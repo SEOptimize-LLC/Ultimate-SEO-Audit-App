@@ -6,9 +6,128 @@ auto-detecting columns and identifying integration data (GSC, PageSpeed, GA4).
 
 import pandas as pd
 from pathlib import Path
-from typing import Optional
-from io import BytesIO
+from typing import Optional, Union
+from io import BytesIO, StringIO
 import re
+import csv
+
+
+def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
+    """Read CSV with robust error handling for malformed rows.
+
+    Handles common issues with Screaming Frog exports:
+    - Inconsistent column counts (commas in content fields)
+    - Different encodings (UTF-8, Latin-1)
+    - Various quoting styles
+
+    Args:
+        file: File path or BytesIO object
+
+    Returns:
+        DataFrame with parsed data
+    """
+    encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
+
+    for encoding in encodings:
+        try:
+            # Reset file position if BytesIO
+            if isinstance(file, BytesIO):
+                file.seek(0)
+
+            # First try: standard pandas with flexible error handling
+            try:
+                df = pd.read_csv(
+                    file,
+                    encoding=encoding,
+                    on_bad_lines="warn",  # Skip malformed rows with warning
+                    low_memory=False,
+                    dtype=str,  # Read all as strings first to avoid type issues
+                )
+                if len(df) > 0:
+                    return df
+            except TypeError:
+                # Older pandas version - use error_bad_lines
+                if isinstance(file, BytesIO):
+                    file.seek(0)
+                df = pd.read_csv(
+                    file,
+                    encoding=encoding,
+                    error_bad_lines=False,
+                    warn_bad_lines=True,
+                    low_memory=False,
+                    dtype=str,
+                )
+                if len(df) > 0:
+                    return df
+
+        except UnicodeDecodeError:
+            continue
+        except pd.errors.ParserError:
+            # Try Python engine which is more flexible
+            try:
+                if isinstance(file, BytesIO):
+                    file.seek(0)
+                df = pd.read_csv(
+                    file,
+                    encoding=encoding,
+                    engine="python",
+                    on_bad_lines="skip",
+                    dtype=str,
+                )
+                if len(df) > 0:
+                    return df
+            except Exception:
+                continue
+        except Exception:
+            continue
+
+    # Final fallback: read line by line and handle manually
+    if isinstance(file, BytesIO):
+        file.seek(0)
+        content = file.read()
+        for encoding in encodings:
+            try:
+                text = content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = content.decode("utf-8", errors="ignore")
+    else:
+        with open(file, "r", encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+
+    # Parse manually with csv module
+    lines = text.splitlines()
+    if not lines:
+        raise ValueError("Empty CSV file")
+
+    reader = csv.reader(StringIO(text))
+    rows = list(reader)
+
+    if not rows:
+        raise ValueError("No data in CSV file")
+
+    # Use first row as header
+    header = rows[0]
+    num_cols = len(header)
+
+    # Filter rows to match header column count (allow slight variance)
+    valid_rows = []
+    for row in rows[1:]:
+        if len(row) == num_cols:
+            valid_rows.append(row)
+        elif len(row) > num_cols:
+            # Truncate extra columns
+            valid_rows.append(row[:num_cols])
+        elif len(row) >= num_cols - 2:
+            # Pad missing columns
+            valid_rows.append(row + [""] * (num_cols - len(row)))
+
+    if not valid_rows:
+        raise ValueError("No valid data rows found in CSV")
+
+    return pd.DataFrame(valid_rows, columns=header)
 
 
 # Screaming Frog column name mappings
@@ -172,13 +291,7 @@ def parse_screaming_frog_export(
     if file_type in ["xlsx", "xls"]:
         df = pd.read_excel(file, engine="openpyxl")
     elif file_type == "csv":
-        # Try different encodings
-        try:
-            df = pd.read_csv(file, encoding="utf-8")
-        except UnicodeDecodeError:
-            if isinstance(file, BytesIO):
-                file.seek(0)
-            df = pd.read_csv(file, encoding="latin-1")
+        df = _read_csv_robust(file)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
