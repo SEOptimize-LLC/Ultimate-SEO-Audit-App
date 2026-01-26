@@ -201,8 +201,41 @@ def render_upload_section():
                 with st.expander("Preview Data"):
                     st.dataframe(df.head(10), use_container_width=True)
 
+                # Diagnostic info
+                with st.expander("🔧 Column Diagnostics (Debug)"):
+                    st.markdown("**Mapped Columns:**")
+                    key_cols = {
+                        "url": "Address/URL",
+                        "status_code": "Status Code",
+                        "title": "Title",
+                        "meta_description": "Meta Description",
+                        "h1": "H1",
+                        "word_count": "Word Count",
+                        "canonical": "Canonical",
+                        "indexability": "Indexability",
+                        "internal_links_in": "Internal Links In",
+                    }
+                    col_status = []
+                    for std_name, display_name in key_cols.items():
+                        exists = std_name in df.columns
+                        has_data = False
+                        sample = "N/A"
+                        if exists:
+                            non_null = df[std_name].notna().sum()
+                            has_data = non_null > 0
+                            if has_data:
+                                sample = str(df[std_name].dropna().iloc[0])[:50] if len(df[std_name].dropna()) > 0 else "empty"
+                        status = "✅" if exists and has_data else "❌" if not exists else "⚠️ (empty)"
+                        col_status.append(f"- {display_name} (`{std_name}`): {status} - Sample: `{sample}`")
+                    st.markdown("\n".join(col_status))
+
+                    st.markdown(f"\n**All {len(df.columns)} columns in file:**")
+                    st.code(", ".join(df.columns.tolist()))
+
             except Exception as e:
                 st.error(f"Error parsing file: {str(e)}")
+                import traceback
+                st.code(traceback.format_exc())
                 st.session_state.df = None
 
     return st.session_state.df is not None

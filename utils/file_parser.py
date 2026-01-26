@@ -313,6 +313,9 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with standardized column names
     """
+    # First, strip whitespace from column names
+    df.columns = [str(c).strip() for c in df.columns]
+
     rename_map = {}
     for col in df.columns:
         # Direct match
@@ -320,11 +323,15 @@ def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
             rename_map[col] = SCREAMING_FROG_COLUMNS[col]
         else:
             # Case-insensitive match
-            col_lower = col.lower().strip()
+            col_lower = col.lower()
             for sf_col, std_col in SCREAMING_FROG_COLUMNS.items():
                 if sf_col.lower() == col_lower:
                     rename_map[col] = std_col
                     break
+
+    # Print debug info (can be seen in terminal)
+    print(f"[DEBUG] Original columns ({len(df.columns)}): {list(df.columns)[:10]}...")
+    print(f"[DEBUG] Mapped {len(rename_map)} columns: {list(rename_map.values())[:10]}...")
 
     return df.rename(columns=rename_map)
 
