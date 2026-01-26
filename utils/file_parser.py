@@ -12,6 +12,44 @@ import re
 import csv
 
 
+def _detect_delimiter(file: Union[BytesIO, str, Path], encoding: str = "utf-8") -> str:
+    """Detect the delimiter used in a CSV file.
+
+    Args:
+        file: File path or BytesIO object
+        encoding: Encoding to use for reading
+
+    Returns:
+        Detected delimiter character
+    """
+    try:
+        if isinstance(file, BytesIO):
+            file.seek(0)
+            sample = file.read(8192).decode(encoding, errors="ignore")
+            file.seek(0)
+        else:
+            with open(file, "r", encoding=encoding, errors="ignore") as f:
+                sample = f.read(8192)
+
+        # Count potential delimiters in the first line
+        first_line = sample.split("\n")[0] if "\n" in sample else sample
+
+        delimiters = {
+            ";": first_line.count(";"),
+            ",": first_line.count(","),
+            "\t": first_line.count("\t"),
+        }
+
+        # Return delimiter with most occurrences (minimum 2 to be considered)
+        best_delim = max(delimiters, key=delimiters.get)
+        if delimiters[best_delim] >= 2:
+            return best_delim
+
+        return ","  # Default to comma
+    except Exception:
+        return ","
+
+
 def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
     """Read CSV with robust error handling for malformed rows.
 
@@ -19,6 +57,7 @@ def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
     - Inconsistent column counts (commas in content fields)
     - Different encodings (UTF-8, Latin-1)
     - Various quoting styles
+    - Different delimiters (comma, semicolon, tab)
 
     Args:
         file: File path or BytesIO object
@@ -34,16 +73,25 @@ def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
             if isinstance(file, BytesIO):
                 file.seek(0)
 
+            # Detect delimiter
+            delimiter = _detect_delimiter(file, encoding)
+            print(f"[DEBUG] Detected delimiter: '{delimiter}' (semicolon={delimiter==';'})")
+
+            if isinstance(file, BytesIO):
+                file.seek(0)
+
             # First try: standard pandas with flexible error handling
             try:
                 df = pd.read_csv(
                     file,
                     encoding=encoding,
+                    sep=delimiter,
                     on_bad_lines="warn",  # Skip malformed rows with warning
                     low_memory=False,
                     dtype=str,  # Read all as strings first to avoid type issues
                 )
                 if len(df) > 0:
+                    print(f"[DEBUG] Successfully read {len(df)} rows with {len(df.columns)} columns")
                     return df
             except TypeError:
                 # Older pandas version - use error_bad_lines
@@ -52,12 +100,14 @@ def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
                 df = pd.read_csv(
                     file,
                     encoding=encoding,
+                    sep=delimiter,
                     error_bad_lines=False,
                     warn_bad_lines=True,
                     low_memory=False,
                     dtype=str,
                 )
                 if len(df) > 0:
+                    print(f"[DEBUG] Successfully read {len(df)} rows with {len(df.columns)} columns")
                     return df
 
         except UnicodeDecodeError:
@@ -67,9 +117,13 @@ def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
             try:
                 if isinstance(file, BytesIO):
                     file.seek(0)
+                delimiter = _detect_delimiter(file, encoding)
+                if isinstance(file, BytesIO):
+                    file.seek(0)
                 df = pd.read_csv(
                     file,
                     encoding=encoding,
+                    sep=delimiter,
                     engine="python",
                     on_bad_lines="skip",
                     dtype=str,
@@ -97,12 +151,17 @@ def _read_csv_robust(file: Union[BytesIO, str, Path]) -> pd.DataFrame:
         with open(file, "r", encoding="utf-8", errors="ignore") as f:
             text = f.read()
 
+    # Detect delimiter from text
+    first_line = text.split("\n")[0] if "\n" in text else text
+    delimiters = {";": first_line.count(";"), ",": first_line.count(","), "\t": first_line.count("\t")}
+    delimiter = max(delimiters, key=delimiters.get) if max(delimiters.values()) >= 2 else ","
+
     # Parse manually with csv module
     lines = text.splitlines()
     if not lines:
         raise ValueError("Empty CSV file")
 
-    reader = csv.reader(StringIO(text))
+    reader = csv.reader(StringIO(text), delimiter=delimiter)
     rows = list(reader)
 
     if not rows:
@@ -152,6 +211,7 @@ SCREAMING_FROG_COLUMNS = {
     "Meta Description 1 Length": "meta_desc_length",
     "Meta Description 1 Pixel Width": "meta_desc_pixel_width",
     "Meta Description 2": "meta_description_2",  # Multiple meta descs
+    "Meta Keywords 1": "meta_keywords",
 
     # Headings
     "H1-1": "h1",
@@ -159,6 +219,7 @@ SCREAMING_FROG_COLUMNS = {
     "H1-2": "h1_2",  # Multiple H1s
     "H2-1": "h2",
     "H2-1 Length": "h2_length",
+    "H2-2": "h2_2",
 
     # Content metrics
     "Word Count": "word_count",
@@ -179,6 +240,7 @@ SCREAMING_FROG_COLUMNS = {
     "Meta Robots 2": "meta_robots_2",
     "X-Robots-Tag 1": "x_robots_tag",
     "Robots.txt Status": "robots_txt_status",
+    "Meta Refresh 1": "meta_refresh",
 
     # Redirects
     "Redirect URL": "redirect_url",
@@ -186,10 +248,15 @@ SCREAMING_FROG_COLUMNS = {
     "Redirect Chain": "redirect_chain",
     "Number of Redirects": "redirect_count",
 
-    # Links
+    # Links - support both "Inlinks" and "Unique Inlinks" naming
+    "Inlinks": "inlinks_total",
     "Unique Inlinks": "internal_links_in",
+    "Outlinks": "outlinks_total",
     "Unique Outlinks": "internal_links_out",
     "External Outlinks": "external_links_out",
+    "Unique External Outlinks": "external_links_unique",
+    "Unique External JS Outlinks": "external_js_outlinks",
+    "% of Total": "inlinks_percent",
     "Follow": "follow_links",
     "No Follow": "nofollow_links",
     "Sponsored": "sponsored_links",
@@ -206,30 +273,54 @@ SCREAMING_FROG_COLUMNS = {
     # Structured Data
     "Structured Data": "structured_data",
     "Contains Structured Data": "has_structured_data",
+    "Rich Results": "rich_results",
+    "Rich Results Types": "rich_results_types",
 
     # URL properties
     "URL Length": "url_length",
     "Path Length": "path_length",
     "Depth": "url_depth",
+    "Folder Depth": "folder_depth",
     "Query String": "query_string",
     "Contains Underscores": "has_underscores",
     "Contains Uppercase": "has_uppercase",
     "Contains Multiple Slashes": "has_multiple_slashes",
     "Contains Repetitive Paths": "has_repetitive_paths",
     "Contains Parameters": "has_parameters",
+    "Hash": "url_hash",
+    "URL Encoded Address": "url_encoded",
 
-    # Response
+    # Response - support both casing
     "Response Time": "response_time",
     "Last Modified": "last_modified",
     "Size (Bytes)": "size_bytes",
+    "Size (bytes)": "size_bytes",
+    "Transferred (bytes)": "transferred_bytes",
+    "Total Transferred (bytes)": "total_transferred_bytes",
     "Transfer Encoding": "transfer_encoding",
     "HTTP/2": "http2",
+    "HTTP Version": "http_version",
+    "Cookies": "cookies",
+    "Language": "language",
 
     # Crawl info
     "Crawl Depth": "crawl_depth",
     "Found At": "found_at",
     "Link Type": "link_type",
     "Link Path": "link_path",
+    "Crawl Timestamp": "crawl_timestamp",
+
+    # Similarity/Duplicates
+    "Closest Similarity Match": "similarity_match",
+    "No. Near Duplicates": "near_duplicates",
+
+    # Spelling/Grammar
+    "Spelling Errors": "spelling_errors",
+    "Grammar Errors": "grammar_errors",
+
+    # Carbon/Environmental
+    "CO2 (mg)": "co2_mg",
+    "Carbon Rating": "carbon_rating",
 
     # GSC Integration (optional)
     "Clicks": "gsc_clicks",
@@ -238,25 +329,67 @@ SCREAMING_FROG_COLUMNS = {
     "Position": "gsc_position",
     "GSC URL": "gsc_url",
 
-    # PageSpeed Integration (optional)
+    # GSC URL Inspection API
+    "URL Inspection API Status": "url_inspection_status",
+    "URL Inspection API Error": "url_inspection_error",
+    "Summary": "url_inspection_summary",
+    "Coverage": "url_inspection_coverage",
+    "Last Crawl": "gsc_last_crawl",
+    "Days Since Last Crawled": "days_since_crawled",
+    "Crawled As": "crawled_as",
+    "Crawl Allowed": "crawl_allowed",
+    "Page Fetch": "page_fetch",
+    "Indexing Allowed": "indexing_allowed",
+    "User-Declared Canonical": "user_canonical",
+    "Google-Selected Canonical": "google_canonical",
+    "Mobile Usability": "mobile_usability",
+    "Mobile Usability Issues": "mobile_usability_issues",
+    "AMP Results": "amp_results",
+    "AMP Issues": "amp_issues",
+    "Rich Results Type Errors": "rich_results_errors",
+    "Rich Results Type Warnings": "rich_results_warnings",
+
+    # PageSpeed Integration (optional) - support both seconds and milliseconds
     "Largest Contentful Paint Time (s)": "lcp",
+    "Largest Contentful Paint Time (ms)": "lcp_ms",
     "Total Blocking Time (ms)": "tbt",
     "Cumulative Layout Shift": "cls",
     "First Contentful Paint Time (s)": "fcp",
+    "First Contentful Paint Time (ms)": "fcp_ms",
     "Speed Index (s)": "speed_index",
+    "Speed Index Time (ms)": "speed_index_ms",
     "Time to Interactive (s)": "tti",
+    "Time to Interactive (ms)": "tti_ms",
+    "Time to First Byte (ms)": "ttfb_ms",
     "Performance Score": "performance_score",
     "Accessibility Score": "accessibility_score",
     "Best Practices Score": "best_practices_score",
     "SEO Score": "seo_score",
 
-    # GA4 Integration (optional)
+    # GA4 Integration (optional) - support both naming conventions
     "Sessions": "ga_sessions",
+    "GA4 Sessions": "ga_sessions",
     "Page Views": "ga_pageviews",
+    "GA4 Views": "ga_pageviews",
     "Bounce Rate": "ga_bounce_rate",
+    "GA4 Bounce rate": "ga_bounce_rate",
     "Avg. Session Duration": "ga_avg_session_duration",
+    "GA4 Average session duration": "ga_avg_session_duration",
     "Conversions": "ga_conversions",
     "Revenue": "ga_revenue",
+    "GA4 Total users": "ga_total_users",
+    "GA4 New users": "ga_new_users",
+
+    # Mobile/AMP
+    "amphtml Link Element": "amphtml_link",
+    "Mobile Alternate Link": "mobile_alternate_link",
+
+    # Misc
+    "Published Date 1": "published_date",
+    "rel=\"next\" 1": "rel_next",
+    "rel=\"prev\" 1": "rel_prev",
+    "HTTP rel=\"next\" 1": "http_rel_next",
+    "HTTP rel=\"prev\" 1": "http_rel_prev",
 }
 
 # Reverse mapping for lookup
@@ -352,15 +485,34 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # Convert numeric columns
     numeric_columns = [
         "title_length", "meta_desc_length", "h1_length", "word_count",
-        "internal_links_in", "internal_links_out", "missing_alt",
-        "url_length", "url_depth", "response_time", "size_bytes",
+        "internal_links_in", "internal_links_out", "inlinks_total",
+        "outlinks_total", "external_links_out", "missing_alt",
+        "url_length", "url_depth", "folder_depth", "response_time",
+        "size_bytes", "transferred_bytes",
         "gsc_clicks", "gsc_impressions", "gsc_position",
-        "lcp", "tbt", "cls", "performance_score",
-        "redirect_count", "crawl_depth"
+        "lcp", "lcp_ms", "tbt", "cls", "fcp", "fcp_ms",
+        "speed_index", "speed_index_ms", "tti", "tti_ms", "ttfb_ms",
+        "performance_score", "redirect_count", "crawl_depth",
+        "near_duplicates", "spelling_errors", "grammar_errors",
+        "ga_sessions", "ga_pageviews", "ga_total_users", "ga_new_users",
+        "link_score"
     ]
     for col in numeric_columns:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # Convert millisecond PageSpeed metrics to seconds if not already present
+    ms_to_s_conversions = {
+        "lcp_ms": "lcp",
+        "fcp_ms": "fcp",
+        "speed_index_ms": "speed_index",
+        "tti_ms": "tti",
+        "ttfb_ms": "ttfb",
+    }
+    for ms_col, s_col in ms_to_s_conversions.items():
+        if ms_col in df.columns and s_col not in df.columns:
+            df[s_col] = df[ms_col] / 1000.0
+            print(f"[DEBUG] Converted {ms_col} to {s_col} (ms -> seconds)")
 
     # Convert percentage columns (remove % if present)
     pct_columns = ["gsc_ctr", "text_ratio", "ga_bounce_rate"]
@@ -411,19 +563,26 @@ def detect_columns(df: pd.DataFrame) -> dict:
 
     # Map columns to categories
     category_mapping = {
-        "core": ["url", "content_type", "status_code", "status", "indexability", "indexability_status"],
+        "core": ["url", "content_type", "status_code", "status",
+                 "indexability", "indexability_status"],
         "title": ["title", "title_length", "title_pixel_width", "title_2"],
         "meta": ["meta_description", "meta_desc_length", "meta_description_2"],
         "headings": ["h1", "h1_length", "h1_2", "h2", "h2_length"],
-        "content": ["word_count", "sentence_count", "flesch_score", "readability", "text_ratio"],
-        "technical": ["canonical", "canonical_2", "meta_robots", "x_robots_tag", "robots_txt_status",
-                      "redirect_url", "redirect_type", "redirect_count", "response_time", "http2"],
-        "links": ["internal_links_in", "internal_links_out", "external_links_out",
-                  "follow_links", "nofollow_links", "link_score"],
+        "content": ["word_count", "sentence_count", "flesch_score",
+                    "readability", "text_ratio"],
+        "technical": ["canonical", "canonical_2", "meta_robots", "x_robots_tag",
+                      "robots_txt_status", "redirect_url", "redirect_type",
+                      "redirect_count", "response_time", "http2"],
+        "links": ["internal_links_in", "internal_links_out", "inlinks_total",
+                  "outlinks_total", "external_links_out", "follow_links",
+                  "nofollow_links", "link_score"],
         "images": ["image_count", "missing_alt", "large_images"],
         "gsc": ["gsc_clicks", "gsc_impressions", "gsc_ctr", "gsc_position"],
-        "pagespeed": ["lcp", "tbt", "cls", "fcp", "speed_index", "tti", "performance_score"],
-        "ga4": ["ga_sessions", "ga_pageviews", "ga_bounce_rate", "ga_conversions"],
+        "pagespeed": ["lcp", "lcp_ms", "tbt", "cls", "fcp", "fcp_ms",
+                      "speed_index", "speed_index_ms", "tti", "tti_ms",
+                      "ttfb_ms", "performance_score"],
+        "ga4": ["ga_sessions", "ga_pageviews", "ga_bounce_rate",
+                "ga_total_users", "ga_new_users", "ga_conversions"],
     }
 
     for category, columns in category_mapping.items():
