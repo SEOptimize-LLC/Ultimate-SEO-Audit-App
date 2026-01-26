@@ -485,6 +485,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # Convert numeric columns
     numeric_columns = [
         "title_length", "meta_desc_length", "h1_length", "word_count",
+        "sentence_count", "avg_words_per_sentence", "flesch_score",
         "internal_links_in", "internal_links_out", "inlinks_total",
         "outlinks_total", "external_links_out", "missing_alt",
         "url_length", "url_depth", "folder_depth", "response_time",
@@ -495,7 +496,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         "performance_score", "redirect_count", "crawl_depth",
         "near_duplicates", "spelling_errors", "grammar_errors",
         "ga_sessions", "ga_pageviews", "ga_total_users", "ga_new_users",
-        "link_score"
+        "link_score", "image_count"
     ]
     for col in numeric_columns:
         if col in df.columns:
