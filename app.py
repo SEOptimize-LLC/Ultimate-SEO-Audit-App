@@ -15,11 +15,24 @@ from utils.file_parser import (
     get_export_summary,
     get_domain_from_urls,
 )
+from utils.audit_context import AuditContext, load_audit_context
 from models.audit_result import AuditResult, AuditSummary, Severity
 from auditors.technical_auditor import TechnicalAuditor
+from auditors.javascript_rendering_auditor import JavaScriptRenderingAuditor
+from auditors.cannibalization_auditor import CannibalizationAuditor
+from auditors.url_structure_auditor import URLStructureAuditor
+from auditors.ecommerce_patterns_auditor import EcommercePatternsAuditor
+from auditors.local_seo_auditor import LocalSEOAuditor
+from auditors.mobile_first_auditor import MobileFirstAuditor
+from auditors.content_pruning_auditor import ContentPruningAuditor
 from auditors.onpage_auditor import OnPageAuditor
 from auditors.backlink_auditor import BacklinkAuditor
 from auditors.competitor_auditor import CompetitorAuditor
+# Leak-grounded auditors (May 2024 Google API leak inputs)
+from auditors.anchor_quality_auditor import AnchorQualityAuditor
+from auditors.date_freshness_auditor import DateFreshnessAuditor
+from auditors.topical_authority_auditor import TopicalAuthorityAuditor
+from auditors.click_signal_auditor import ClickSignalAuditor
 from services.dataforseo_client import DataForSEOClient, BacklinkData, CompetitorData
 from services.openrouter_client import OpenRouterClient
 from services.report_generator import ReportGenerator
@@ -61,6 +74,16 @@ def init_session_state():
         "integrations": None,
         "audit_complete": False,
         "llm_analysis_complete": False,
+        # Leak-grounded expanded input stack
+        "audit_context": None,
+        "backlinks_df": None,
+        "anchors_df": None,
+        "dates_df": None,
+        "gsc_df": None,
+        "topical_map": None,
+        # Computed semantic map (from run_semantic_map.py)
+        "computed_topical_path": None,
+        "computed_full_path": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -158,87 +181,241 @@ def render_sidebar():
 
 
 def render_upload_section():
-    """Render the file upload section."""
-    st.header("📁 Step 1: Upload Screaming Frog Export")
+    """Render the expanded 6-input upload section.
 
-    uploaded_file = st.file_uploader(
-        "Upload your Screaming Frog crawl export (CSV or Excel)",
-        type=["csv", "xlsx", "xls"],
-        help="Export your crawl data from Screaming Frog as CSV or Excel format",
+    Inputs (1 required, 5 optional but recommended for full leak-grounded audit):
+        1. SF HTML Internal report      — REQUIRED — core crawl
+        2. SEMrush backlink report      — backlink quality + domain authority
+        3. SF Anchor Text report        — anchor mismatch + spam velocity
+        4. SF custom extraction (dates) — date triangulation
+        5. GSC Search Analytics export  — position-adjusted CTR + click signals
+        6. Koray topical map (markdown) — siteFocusScore / siteRadius proxy
+    """
+    st.header("📁 Step 1: Upload Audit Inputs")
+    st.caption(
+        "Only the SF Internal report is required. Each additional input unlocks "
+        "leak-grounded analyses (May 2024 Google API leak)."
     )
 
-    if uploaded_file:
-        with st.spinner("Parsing file..."):
-            try:
-                # Determine file type
-                file_type = uploaded_file.name.split(".")[-1].lower()
+    col_a, col_b = st.columns(2)
 
-                # Parse the file
-                df = parse_screaming_frog_export(uploaded_file, file_type)
-                st.session_state.df = df
+    with col_a:
+        st.markdown("**Required**")
+        crawl_file = st.file_uploader(
+            "1. SF HTML Internal report",
+            type=["csv", "xlsx", "xls"],
+            key="upload_crawl",
+            help="Screaming Frog export. Standard Internal HTML crawl.",
+        )
 
-                # Get summary
-                summary = get_export_summary(df)
-                st.session_state.domain = summary.get("domain")
-                st.session_state.integrations = detect_integrations(df)
+        st.markdown("**Recommended — leak-grounded**")
+        anchors_file = st.file_uploader(
+            "3. SF Anchor Text report",
+            type=["csv", "xlsx", "xls"],
+            key="upload_anchors",
+            help="SF Bulk Export → All Anchor Text. Unlocks anchorMismatchDemotion + phraseAnchorSpam analysis.",
+        )
 
-                st.success(f"✓ Loaded {len(df):,} URLs from {st.session_state.domain or 'Unknown domain'}")
+        gsc_file = st.file_uploader(
+            "5. GSC Search Analytics export",
+            type=["csv", "xlsx", "xls"],
+            key="upload_gsc",
+            help="GSC Performance → Export with query + page dimensions. Unlocks position-adjusted CTR analysis.",
+        )
 
-                # Display summary
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total URLs", f"{len(df):,}")
-                with col2:
-                    st.metric("Columns", f"{len(df.columns)}")
-                with col3:
-                    gsc = "Yes" if st.session_state.integrations.get("gsc") else "No"
-                    st.metric("GSC Data", gsc)
-                with col4:
-                    ps = "Yes" if st.session_state.integrations.get("pagespeed") else "No"
-                    st.metric("PageSpeed Data", ps)
+    with col_b:
+        st.markdown("**Optional**")
+        backlinks_file = st.file_uploader(
+            "2. SEMrush backlink report",
+            type=["csv", "xlsx", "xls"],
+            key="upload_backlinks",
+            help="SEMrush Backlink export. Unlocks external authority + sourceType tier analysis.",
+        )
 
-                # Preview
-                with st.expander("Preview Data"):
-                    st.dataframe(df.head(10), use_container_width=True)
+        dates_file = st.file_uploader(
+            "4. SF content dates extraction",
+            type=["csv", "xlsx", "xls"],
+            key="upload_dates",
+            help="SF custom extraction with byline / schema published+modified / Last-Modified. Unlocks date triangulation.",
+        )
 
-                # Diagnostic info
-                with st.expander("🔧 Column Diagnostics (Debug)"):
-                    st.markdown("**Mapped Columns:**")
-                    key_cols = {
-                        "url": "Address/URL",
-                        "status_code": "Status Code",
-                        "title": "Title",
-                        "meta_description": "Meta Description",
-                        "h1": "H1",
-                        "word_count": "Word Count",
-                        "canonical": "Canonical",
-                        "indexability": "Indexability",
-                        "internal_links_in": "Internal Links In",
-                    }
-                    col_status = []
-                    for std_name, display_name in key_cols.items():
-                        exists = std_name in df.columns
-                        has_data = False
-                        sample = "N/A"
-                        if exists:
-                            non_null = df[std_name].notna().sum()
-                            has_data = non_null > 0
-                            if has_data:
-                                sample = str(df[std_name].dropna().iloc[0])[:50] if len(df[std_name].dropna()) > 0 else "empty"
-                        status = "✅" if exists and has_data else "❌" if not exists else "⚠️ (empty)"
-                        col_status.append(f"- {display_name} (`{std_name}`): {status} - Sample: `{sample}`")
-                    st.markdown("\n".join(col_status))
+        topical_file = st.file_uploader(
+            "6. Topical map (Koray-style)",
+            type=["md", "markdown", "txt"],
+            key="upload_topical",
+            help="Markdown file with central entity, Ring 1/2/3 topics, outliers. Unlocks siteFocusScore / siteRadius analysis.",
+        )
 
-                    st.markdown(f"\n**All {len(df.columns)} columns in file:**")
-                    st.code(", ".join(df.columns.tolist()))
+        computed_map_file = st.file_uploader(
+            "7. Computed semantic map (optional, JSON)",
+            type=["json"],
+            key="upload_computed_map",
+            help=(
+                "Output of `python run_semantic_map.py --client <name>` "
+                "(topical_map.json). Use this when the client does not "
+                "have a Koray topical map - the skill generates one from "
+                "the SF crawl + embeddings. Pair with the full JSON below "
+                "for the click-overlay finding."
+            ),
+        )
 
-            except Exception as e:
-                st.error(f"Error parsing file: {str(e)}")
-                import traceback
-                st.code(traceback.format_exc())
-                st.session_state.df = None
+        full_map_file = st.file_uploader(
+            "8. Semantic map full JSON (optional)",
+            type=["json"],
+            key="upload_full_map",
+            help=(
+                "Optional richer payload (semantic_map_full.json) that "
+                "unlocks the high-click off-topic cluster finding."
+            ),
+        )
+
+    if not crawl_file:
+        st.info("Upload at least the SF HTML Internal report to begin.")
+        return False
+
+    with st.spinner("Parsing audit inputs..."):
+        try:
+            ctx = load_audit_context(
+                crawl_file=crawl_file,
+                backlinks_file=backlinks_file,
+                anchors_file=anchors_file,
+                dates_file=dates_file,
+                gsc_file=gsc_file,
+                topical_map_file=topical_file,
+            )
+
+            if ctx.crawl_df is None:
+                st.error("Failed to parse the SF Internal report.")
+                return False
+
+            df = ctx.crawl_df
+            st.session_state.df = df
+            st.session_state.audit_context = ctx
+            st.session_state.domain = ctx.domain
+            st.session_state.integrations = ctx.integrations
+            st.session_state.backlinks_df = ctx.backlinks_df
+            st.session_state.anchors_df = ctx.anchors_df
+            st.session_state.dates_df = ctx.dates_df
+            st.session_state.gsc_df = ctx.gsc_df
+            st.session_state.topical_map = ctx.topical_map
+
+            # Persist optional computed-map uploads to temp paths so the
+            # auditor (which expects file paths) can consume them later.
+            st.session_state.computed_topical_path = None
+            st.session_state.computed_full_path = None
+            if computed_map_file is not None:
+                import tempfile
+                with tempfile.NamedTemporaryFile(
+                    suffix=".json", delete=False, mode="wb"
+                ) as tf:
+                    tf.write(computed_map_file.getvalue())
+                    st.session_state.computed_topical_path = tf.name
+            if full_map_file is not None:
+                import tempfile
+                with tempfile.NamedTemporaryFile(
+                    suffix=".json", delete=False, mode="wb"
+                ) as tf:
+                    tf.write(full_map_file.getvalue())
+                    st.session_state.computed_full_path = tf.name
+
+            st.success(f"✓ Loaded {len(df):,} URLs from {ctx.domain or 'Unknown domain'}")
+
+            _render_input_availability(ctx)
+            _render_crawl_diagnostics(df)
+
+        except Exception as e:
+            st.error(f"Error parsing inputs: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
+            st.session_state.df = None
 
     return st.session_state.df is not None
+
+
+def _render_input_availability(ctx: AuditContext) -> None:
+    """Render the availability matrix for the 6 inputs and the analyses they unlock."""
+    inputs = ctx.available_inputs
+    analyses = ctx.available_analyses
+
+    st.markdown("### 📊 Input Availability")
+    cols = st.columns(6)
+    labels = [
+        ("Crawl", "crawl"),
+        ("Backlinks", "backlinks"),
+        ("Anchors", "anchors"),
+        ("Dates", "dates"),
+        ("GSC", "gsc"),
+        ("Topical Map", "topical_map"),
+    ]
+    for col, (label, key) in zip(cols, labels):
+        with col:
+            mark = "✅" if inputs[key] else "⚪"
+            st.metric(label, mark)
+
+    with st.expander("🔬 Leak-grounded analyses unlocked by current inputs"):
+        analysis_labels = {
+            "anchor_mismatch_demotion": "Anchor mismatch demotion (CompressedQualitySignals)",
+            "anchor_spam_velocity": "Anchor phrase spam velocity (AnchorPhraseSpamInfo)",
+            "external_backlink_quality": "External backlink quality (Anchors sourceType)",
+            "site_authority_signal": "Site authority (NSR siteAuthority proxy)",
+            "date_triangulation": "Date triangulation (semanticDate / lastSignificantUpdate)",
+            "freshness_unreliability": "Freshness unreliability (dateUnreliabilityInfo)",
+            "position_adjusted_ctr": "Position-adjusted CTR (NavBoost goodClicks)",
+            "click_signal_grounding": "Click-signal grounding (NavBoost / Glue)",
+            "topical_authority_outliers": "Topical outliers (siteRadius)",
+            "site_radius_analysis": "Site focus / radius (QualityAuthorityTopicEmbeddings)",
+        }
+        for analysis_key, label in analysis_labels.items():
+            mark = "✅" if analyses.get(analysis_key) else "⛔"
+            st.markdown(f"- {mark} {label}")
+
+
+def _render_crawl_diagnostics(df: pd.DataFrame) -> None:
+    """Render the existing crawl summary metrics + column diagnostics expander."""
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total URLs", f"{len(df):,}")
+    with col2:
+        st.metric("Columns", f"{len(df.columns)}")
+    with col3:
+        gsc = "Yes" if st.session_state.integrations.get("gsc") else "No"
+        st.metric("GSC Crawl Data", gsc)
+    with col4:
+        ps = "Yes" if st.session_state.integrations.get("pagespeed") else "No"
+        st.metric("PageSpeed Data", ps)
+
+    with st.expander("Preview Data"):
+        st.dataframe(df.head(10), use_container_width=True)
+
+    with st.expander("🔧 Column Diagnostics (Debug)"):
+        key_cols = {
+            "url": "Address/URL",
+            "status_code": "Status Code",
+            "title": "Title",
+            "meta_description": "Meta Description",
+            "h1": "H1",
+            "word_count": "Word Count",
+            "canonical": "Canonical",
+            "indexability": "Indexability",
+            "internal_links_in": "Internal Links In",
+        }
+        col_status = []
+        for std_name, display_name in key_cols.items():
+            exists = std_name in df.columns
+            has_data = False
+            sample = "N/A"
+            if exists:
+                non_null = df[std_name].notna().sum()
+                has_data = non_null > 0
+                if has_data:
+                    non_null_vals = df[std_name].dropna()
+                    sample = str(non_null_vals.iloc[0])[:50] if len(non_null_vals) > 0 else "empty"
+            status = "✅" if exists and has_data else "❌" if not exists else "⚠️ (empty)"
+            col_status.append(f"- {display_name} (`{std_name}`): {status} - Sample: `{sample}`")
+        st.markdown("\n".join(col_status))
+
+        st.markdown(f"\n**All {len(df.columns)} columns in file:**")
+        st.code(", ".join(df.columns.tolist()))
 
 
 def run_audit(options: dict) -> AuditResult:
@@ -274,13 +451,126 @@ def run_audit(options: dict) -> AuditResult:
     progress.progress(10)
     technical_auditor = TechnicalAuditor(df)
     result.technical_issues = technical_auditor.run_audit()
+    progress.progress(20)
+
+    # JavaScript Rendering Audit (gracefully degrades when render data absent)
+    status.text("Running JavaScript rendering audit...")
+    js_auditor = JavaScriptRenderingAuditor(df)
+    result.technical_issues.extend(js_auditor.run_audit())
+    progress.progress(25)
+
+    # URL Structure Audit
+    status.text("Running URL structure audit...")
+    url_auditor = URLStructureAuditor(df)
+    result.technical_issues.extend(url_auditor.run_audit())
     progress.progress(30)
+
+    # Cannibalization Audit
+    status.text("Running cannibalization audit...")
+    cannibal_auditor = CannibalizationAuditor(df)
+    result.technical_issues.extend(cannibal_auditor.run_audit())
+    progress.progress(35)
+
+    # Mobile-First Audit
+    status.text("Running mobile-first audit...")
+    mobile_auditor = MobileFirstAuditor(df)
+    result.technical_issues.extend(mobile_auditor.run_audit())
+    progress.progress(38)
+
+    # Ecommerce Patterns Audit (gates on site-type detection)
+    status.text("Running ecommerce patterns audit...")
+    ecom_auditor = EcommercePatternsAuditor(df)
+    result.technical_issues.extend(ecom_auditor.run_audit())
+    progress.progress(42)
+
+    # Local SEO Audit (gates on site-type detection)
+    status.text("Running local SEO audit...")
+    local_auditor = LocalSEOAuditor(df)
+    result.technical_issues.extend(local_auditor.run_audit())
+    progress.progress(45)
 
     # On-Page Audit
     status.text("Running on-page SEO audit...")
     onpage_auditor = OnPageAuditor(df)
     result.onpage_issues = onpage_auditor.run_audit()
+    progress.progress(48)
+
+    # Content Pruning Audit (on-page concern)
+    status.text("Running content pruning audit...")
+    pruning_auditor = ContentPruningAuditor(df)
+    result.onpage_issues.extend(pruning_auditor.run_audit())
     progress.progress(50)
+
+    # ==== Leak-grounded auditors (gracefully skip when inputs absent) ====
+    ctx = st.session_state.get("audit_context")
+    if ctx is not None:
+        # Anchor Quality Audit (requires SF Anchor Text report)
+        if ctx.anchors_df is not None:
+            status.text("Running anchor quality audit (anchorMismatchDemotion + spam velocity)...")
+            try:
+                aq_auditor = AnchorQualityAuditor(df, ctx.anchors_df)
+                result.onpage_issues.extend(aq_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Anchor quality audit failed: {e}")
+        progress.progress(54)
+
+        # Date Freshness Audit (requires custom dates extraction)
+        if ctx.dates_df is not None:
+            status.text("Running date triangulation audit (semanticDate / lastSignificantUpdate)...")
+            try:
+                df_auditor = DateFreshnessAuditor(df, ctx.dates_df)
+                result.onpage_issues.extend(df_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Date freshness audit failed: {e}")
+        progress.progress(58)
+
+        # Topical Authority Audit
+        # Prefer a computed semantic map (from run_semantic_map.py) when
+        # uploaded; fall back to the Koray topical map otherwise.
+        computed_topical = st.session_state.get(
+            "computed_topical_path"
+        )
+        computed_full = st.session_state.get("computed_full_path")
+        if computed_topical is not None:
+            status.text(
+                "Running topical authority audit "
+                "(computed semantic map)..."
+            )
+            try:
+                ta_auditor = (
+                    TopicalAuthorityAuditor.from_computed_map(
+                        crawl_df=df,
+                        topical_map_path=computed_topical,
+                        full_json_path=computed_full,
+                    )
+                )
+                result.onpage_issues.extend(ta_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Topical authority audit failed: {e}")
+        elif ctx.topical_map is not None:
+            status.text(
+                "Running topical authority audit "
+                "(siteRadius / siteFocusScore)..."
+            )
+            try:
+                ta_auditor = TopicalAuthorityAuditor(
+                    df, ctx.topical_map
+                )
+                result.onpage_issues.extend(ta_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Topical authority audit failed: {e}")
+        progress.progress(62)
+
+        # Click Signal Audit (requires GSC performance export)
+        if ctx.gsc_df is not None:
+            status.text("Running click-signal audit (position-adjusted CTR / NavBoost)...")
+            try:
+                cs_auditor = ClickSignalAuditor(df, ctx.gsc_df)
+                result.onpage_issues.extend(cs_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Click signal audit failed: {e}")
+        progress.progress(66)
+    # ====================================================================
 
     # Backlink Analysis (optional)
     if options.get("enable_backlinks") and domain:
