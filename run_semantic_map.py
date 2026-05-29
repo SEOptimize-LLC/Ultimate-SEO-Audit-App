@@ -1,0 +1,208 @@
+"""CLI orchestrator for the semantic-site-map skill.
+
+Usage:
+    python run_semantic_map.py --client "<client-name>"
+    python run_semantic_map.py --client "Education Walkthrough" \\
+        --crawl "Clients/Education Walkthrough/Others/ew_crawl_filtered.csv" \\
+        --gsc   "Clients/Education Walkthrough/data/gsc_performance.csv"
+
+If --crawl is omitted, defaults to Clients/<client>/data/crawl_internal.csv.
+If --gsc is omitted, defaults to Clients/<client>/data/gsc_performance.csv
+(optional - skipped if absent).
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import logging
+import os
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+from dotenv import load_dotenv
+
+from Skills.semantic_site_map.cluster import cluster_pages
+from Skills.semantic_site_map.embedder import DEFAULT_MODEL, embed_pages
+from Skills.semantic_site_map.report import build_outputs
+from Skills.semantic_site_map.text_loader import load_page_text
+from utils.file_parser import _read_csv_robust
+
+
+def _setup_logging(verbose: bool) -> None:
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s | %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+
+def _resolve_paths(
+    client: str,
+    crawl: Optional[str],
+    gsc: Optional[str],
+) -> tuple[Path, Optional[Path], Path]:
+    client_root = Path("Clients") / client
+    if not client_root.exists():
+        raise SystemExit(f"Client folder not found: {client_root}")
+
+    crawl_path = (
+        Path(crawl) if crawl
+        else client_root / "data" / "crawl_internal.csv"
+    )
+    if not crawl_path.exists():
+        raise SystemExit(f"Crawl file not found: {crawl_path}")
+
+    gsc_path: Optional[Path] = (
+        Path(gsc) if gsc
+        else client_root / "data" / "gsc_performance.csv"
+    )
+    if gsc_path and not gsc_path.exists():
+        gsc_path = None
+
+    out_dir = client_root / "Full SEO Audit" / "semantic_map"
+    return crawl_path, gsc_path, out_dir
+
+
+def _load_gsc(path: Optional[Path]) -> Optional[pd.DataFrame]:
+    if path is None:
+        return None
+    df = _read_csv_robust(path)
+    rename = {}
+    for col in df.columns:
+        low = col.lower().strip()
+        if low in ("page", "address", "landing page"):
+            rename[col] = "url"
+        elif low in ("clicks", "url clicks"):
+            rename[col] = "clicks"
+        elif low == "impressions":
+            rename[col] = "impressions"
+    df = df.rename(columns=rename)
+    needed = {"url", "clicks", "impressions"}
+    if not needed.issubset(df.columns):
+        logging.warning(
+            "run_semantic_map: GSC file lacks expected columns "
+            "(got %s) - skipping click overlay",
+            list(df.columns),
+        )
+        return None
+    return df[list(needed)]
+
+
+def _normalize_crawl_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure a 'url' column exists by renaming common SF aliases."""
+    if "url" in df.columns:
+        return df
+    for col in df.columns:
+        if col.lower() in ("address", "url"):
+            return df.rename(columns={col: "url"})
+    raise SystemExit(
+        "Crawl CSV has no 'url' / 'Address' column - cannot proceed."
+    )
+
+
+async def _run(args: argparse.Namespace) -> None:
+    load_dotenv()
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise SystemExit(
+            "OPENROUTER_API_KEY missing. "
+            "Add it to .env or your environment."
+        )
+
+    crawl_path, gsc_path, out_dir = _resolve_paths(
+        args.client, args.crawl, args.gsc
+    )
+    cache_dir = out_dir.parent / "_cache_semantic_map"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    logging.info("run_semantic_map: client=%s", args.client)
+    logging.info("run_semantic_map: crawl=%s", crawl_path)
+    logging.info(
+        "run_semantic_map: gsc=%s", gsc_path or "(none)"
+    )
+    logging.info("run_semantic_map: out_dir=%s", out_dir)
+
+    df = _read_csv_robust(crawl_path)
+    df = _normalize_crawl_columns(df)
+
+    text_cache = cache_dir / "page_text.csv"
+    text_df = await load_page_text(df, cache_path=text_cache)
+    logging.info("run_semantic_map: text rows=%d", len(text_df))
+
+    if len(text_df) < 5:
+        raise SystemExit(
+            f"Only {len(text_df)} URLs survived eligibility filters "
+            "- refusing to cluster."
+        )
+
+    embeddings = embed_pages(
+        text_df,
+        cache_dir=cache_dir,
+        api_key=api_key,
+        model=args.model,
+    )
+    logging.info(
+        "run_semantic_map: embedding matrix shape=%s", embeddings.shape
+    )
+
+    if len(text_df) < 50:
+        logging.warning(
+            "run_semantic_map: only %d URLs (<50) - "
+            "clustering will be coarse. "
+            "Markdown report will flag this limitation.",
+            len(text_df),
+        )
+
+    cluster_result = cluster_pages(text_df, embeddings, api_key=api_key)
+    gsc = _load_gsc(gsc_path)
+
+    paths = build_outputs(
+        out_dir=out_dir,
+        text_df=text_df,
+        embeddings=embeddings,
+        cluster_result=cluster_result,
+        gsc=gsc,
+        client_name=args.client,
+        model_name=args.model,
+    )
+
+    print("\nOutputs written:")
+    for label, p in paths.items():
+        print(f"  {label:>20}  {p}")
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="Semantic site map for a client.",
+    )
+    parser.add_argument(
+        "--client",
+        required=True,
+        help="Client folder name under Clients/",
+    )
+    parser.add_argument(
+        "--crawl",
+        help="Path to SF Internal CSV "
+        "(default: data/crawl_internal.csv)",
+    )
+    parser.add_argument(
+        "--gsc",
+        help="Path to GSC performance CSV "
+        "(default: data/gsc_performance.csv)",
+    )
+    parser.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        help="OpenRouter embedding model id",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
+    args = parser.parse_args(argv)
+
+    _setup_logging(args.verbose)
+    asyncio.run(_run(args))
+
+
+if __name__ == "__main__":
+    main()
