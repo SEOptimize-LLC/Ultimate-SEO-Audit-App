@@ -119,6 +119,13 @@ def _load_gsc(path: Optional[Path]) -> Optional[pd.DataFrame]:
             list(df.columns),
         )
         return None
+    # Coerce numeric columns - _read_csv_robust returns strings when
+    # the file came from a non-pandas source (e.g. GSC MCP markdown
+    # output reformatted to CSV).
+    for num_col in ("clicks", "impressions"):
+        df[num_col] = pd.to_numeric(
+            df[num_col], errors="coerce"
+        ).fillna(0)
     return df[list(needed)]
 
 
