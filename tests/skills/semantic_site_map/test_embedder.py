@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from Skills.semantic_site_map.embedder import (
     EMBEDDING_DIM,
@@ -83,6 +84,63 @@ def test_embed_pages_only_fetches_uncached(tmp_path: Path):
         # Only the new URL's text should be sent on the second call.
         called_with = m.call_args.args[0]
         assert called_with == ["body b"]
+
+
+def test_embed_pages_truncates_oversized_text(tmp_path: Path):
+    """A text longer than MAX_INPUT_CHARS is truncated before send."""
+    from Skills.semantic_site_map.embedder import MAX_INPUT_CHARS
+
+    long_text = "x" * (MAX_INPUT_CHARS + 5000)
+    df = pd.DataFrame({
+        "url": ["https://x.com/a"],
+        "text": [long_text],
+    })
+    sent_batches: list[list[str]] = []
+    target = "Skills.semantic_site_map.embedder._call_openrouter_embeddings"
+
+    def capture(texts, **_):
+        sent_batches.append(list(texts))
+        return _fake_openrouter_response(texts)
+
+    with patch(target, side_effect=capture):
+        embed_pages(df, cache_dir=tmp_path, api_key="fake")
+
+    assert len(sent_batches) == 1
+    sent_text = sent_batches[0][0]
+    # Must be exactly the safety cap, not the original length.
+    assert len(sent_text) == MAX_INPUT_CHARS
+
+
+def test_embed_pages_raises_on_provider_error_with_200(
+    tmp_path: Path,
+):
+    """OpenRouter returns 200 with provider error -> we must raise."""
+    df = pd.DataFrame({
+        "url": ["https://x.com/a"],
+        "text": ["body a"],
+    })
+    target = "Skills.semantic_site_map.embedder.requests.post"
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "error": {
+                    "message": (
+                        "HTTP 400: maximum input length is "
+                        "8192 tokens."
+                    ),
+                    "code": 400,
+                },
+            }
+
+    with patch(target, return_value=FakeResponse()):
+        with pytest.raises(RuntimeError, match="provider error"):
+            embed_pages(df, cache_dir=tmp_path, api_key="fake")
 
 
 def test_embed_pages_batches_requests(tmp_path: Path):

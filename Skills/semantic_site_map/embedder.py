@@ -18,6 +18,12 @@ EMBEDDING_DIM = 1536
 DEFAULT_BATCH_SIZE = 100
 OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings"
 
+# text-embedding-3-small accepts up to 8192 tokens per input.
+# At ~4 chars/token that's ~32k chars; we truncate to 24k to leave a
+# safety margin for tokens that compress poorly (emoji, multi-byte
+# scripts like Arabic, code samples, URLs).
+MAX_INPUT_CHARS = 24_000
+
 
 def _hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
@@ -78,7 +84,22 @@ def _call_openrouter_embeddings(
                     f"retryable {response.status_code}"
                 )
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
+            # OpenRouter returns HTTP 200 even when the underlying
+            # provider rejected the call. Detect by checking for an
+            # `error` key and surface it loudly so we don't silently
+            # cache zero embeddings.
+            if "error" in payload and payload["error"]:
+                err = payload["error"]
+                if isinstance(err, dict):
+                    msg = err.get("message", str(err))
+                else:
+                    msg = str(err)
+                raise RuntimeError(
+                    f"OpenRouter returned 200 with provider error: "
+                    f"{msg}"
+                )
+            return payload
         except (requests.HTTPError, requests.RequestException) as exc:
             if attempt == max_retries - 1:
                 raise
@@ -122,9 +143,27 @@ def embed_pages(
     cache_dir = Path(cache_dir)
     cache = _load_cache(cache_dir, model)
 
-    hashes = [_hash_text(t) for t in df["text"].astype(str)]
+    # Truncate each text to MAX_INPUT_CHARS BEFORE hashing so the
+    # cache key matches the bytes actually sent to the API. Otherwise
+    # a long page hashes to one key but is sent truncated, and the
+    # reverse lookup at matrix-assembly time misses.
+    raw_texts = df["text"].astype(str)
+    truncated = [t[:MAX_INPUT_CHARS] for t in raw_texts]
+    over_limit = sum(
+        1 for t in raw_texts if len(t) > MAX_INPUT_CHARS
+    )
+    if over_limit:
+        logger.info(
+            "embedder: %d/%d texts truncated to %d chars "
+            "(model token limit)",
+            over_limit,
+            len(raw_texts),
+            MAX_INPUT_CHARS,
+        )
+
+    hashes = [_hash_text(t) for t in truncated]
     to_fetch_idx = [i for i, h in enumerate(hashes) if h not in cache]
-    to_fetch_texts = [df["text"].iloc[i] for i in to_fetch_idx]
+    to_fetch_texts = [truncated[i] for i in to_fetch_idx]
 
     if to_fetch_texts:
         logger.info(
