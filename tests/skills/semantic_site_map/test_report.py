@@ -38,19 +38,46 @@ def test_aggregate_clicks_handles_missing_gsc():
 
 
 def test_classify_into_rings_splits_by_quartiles():
-    radii = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+    # 4 on-topic pages (radius < 0.6) and 2 outliers (radius >= 0.6)
+    # plus 2 HDBSCAN-unclustered (-1) that are NEAR center, not outliers.
+    radii = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.7, 0.8])
     cluster_labels = np.array([0, 0, 1, 1, 2, 2, -1, -1])
     urls = [f"https://x.com/{i}" for i in range(8)]
 
-    rings, outliers = classify_into_rings(urls, cluster_labels, radii)
+    rings, outliers, unclustered = classify_into_rings(
+        urls, cluster_labels, radii
+    )
     assert set(rings.keys()) == {
         "core",
         "focus",
         "expansion",
         "peripheral",
     }
+    # 6 pages with radius < 0.6 split into 4 ring quartiles.
     assert sum(len(v) for v in rings.values()) == 6
+    # 2 pages with radius >= 0.6 are outliers.
     assert len(outliers) == 2
+    # HDBSCAN -1 pages were both above 0.6 here, so they go in
+    # outliers (not unclustered).
+    assert len(unclustered) == 0
+
+
+def test_classify_into_rings_hdbscan_outlier_can_be_on_topic():
+    """A page that HDBSCAN marks -1 but has low siteRadius is
+    'unclustered on topic', NOT an outlier."""
+    radii = np.array([0.1, 0.2, 0.3, 0.25, 0.15])  # all < 0.6
+    cluster_labels = np.array([0, 0, 0, -1, -1])  # 2 unclustered
+    urls = [f"https://x.com/{i}" for i in range(5)]
+
+    rings, outliers, unclustered = classify_into_rings(
+        urls, cluster_labels, radii
+    )
+    # No page exceeds 0.6 -> outliers is empty.
+    assert outliers == []
+    # The 2 HDBSCAN -1 pages near center go to unclustered.
+    assert len(unclustered) == 2
+    # All 5 pages still appear in some ring (they're on-topic).
+    assert sum(len(v) for v in rings.values()) == 5
 
 
 def test_pick_central_entity_uses_largest_cluster_label():

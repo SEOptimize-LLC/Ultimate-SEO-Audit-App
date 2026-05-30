@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 
 RING_NAMES = ("core", "focus", "expansion", "peripheral")
 HIGH_CLICK_QUANTILE = 0.75
-HIGH_RADIUS_THRESHOLD = 0.6  # cosine distance
+# Cosine distance from site center above which a page is a genuine
+# "siteRadius outlier" in the May 2024 leak sense (topically off-brand,
+# diluting siteFocusScore). Used for both the standalone outlier check
+# and the high-click off-topic check.
+OUTLIER_RADIUS_THRESHOLD = 0.6
+HIGH_RADIUS_THRESHOLD = OUTLIER_RADIUS_THRESHOLD  # legacy alias
 
 
 def aggregate_clicks_by_cluster(
@@ -63,25 +68,52 @@ def classify_into_rings(
     urls: list[str],
     cluster_labels: np.ndarray,
     radii: np.ndarray,
-) -> tuple[dict[str, list[dict]], list[dict]]:
-    """Split URLs into 4 ring quartiles by siteRadius (excluding outliers)."""
-    clustered_mask = cluster_labels != -1
-    clustered_urls = [u for u, m in zip(urls, clustered_mask) if m]
-    clustered_radii = radii[clustered_mask]
-    outlier_urls = [u for u, m in zip(urls, clustered_mask) if not m]
-    outlier_radii = radii[~clustered_mask]
+    outlier_threshold: float = OUTLIER_RADIUS_THRESHOLD,
+) -> tuple[dict[str, list[dict]], list[dict], list[dict]]:
+    """Split URLs into 4 ring quartiles + outliers + unclustered.
+
+    Outliers are defined by SITERADIUS (cosine distance to site center
+    >= outlier_threshold), not by HDBSCAN's -1 noise label. A page can
+    be HDBSCAN-unclustered while sitting close to the topical center -
+    it's "topologically isolated in embedding space" but not "off-topic
+    for the site." Conflating those two concepts (as v0 did) produced
+    false-positive outlier findings.
+
+    Returns:
+        rings:      4 quartile buckets keyed by RING_NAMES, computed
+                    over ALL non-outlier pages.
+        outliers:   pages with siteRadius >= outlier_threshold (the
+                    leak's actual concept; goes to the auditor).
+        unclustered: pages HDBSCAN couldn't fit into a cluster AND
+                    whose siteRadius is below the outlier threshold.
+                    Surfaced for analyst review but NOT treated as
+                    off-topic.
+    """
+    radii = np.asarray(radii)
+    cluster_labels = np.asarray(cluster_labels)
 
     rings: dict[str, list[dict]] = {n: [] for n in RING_NAMES}
 
-    if len(clustered_radii) == 0:
-        outliers = [
-            {"url": u, "site_radius": float(r)}
-            for u, r in zip(outlier_urls, outlier_radii)
-        ]
-        return rings, outliers
+    outlier_mask = radii >= outlier_threshold
+    on_topic_mask = ~outlier_mask
+    unclustered_on_topic_mask = on_topic_mask & (cluster_labels == -1)
 
-    quartiles = np.quantile(clustered_radii, [0.25, 0.5, 0.75])
-    for u, r in zip(clustered_urls, clustered_radii):
+    outliers = [
+        {"url": u, "site_radius": float(r)}
+        for u, r, m in zip(urls, radii, outlier_mask) if m
+    ]
+    unclustered = [
+        {"url": u, "site_radius": float(r)}
+        for u, r, m in zip(urls, radii, unclustered_on_topic_mask) if m
+    ]
+
+    on_topic_urls = [u for u, m in zip(urls, on_topic_mask) if m]
+    on_topic_radii = radii[on_topic_mask]
+    if len(on_topic_radii) == 0:
+        return rings, outliers, unclustered
+
+    quartiles = np.quantile(on_topic_radii, [0.25, 0.5, 0.75])
+    for u, r in zip(on_topic_urls, on_topic_radii):
         if r <= quartiles[0]:
             rings["core"].append({"url": u, "site_radius": float(r)})
         elif r <= quartiles[1]:
@@ -95,11 +127,7 @@ def classify_into_rings(
                 {"url": u, "site_radius": float(r)}
             )
 
-    outliers = [
-        {"url": u, "site_radius": float(r)}
-        for u, r in zip(outlier_urls, outlier_radii)
-    ]
-    return rings, outliers
+    return rings, outliers, unclustered
 
 
 def pick_central_entity(
@@ -250,19 +278,29 @@ def _render_markdown_report(
     central_entity: str,
     client_name: str,
     has_gsc: bool,
+    n_outliers: int,
+    n_unclustered: int,
 ) -> str:
     cluster_labels = cluster_result["cluster_labels"]
     cluster_name_by_id = cluster_result["cluster_name_by_id"]
     ngrams_by_cluster = cluster_result["ngrams_by_cluster"]
     n_total = len(cluster_labels)
-    n_outliers = int((cluster_labels == -1).sum())
 
     lines = [
         f"# Semantic Site Map - {client_name}",
         "",
         f"- **Central entity (largest cluster):** {central_entity}",
         f"- **URLs analyzed:** {n_total}",
-        f"- **Outliers (high siteRadius / unclustered):** {n_outliers}",
+        (
+            "- **Outliers (siteRadius >= "
+            f"{OUTLIER_RADIUS_THRESHOLD}):** {n_outliers} "
+            "(genuinely off-topic for the site)"
+        ),
+        (
+            f"- **Unclustered on-topic:** {n_unclustered} "
+            "(close to site center but not in a dense cluster - "
+            "long-tail blog posts, edge cases)"
+        ),
         (
             "- **Click overlay:** "
             f"{'present' if has_gsc else 'click data unavailable'}"
@@ -334,7 +372,7 @@ def build_outputs(
     clicks_by_cluster = aggregate_clicks_by_cluster(
         urls, cluster_labels, gsc
     )
-    rings, outliers = classify_into_rings(
+    rings, outliers, unclustered = classify_into_rings(
         urls, cluster_labels, radii
     )
     central_entity = pick_central_entity(
@@ -366,6 +404,8 @@ def build_outputs(
         "embedding_model_used": model_name,
         "rings": rings,
         "outliers": outliers,
+        "unclustered_on_topic": unclustered,
+        "outlier_radius_threshold": OUTLIER_RADIUS_THRESHOLD,
         "clicks_by_cluster": (
             clicks_by_cluster if gsc is not None else {}
         ),
@@ -393,6 +433,8 @@ def build_outputs(
         central_entity,
         client_name,
         has_gsc=(gsc is not None),
+        n_outliers=len(outliers),
+        n_unclustered=len(unclustered),
     )
     report_md = out_dir / "semantic_map_report.md"
     report_md.write_text(md, encoding="utf-8")
