@@ -69,9 +69,30 @@ async def load_page_text(
         return _build_text_from_sf(filtered, body_col)
 
     if cache_path is not None and cache_path.exists():
-        logger.info("text_loader: reusing cached page_text from %s", cache_path)
+        logger.info(
+            "text_loader: reusing cached page_text from %s", cache_path
+        )
         cached = pd.read_csv(cache_path)
-        return cached[cached["url"].isin(filtered["url"])].reset_index(drop=True)
+        cached = cached[
+            cached["url"].isin(filtered["url"])
+        ].reset_index(drop=True)
+        # Re-apply boilerplate detection on cached text. Cheap (~1s
+        # for 1,500 rows) and guards against caches written before
+        # the boilerplate pass existed.
+        boilerplate = _detect_boilerplate_lines(cached["text"].tolist())
+        if boilerplate:
+            logger.info(
+                "text_loader: cached corpus - stripping %d "
+                "boilerplate line(s)",
+                len(boilerplate),
+            )
+            cached["text"] = cached["text"].apply(
+                lambda t: _strip_boilerplate(t, boilerplate)
+            )
+            cached = cached[
+                cached["text"].str.len() > 0
+            ].reset_index(drop=True)
+        return cached
 
     logger.info("text_loader: falling back to Crawl4AI for %d URLs", len(filtered))
     fetched = await _fetch_via_crawl4ai(
