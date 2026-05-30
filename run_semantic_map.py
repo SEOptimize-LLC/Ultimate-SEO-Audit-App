@@ -17,8 +17,20 @@ import argparse
 import asyncio
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional
+
+# Crawl4AI's startup banner prints non-ASCII glyphs (e.g. ->) via
+# colorama. On Windows with the default cp1252 console codec, this
+# crashes whenever stdout is redirected (tee, > file, CI capture).
+# Force UTF-8 on stdout/stderr so the skill is safe to pipe.
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
+        pass
 
 import pandas as pd
 from dotenv import load_dotenv
