@@ -193,42 +193,92 @@ def _render_scatter(
     urls: list[str],
     out_path: Path,
     client_name: str,
+    site_center: Optional[np.ndarray] = None,
 ) -> None:
-    """2D scatter via PCA. Rings = radius quartiles. Point size = clicks."""
+    """2D scatter via PCA. Rings = real siteRadius quartiles.
+
+    The site-center marker is placed at the PCA-projection of the
+    actual site_center vector (the mean embedding) - NOT at the
+    arbitrary origin of PCA space.
+
+    Rings are computed from the real cosine-distance siteRadius
+    quartiles, then converted into PCA-space radii via a linear
+    regression of (cosine distance to center) vs. (PCA distance to
+    projected center). This makes the visual rings actually match
+    the ring-bucket assignment used by classify_into_rings.
+    """
     from sklearn.decomposition import PCA
 
     pca = PCA(n_components=2, random_state=42)
     coords = pca.fit_transform(embeddings)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
+    # Project the actual site center into PCA space.
+    if site_center is None:
+        center_2d = np.array([0.0, 0.0])
+    else:
+        center_2d = pca.transform(
+            site_center.reshape(1, -1)
+        )[0]
+
+    fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_aspect("equal")
 
-    pc_dists = np.linalg.norm(coords, axis=1)
-    if len(pc_dists):
-        ring_radii = np.quantile(pc_dists, [0.25, 0.5, 0.75, 0.95])
-        ring_colors = ["#3aa676", "#3a7da6", "#d4a017", "#c75450"]
-        ring_labels = ["Core", "Focus", "Expansion", "Peripheral"]
-        for r, color, label in zip(
-            ring_radii, ring_colors, ring_labels
-        ):
-            circle = plt.Circle(
-                (0, 0),
-                r,
-                fill=False,
-                linestyle="--",
-                linewidth=1.2,
-                color=color,
-                alpha=0.7,
-            )
-            ax.add_patch(circle)
-            ax.text(
-                r * 0.71,
-                r * 0.71,
-                label,
-                fontsize=8,
-                color=color,
+    # PCA distance to the projected center, per point.
+    pc_dists_to_center = np.linalg.norm(
+        coords - center_2d, axis=1
+    )
+
+    # Use PCA-distance quartiles directly. Mapping cosine-distance
+    # quartiles into PCA space via np.interp produces non-monotonic
+    # results (PCA is a lossy 2D projection of a 1536D space, so
+    # the relationship is noisy). PCA-distance quartiles are
+    # guaranteed monotonic and visually intuitive - they show how
+    # the page population is spread out in the 2D embedding view.
+    if len(pc_dists_to_center) > 1:
+        ring_pca_radii = list(np.quantile(
+            pc_dists_to_center, [0.25, 0.5, 0.75, 0.95]
+        ))
+    else:
+        ring_pca_radii = [0.1, 0.2, 0.3, 0.4]
+
+    ring_colors = ["#3aa676", "#3a7da6", "#d4a017", "#c75450"]
+    ring_labels = ["Core", "Focus", "Expansion", "Peripheral"]
+    # Place each label at a distinct angle so they don't overlap.
+    # Core at top, Focus right, Expansion bottom, Peripheral left.
+    label_angles_deg = [90, 0, 270, 180]
+    for r, color, label, angle in zip(
+        ring_pca_radii, ring_colors, ring_labels, label_angles_deg
+    ):
+        circle = plt.Circle(
+            tuple(center_2d),
+            r,
+            fill=False,
+            linestyle="--",
+            linewidth=1.4,
+            color=color,
+            alpha=0.75,
+        )
+        ax.add_patch(circle)
+        rad = np.deg2rad(angle)
+        offset_x = center_2d[0] + r * np.cos(rad)
+        offset_y = center_2d[1] + r * np.sin(rad)
+        ax.text(
+            offset_x,
+            offset_y,
+            f" {label} ",
+            fontsize=10,
+            color=color,
+            alpha=0.95,
+            fontweight="bold",
+            ha="center",
+            va="center",
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                facecolor="white",
+                edgecolor=color,
                 alpha=0.85,
-            )
+            ),
+        )
 
     unique = sorted(set(cluster_labels))
     cmap = plt.colormaps.get_cmap("tab20")
@@ -238,36 +288,63 @@ def _render_scatter(
     }
     color_map[-1] = (0.7, 0.7, 0.7, 0.4)
 
-    sizes = np.array([
-        max(10, min(400, clicks_by_url.get(u, 0) * 4)) for u in urls
-    ])
+    # Point size: floor 25 (always visible), scale by clicks if
+    # GSC data is present, otherwise everything sits at the floor.
+    has_clicks = any(clicks_by_url.get(u, 0) > 0 for u in urls)
+    if has_clicks:
+        max_clicks = max(clicks_by_url.values()) or 1
+        sizes = np.array([
+            max(25, min(600, 25 + clicks_by_url.get(u, 0) * 500
+                        / max_clicks))
+            for u in urls
+        ])
+    else:
+        sizes = np.full(len(urls), 35)
+
     colors = [color_map[c] for c in cluster_labels]
     ax.scatter(
         coords[:, 0],
         coords[:, 1],
         s=sizes,
         c=colors,
-        alpha=0.7,
-        edgecolors="none",
+        alpha=0.65,
+        edgecolors="white",
+        linewidths=0.4,
     )
+    # Site Center marker.
     ax.scatter(
-        [0],
-        [0],
+        [center_2d[0]],
+        [center_2d[1]],
         marker="*",
-        s=300,
+        s=600,
         color="black",
         zorder=5,
         label="Site Center",
+        edgecolors="white",
+        linewidths=1.5,
+    )
+    ax.annotate(
+        "Site Center",
+        xy=(center_2d[0], center_2d[1]),
+        xytext=(10, 10),
+        textcoords="offset points",
+        fontsize=10,
+        fontweight="bold",
+        zorder=6,
     )
 
-    ax.set_title(f"Semantic Site Map - {client_name}", fontsize=14)
+    title_suffix = " (point size = GSC clicks)" if has_clicks else ""
+    ax.set_title(
+        f"Semantic Site Map - {client_name}{title_suffix}",
+        fontsize=15,
+        pad=14,
+    )
     ax.set_xlabel("Topical axis 1 (PCA)")
     ax.set_ylabel("Topical axis 2 (PCA)")
-    ax.legend(loc="upper right", fontsize=9)
-    ax.grid(True, linestyle="--", alpha=0.3)
+    ax.grid(True, linestyle="--", alpha=0.25)
 
     fig.tight_layout()
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -453,6 +530,7 @@ def build_outputs(
         urls,
         png,
         client_name,
+        site_center=cluster_result.get("site_center"),
     )
 
     return {
