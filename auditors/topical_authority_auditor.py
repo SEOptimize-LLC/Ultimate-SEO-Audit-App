@@ -82,6 +82,7 @@ class TopicalAuthorityAuditor(BaseAuditor):
         self._check_topic_dispersion()
         self._check_central_entity_alignment()
         self._check_high_click_off_topic_cluster()
+        self._check_click_weighted_centroid_drift()
 
         return self.issues
 
@@ -311,6 +312,102 @@ class TopicalAuthorityAuditor(BaseAuditor):
                 "do."
             ),
             additional_data={"clusters": flagged},
+        )
+
+    def _check_click_weighted_centroid_drift(self) -> None:
+        """Flag when traffic and content centroids diverge.
+
+        Reads ``click_weighted_centroid_drift`` from the rich JSON.
+        When the cosine similarity between the unweighted (mean) and
+        click-weighted centroids drops below the configured threshold,
+        the site's stated topical center and the topic people actually
+        visit it for are pointing in different directions. The skill
+        already computes the comparison; the auditor surfaces it as
+        a structured finding so it appears in the audit deliverable.
+
+        Silently no-ops when the full JSON wasn't provided OR doesn't
+        contain the drift field (backward-compat with older outputs).
+        """
+        if not self._full_map:
+            return
+
+        drift = self._full_map.get("click_weighted_centroid_drift")
+        if not drift:
+            return
+
+        # Threshold matches report.CENTROID_DRIFT_SIMILARITY_THRESHOLD.
+        # Hardcoded here to avoid a cross-package import from auditors
+        # back into the skill.
+        threshold = 0.9
+        sim = float(drift.get("cosine_similarity", 1.0))
+        if sim >= threshold:
+            return
+
+        top_drift_clusters = drift.get("top_drift_clusters") or []
+        cluster_summary = ", ".join(
+            c.get("cluster_name", f"Cluster {c.get('cluster_id')}")
+            for c in top_drift_clusters[:3]
+        ) or "(no clusters identified)"
+        total_drift_clicks = sum(
+            int(c.get("clicks", 0)) for c in top_drift_clusters
+        )
+        total_drift_pages = sum(
+            int(c.get("page_count", 0)) for c in top_drift_clusters
+        )
+
+        self.create_issue(
+            severity=Severity.HIGH,
+            category=AuditCategory.CONTENT,
+            issue_type="click_weighted_centroid_drift",
+            title=(
+                "Traffic and content centroids diverge "
+                f"(cosine sim {sim:.2f} < {threshold:.2f}): "
+                f"traffic concentrated in {cluster_summary}"
+            ),
+            description=(
+                "The unweighted topical centroid (mean of every page's "
+                "embedding) and the click-weighted centroid (mean weighted "
+                "by GSC clicks per page) point in different directions. "
+                f"Cosine similarity is {sim:.3f}; at or above "
+                f"{threshold:.2f} we consider them aligned.\n\n"
+                "Per the May 2024 Google API leak, siteEmbedding is "
+                "computed from the aggregate of every indexed page, but "
+                "Google also observes which pages users click. When the "
+                "two diverge, the site is sending mixed signals: the "
+                "topic it claims to be about is not the topic visitors "
+                "engage with. Long-term that erodes topical authority "
+                "AND signals to Google that the high-traffic content is "
+                "the real topical home.\n\n"
+                f"Top drift drivers: {cluster_summary} - combined "
+                f"{total_drift_clicks} clicks across {total_drift_pages} "
+                "pages."
+            ),
+            count=len(top_drift_clusters),
+            recommendation=(
+                "Ask the underlying question: does the click-pulling "
+                "content match the business's commercial focus? If YES "
+                "(e.g. educational content for a SaaS that converts via "
+                "educational journey), the divergence is a positioning "
+                "alignment problem - rewrite the site's homepage, "
+                "navigation, and category structure to lead with the "
+                "topic visitors actually engage with. If NO (visitors "
+                "come for off-brand content that does NOT convert), "
+                "relocate that content to a subdomain to keep its "
+                "traffic while letting the main domain's siteEmbedding "
+                "snap back to the commercial topical center."
+            ),
+            impact=(
+                "Persistent centroid drift weakens BOTH the siteEmbedding "
+                "signal (mean) AND user-engagement signals (clicks) - "
+                "the two reinforce each other in Google's evaluation. "
+                "Misaligned sites pay a topical-authority tax that "
+                "compounds over time."
+            ),
+            additional_data={
+                "cosine_similarity": sim,
+                "threshold": threshold,
+                "top_drift_clusters": top_drift_clusters,
+            },
         )
 
     @staticmethod

@@ -24,6 +24,66 @@ HIGH_CLICK_QUANTILE = 0.75
 # and the high-click off-topic check.
 OUTLIER_RADIUS_THRESHOLD = 0.6
 HIGH_RADIUS_THRESHOLD = OUTLIER_RADIUS_THRESHOLD  # legacy alias
+# Below this cosine similarity between the unweighted and click-weighted
+# centroids, traffic and content are misaligned enough to surface as a
+# HIGH-severity finding. 0.9 is empirically the "they basically agree"
+# boundary in 1536-dim embedding space.
+CENTROID_DRIFT_SIMILARITY_THRESHOLD = 0.9
+ACTION_LABELS = ("keep", "grow", "relocate", "prune")
+
+
+def classify_pages_by_action(
+    urls: list[str],
+    clicks_per_url: dict[str, float],
+    value_per_url: dict[str, float],
+) -> dict[str, str]:
+    """Assign each URL to one of keep / grow / relocate / prune.
+
+    Median-split on BOTH clicks and value:
+        High clicks + High value -> keep
+        Low  clicks + High value -> grow      (opportunity)
+        High clicks + Low  value -> relocate  (dilution)
+        Low  clicks + Low  value -> prune
+
+    A URL missing from clicks_per_url is treated as 0 clicks. A URL
+    missing from value_per_url is treated as 0 value. Median is computed
+    across the input URL set; ties on the median fall to the LOW side
+    (deterministic and conservative - it's easier to graduate a page
+    upward later than to undo a "keep" recommendation).
+
+    Args:
+        urls: All URLs to classify.
+        clicks_per_url: Per-URL click count from GSC (90-day default).
+        value_per_url: Per-URL business value score (0..100 from
+            ``value.derive_business_value``).
+
+    Returns:
+        Dict mapping every input URL to one of ACTION_LABELS.
+    """
+    if not urls:
+        return {}
+
+    clicks = [float(clicks_per_url.get(u, 0)) for u in urls]
+    values = [float(value_per_url.get(u, 0)) for u in urls]
+    # numpy.median to avoid sorting twice; mirrors how the rest of the
+    # report computes quartile thresholds.
+    import numpy as np
+    clicks_median = float(np.median(clicks))
+    value_median = float(np.median(values))
+
+    actions: dict[str, str] = {}
+    for url, c, v in zip(urls, clicks, values):
+        is_high_clicks = c > clicks_median
+        is_high_value = v > value_median
+        if is_high_clicks and is_high_value:
+            actions[url] = "keep"
+        elif not is_high_clicks and is_high_value:
+            actions[url] = "grow"
+        elif is_high_clicks and not is_high_value:
+            actions[url] = "relocate"
+        else:
+            actions[url] = "prune"
+    return actions
 
 
 def aggregate_clicks_by_cluster(
@@ -357,6 +417,10 @@ def _render_markdown_report(
     has_gsc: bool,
     n_outliers: int,
     n_unclustered: int,
+    page_actions: Optional[dict[str, str]] = None,
+    clicks_per_url: Optional[dict[str, float]] = None,
+    value_per_url: Optional[dict[str, float]] = None,
+    drift: Optional[dict] = None,
 ) -> str:
     cluster_labels = cluster_result["cluster_labels"]
     cluster_name_by_id = cluster_result["cluster_name_by_id"]
@@ -425,7 +489,204 @@ def _render_markdown_report(
             )
         lines.append("")
 
+    # Click-weighted centroid drift callout.
+    if drift is not None:
+        sim = drift.get("cosine_similarity", 1.0)
+        lines.append("## Click-weighted centroid drift")
+        lines.append("")
+        lines.append(
+            f"- **Cosine similarity (unweighted vs. click-weighted "
+            f"centroid):** {sim:.3f}"
+        )
+        if sim >= CENTROID_DRIFT_SIMILARITY_THRESHOLD:
+            lines.append(
+                "- **Verdict:** Traffic and content are aligned. The "
+                "site's most-visited pages sit near the topical center."
+            )
+        else:
+            lines.append(
+                "- **Verdict:** Traffic is concentrated in a part of "
+                "the embedding space that is NOT the site's topical "
+                "center. The site's stated topic and the topic people "
+                "actually visit it for are diverging."
+            )
+            top_drift = drift.get("top_drift_clusters", [])
+            if top_drift:
+                lines.append("")
+                lines.append("**Clusters most responsible for the drift:**")
+                for c in top_drift:
+                    lines.append(
+                        f"- **{c['cluster_name']}** - "
+                        f"{c['clicks']} clicks across "
+                        f"{c['page_count']} pages"
+                    )
+        lines.append("")
+
+    # Keep / Grow / Relocate / Prune per-page action matrix.
+    if page_actions:
+        from collections import Counter
+        counts = Counter(page_actions.values())
+        lines.append("## Page-action matrix (Keep / Grow / Relocate / Prune)")
+        lines.append("")
+        lines.append(
+            "Each page is classified by median-split on **clicks** "
+            "(GSC) and **business value** (auto-derived from URL "
+            "pattern + GSC commercial intent + GA4 conversions when "
+            "available)."
+        )
+        lines.append("")
+        lines.append("| Action | Pages | Meaning |")
+        lines.append("|---|---|---|")
+        lines.append(
+            f"| Keep | {counts.get('keep', 0)} | "
+            "High clicks + high value. Protect; refresh; expand. |"
+        )
+        lines.append(
+            f"| Grow | {counts.get('grow', 0)} | "
+            "Low clicks + high value. The opportunity - "
+            "money pages people are not finding. |"
+        )
+        lines.append(
+            f"| Relocate | {counts.get('relocate', 0)} | "
+            "High clicks + low value. The dilution - moving these to a "
+            "subdomain preserves the traffic and reclaims topical focus. |"
+        )
+        lines.append(
+            f"| Prune | {counts.get('prune', 0)} | "
+            "Low clicks + low value. Consolidate, noindex, or 410. |"
+        )
+        lines.append("")
+
+        # Top URLs per action bucket, ranked by clicks * value for
+        # the actionable buckets, or just clicks for prune.
+        clicks = clicks_per_url or {}
+        values = value_per_url or {}
+        for action in ("grow", "relocate", "keep", "prune"):
+            urls_in_bucket = [
+                u for u, a in page_actions.items() if a == action
+            ]
+            if not urls_in_bucket:
+                continue
+            if action == "prune":
+                urls_in_bucket.sort(key=lambda u: -clicks.get(u, 0))
+            else:
+                urls_in_bucket.sort(
+                    key=lambda u: -(
+                        clicks.get(u, 0) * (values.get(u, 0) + 1)
+                    )
+                )
+            lines.append(f"### Top {action.capitalize()} URLs (up to 10)")
+            for u in urls_in_bucket[:10]:
+                lines.append(
+                    f"- `{u}`  (clicks={int(clicks.get(u, 0))}, "
+                    f"value={values.get(u, 0):.0f})"
+                )
+            lines.append("")
+
     return "\n".join(lines)
+
+
+def compute_click_weighted_centroid_drift(
+    urls: list[str],
+    embeddings: np.ndarray,
+    site_center: np.ndarray,
+    clicks_per_url: dict[str, float],
+    cluster_labels: np.ndarray,
+    cluster_name_by_id: dict[int, str],
+) -> dict:
+    """Compare the unweighted vs click-weighted topical centroid.
+
+    The unweighted centroid is the site's mean embedding (already passed
+    in as ``site_center``). The click-weighted centroid is the same mean
+    but with each page weighted by its click count - the place in
+    embedding space where the site's traffic actually lives.
+
+    When the two centroids point in the same direction (cosine similarity
+    >= CENTROID_DRIFT_SIMILARITY_THRESHOLD), traffic and content align.
+    When they diverge, the site's traffic is concentrated in a part of
+    the embedding space that's NOT the site's stated topical focus -
+    the auditor surfaces this as a HIGH finding.
+
+    Returns a dict with:
+        cosine_similarity:    float in [-1, 1]
+        click_weighted_centroid: list[float] - the weighted mean
+        top_drift_clusters:   list of cluster dicts most responsible
+                              for the drift, sorted by click contribution
+                              (empty when similarity is above threshold)
+    """
+    if len(urls) == 0 or len(embeddings) == 0:
+        return {
+            "cosine_similarity": 1.0,
+            "click_weighted_centroid": [float(x) for x in site_center],
+            "top_drift_clusters": [],
+        }
+
+    weights = np.array(
+        [float(clicks_per_url.get(u, 0)) for u in urls],
+        dtype=np.float64,
+    )
+    total_clicks = weights.sum()
+    if total_clicks <= 0:
+        # No click data - can't compute a weighted centroid.
+        return {
+            "cosine_similarity": 1.0,
+            "click_weighted_centroid": [float(x) for x in site_center],
+            "top_drift_clusters": [],
+        }
+
+    weighted_centroid = (embeddings * weights[:, None]).sum(axis=0) / total_clicks
+    # Cosine similarity between the two centroids.
+    norm_a = np.linalg.norm(site_center)
+    norm_b = np.linalg.norm(weighted_centroid)
+    if norm_a == 0 or norm_b == 0:
+        cosine_sim = 1.0
+    else:
+        cosine_sim = float(
+            np.dot(site_center, weighted_centroid) / (norm_a * norm_b)
+        )
+
+    # When the centroids diverge, identify which clusters are pulling
+    # the click-weighted centroid away from the unweighted one. Approach:
+    # for each cluster, compute its share of total clicks AND its
+    # distance from the unweighted centroid; clusters that combine
+    # large click share + large distance are the drift drivers.
+    top_drift_clusters: list[dict] = []
+    if cosine_sim < CENTROID_DRIFT_SIMILARITY_THRESHOLD:
+        unique_clusters = sorted({int(c) for c in cluster_labels if c != -1})
+        cluster_drift_scores: list[tuple[int, float, int, float]] = []
+        for cid in unique_clusters:
+            mask = cluster_labels == cid
+            if not mask.any():
+                continue
+            cluster_clicks = float(weights[mask].sum())
+            if cluster_clicks <= 0:
+                continue
+            cluster_mean = embeddings[mask].mean(axis=0)
+            distance_from_center = float(
+                np.linalg.norm(cluster_mean - site_center)
+            )
+            # Drift score = click share * distance. Bigger = more guilty.
+            click_share = cluster_clicks / total_clicks
+            drift_score = click_share * distance_from_center
+            cluster_drift_scores.append(
+                (cid, drift_score, int(mask.sum()), cluster_clicks)
+            )
+        cluster_drift_scores.sort(key=lambda t: -t[1])
+        for cid, _drift, page_count, clicks_n in cluster_drift_scores[:5]:
+            top_drift_clusters.append({
+                "cluster_id": cid,
+                "cluster_name": cluster_name_by_id.get(
+                    cid, f"Cluster {cid}"
+                ),
+                "clicks": int(clicks_n),
+                "page_count": page_count,
+            })
+
+    return {
+        "cosine_similarity": cosine_sim,
+        "click_weighted_centroid": [float(x) for x in weighted_centroid],
+        "top_drift_clusters": top_drift_clusters,
+    }
 
 
 def build_outputs(
@@ -436,6 +697,7 @@ def build_outputs(
     gsc: Optional[pd.DataFrame],
     client_name: str,
     model_name: str,
+    ga4: Optional[pd.DataFrame] = None,
 ) -> dict[str, Path]:
     """Emit the four output files; return their paths."""
     out_dir = Path(out_dir)
@@ -459,6 +721,36 @@ def build_outputs(
         clicks_by_cluster,
         cluster_labels,
         radii,
+        cluster_name_by_id,
+    )
+
+    # Per-URL click count (used by both action classifier and drift calc).
+    clicks_per_url: dict[str, float] = {}
+    if gsc is not None and "url" in gsc.columns and "clicks" in gsc.columns:
+        per_url_clicks = gsc.groupby("url")["clicks"].sum()
+        clicks_per_url = {
+            str(u): float(c) for u, c in per_url_clicks.items()
+        }
+
+    # Business value per URL (auto-derived from URL pattern + optional
+    # GSC commercial-intent + optional GA4 conversions).
+    from Skills.semantic_site_map.value import derive_business_value
+    value_per_url = derive_business_value(urls, gsc_df=gsc, ga4_df=ga4)
+
+    # Keep / Grow / Relocate / Prune classifier.
+    page_actions = classify_pages_by_action(
+        urls, clicks_per_url, value_per_url
+    )
+
+    # Click-weighted centroid drift (the leak-grounded "is traffic
+    # aligned with content?" check).
+    site_center = cluster_result["site_center"]
+    drift = compute_click_weighted_centroid_drift(
+        urls,
+        embeddings,
+        site_center,
+        clicks_per_url,
+        cluster_labels,
         cluster_name_by_id,
     )
 
@@ -496,6 +788,9 @@ def build_outputs(
             str(k): v for k, v in cluster_name_by_id.items()
         },
         "high_click_off_topic_clusters": high_click_off_topic,
+        "value_per_url": value_per_url,
+        "page_action_per_url": page_actions,
+        "click_weighted_centroid_drift": drift,
     }
     full_json = out_dir / "semantic_map_full.json"
     full_json.write_text(
@@ -512,6 +807,10 @@ def build_outputs(
         has_gsc=(gsc is not None),
         n_outliers=len(outliers),
         n_unclustered=len(unclustered),
+        page_actions=page_actions,
+        clicks_per_url=clicks_per_url,
+        value_per_url=value_per_url,
+        drift=drift,
     )
     report_md = out_dir / "semantic_map_report.md"
     report_md.write_text(md, encoding="utf-8")

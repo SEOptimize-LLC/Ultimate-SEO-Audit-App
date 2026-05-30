@@ -54,7 +54,8 @@ def _resolve_paths(
     client: str,
     crawl: Optional[str],
     gsc: Optional[str],
-) -> tuple[Path, Optional[Path], Path]:
+    ga4: Optional[str] = None,
+) -> tuple[Path, Optional[Path], Optional[Path], Path]:
     client_root = Path("Clients") / client
     if not client_root.exists():
         raise SystemExit(f"Client folder not found: {client_root}")
@@ -73,8 +74,27 @@ def _resolve_paths(
     if gsc_path and not gsc_path.exists():
         gsc_path = None
 
+    # GA4: look for the canonical pages CSV in data/ga4/, otherwise
+    # accept an explicit path. Skip silently if neither exists - the
+    # business-value scorer falls back to URL-pattern only.
+    ga4_path: Optional[Path] = Path(ga4) if ga4 else None
+    if ga4_path is None:
+        ga4_dir = client_root / "data" / "ga4"
+        if ga4_dir.exists():
+            for name in (
+                "pages.csv",
+                "top_pages.csv",
+                "organic_pages.csv",
+            ):
+                candidate = ga4_dir / name
+                if candidate.exists():
+                    ga4_path = candidate
+                    break
+    if ga4_path is not None and not ga4_path.exists():
+        ga4_path = None
+
     out_dir = client_root / "Full SEO Audit" / "semantic_map"
-    return crawl_path, gsc_path, out_dir
+    return crawl_path, gsc_path, ga4_path, out_dir
 
 
 def _load_gsc(path: Optional[Path]) -> Optional[pd.DataFrame]:
@@ -102,6 +122,54 @@ def _load_gsc(path: Optional[Path]) -> Optional[pd.DataFrame]:
     return df[list(needed)]
 
 
+def _load_ga4(path: Optional[Path]) -> Optional[pd.DataFrame]:
+    """Load a GA4 pages CSV into a (url, conversions) DataFrame.
+
+    Accepts the canonical GA4 export shapes the project's GA4 fetcher
+    produces (page path + key event/conversion columns), normalizes
+    column names, and returns None when the file is unusable. The
+    business-value scorer reads ``conversions`` only.
+    """
+    if path is None:
+        return None
+    try:
+        df = _read_csv_robust(path)
+    except Exception as exc:  # noqa: BLE001
+        logging.warning(
+            "run_semantic_map: GA4 file unreadable (%s) - "
+            "skipping conversion boost", exc,
+        )
+        return None
+    rename = {}
+    for col in df.columns:
+        low = col.lower().strip()
+        if low in ("page", "page_path", "landing_page", "address"):
+            rename[col] = "url"
+        elif low in (
+            "conversions",
+            "key_events",
+            "keyevents",
+            "key events",
+            "conversion",
+        ):
+            rename[col] = "conversions"
+    df = df.rename(columns=rename)
+    if "url" not in df.columns or "conversions" not in df.columns:
+        logging.warning(
+            "run_semantic_map: GA4 file lacks expected columns "
+            "(got %s) - skipping conversion boost",
+            list(df.columns),
+        )
+        return None
+    try:
+        df["conversions"] = pd.to_numeric(
+            df["conversions"], errors="coerce"
+        ).fillna(0)
+    except Exception:  # noqa: BLE001
+        return None
+    return df[["url", "conversions"]]
+
+
 def _normalize_crawl_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Ensure a 'url' column exists by renaming common SF aliases."""
     if "url" in df.columns:
@@ -123,8 +191,8 @@ async def _run(args: argparse.Namespace) -> None:
             "Add it to .env or your environment."
         )
 
-    crawl_path, gsc_path, out_dir = _resolve_paths(
-        args.client, args.crawl, args.gsc
+    crawl_path, gsc_path, ga4_path, out_dir = _resolve_paths(
+        args.client, args.crawl, args.gsc, args.ga4,
     )
     cache_dir = out_dir.parent / "_cache_semantic_map"
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -133,6 +201,9 @@ async def _run(args: argparse.Namespace) -> None:
     logging.info("run_semantic_map: crawl=%s", crawl_path)
     logging.info(
         "run_semantic_map: gsc=%s", gsc_path or "(none)"
+    )
+    logging.info(
+        "run_semantic_map: ga4=%s", ga4_path or "(none)"
     )
     logging.info("run_semantic_map: out_dir=%s", out_dir)
 
@@ -169,6 +240,7 @@ async def _run(args: argparse.Namespace) -> None:
 
     cluster_result = cluster_pages(text_df, embeddings, api_key=api_key)
     gsc = _load_gsc(gsc_path)
+    ga4 = _load_ga4(ga4_path)
 
     paths = build_outputs(
         out_dir=out_dir,
@@ -178,6 +250,7 @@ async def _run(args: argparse.Namespace) -> None:
         gsc=gsc,
         client_name=args.client,
         model_name=args.model,
+        ga4=ga4,
     )
 
     print("\nOutputs written:")
@@ -203,6 +276,12 @@ def main(argv: list[str] | None = None) -> None:
         "--gsc",
         help="Path to GSC performance CSV "
         "(default: data/gsc_performance.csv)",
+    )
+    parser.add_argument(
+        "--ga4",
+        help="Path to GA4 pages CSV with a conversions column "
+        "(default: data/ga4/pages.csv). Optional; enables the "
+        "GA4 conversion boost in business-value scoring.",
     )
     parser.add_argument(
         "--model",
