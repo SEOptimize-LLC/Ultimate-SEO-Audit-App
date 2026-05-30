@@ -4,7 +4,51 @@ import asyncio
 
 import pandas as pd
 
-from Skills.semantic_site_map.text_loader import detect_body_column, load_page_text
+from Skills.semantic_site_map.text_loader import (
+    _clean_noise,
+    detect_body_column,
+    load_page_text,
+)
+
+
+def test_clean_noise_strips_bare_urls():
+    raw = "Read more at https://example.com/foo about teachers"
+    out = _clean_noise(raw)
+    assert "https://example.com/foo" not in out
+    assert "teachers" in out
+
+
+def test_clean_noise_keeps_markdown_anchor_drops_target():
+    raw = "Check [our blog](https://example.com/blog) for tips"
+    out = _clean_noise(raw)
+    assert "our blog" in out
+    assert "example.com" not in out
+
+
+def test_clean_noise_handles_multiple_urls_per_line():
+    raw = "[A](https://x.com/a) and [B](https://x.com/b) and bare https://x.com/c"
+    out = _clean_noise(raw)
+    assert "A" in out and "B" in out
+    assert "x.com" not in out
+
+
+def test_build_text_strips_urls_from_body():
+    import pandas as pd_local
+    from Skills.semantic_site_map.text_loader import _build_text_from_sf
+
+    df = pd_local.DataFrame({
+        "url": ["https://x.com/a"],
+        "title": ["Teacher Guide"],
+        "Content": [
+            "Body about teachers. [Home](https://x.com/) "
+            "[Login](https://x.com/login) https://x.com/contact"
+        ],
+    })
+    out = _build_text_from_sf(df, "Content")
+    text = out["text"].iloc[0]
+    assert "teachers" in text
+    assert "Home" in text  # anchor preserved
+    assert "x.com" not in text  # URL targets stripped
 
 
 def test_detects_content_column():

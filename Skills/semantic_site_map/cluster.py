@@ -54,11 +54,19 @@ def run_clustering(
 
     n = len(embeddings)
     if min_cluster_size is None:
-        min_cluster_size = max(5, n // 50)
+        # Loosened from n//50 to n//100. n//50 produced 77% outliers
+        # on Education Walkthrough (1,293 URLs). n//100 + min_samples=1
+        # lets edge points join the nearest cluster instead of falling
+        # into the noise bucket, which matches the intent of the
+        # leak-grounded siteRadius semantics: only genuinely-far pages
+        # should be outliers.
+        min_cluster_size = max(5, n // 100)
     min_cluster_size = max(2, min(min_cluster_size, n - 1))
 
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=min_cluster_size, metric="euclidean"
+        min_cluster_size=min_cluster_size,
+        min_samples=1,
+        metric="euclidean",
     )
     labels = clusterer.fit_predict(embeddings)
     unique_clusters = set(labels) - {-1}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -110,16 +111,37 @@ def _filter_eligible(df: pd.DataFrame) -> pd.DataFrame:
     return keep.reset_index(drop=True)
 
 
+_URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
+_MD_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+
+
+def _clean_noise(text: str) -> str:
+    """Strip URLs and markdown link targets that pollute embeddings.
+
+    Crawl4AI's markdown output preserves every internal link as
+    ``[anchor](https://full-url)``. With ~50-200 internal links per
+    page, the domain itself dominates TF-IDF and embedding signal,
+    making distinct topical clusters look identical. Strip both the
+    URL targets (keeping the anchor text) and any bare URLs.
+    """
+    # Markdown link first: keep anchor, drop URL target.
+    text = _MD_LINK_PATTERN.sub(r"\1", text)
+    # Any remaining bare URLs.
+    text = _URL_PATTERN.sub("", text)
+    return text
+
+
 def _build_text_from_sf(df: pd.DataFrame, body_col: str) -> pd.DataFrame:
     parts_columns = ["title", "meta_desc", "h1", body_col]
     available = [c for c in parts_columns if c in df.columns]
 
     def row_text(row: pd.Series) -> str:
-        return " \n".join(
+        joined = " \n".join(
             str(row[c])
             for c in available
             if pd.notna(row[c]) and str(row[c]).strip()
         )
+        return _clean_noise(joined)
 
     out = pd.DataFrame({
         "url": df["url"].astype(str),
