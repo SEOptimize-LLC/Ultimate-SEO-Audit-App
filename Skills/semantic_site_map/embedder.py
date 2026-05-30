@@ -15,13 +15,16 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "openai/text-embedding-3-small"
 EMBEDDING_DIM = 1536
-DEFAULT_BATCH_SIZE = 100
+# OpenAI caps a single /embeddings request at 300,000 tokens (sum
+# across all inputs). With MAX_INPUT_CHARS = 24,000 chars per input
+# (~6,000 tokens worst case), a batch of 25 keeps the worst case
+# under 150,000 tokens with a comfortable safety margin.
+DEFAULT_BATCH_SIZE = 25
 OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings"
 
-# text-embedding-3-small accepts up to 8192 tokens per input.
-# At ~4 chars/token that's ~32k chars; we truncate to 24k to leave a
-# safety margin for tokens that compress poorly (emoji, multi-byte
-# scripts like Arabic, code samples, URLs).
+# Per-input limit. text-embedding-3-small accepts up to 8192 tokens
+# per input; at ~4 chars/token that's ~32k chars. 24k gives a margin
+# for tokens that compress poorly (emoji, Arabic, code, URLs).
 MAX_INPUT_CHARS = 24_000
 
 
