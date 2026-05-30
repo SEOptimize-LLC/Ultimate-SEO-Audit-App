@@ -114,6 +114,14 @@ def _filter_eligible(df: pd.DataFrame) -> pd.DataFrame:
 _URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
 _MD_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 
+# Lines appearing on >= this fraction of pages are treated as
+# site-wide template chrome (global nav, footer, sidebar) and removed
+# before embedding. 0.80 = appears on 80% of pages. Empirically this
+# catches mega-menus and global footers without removing legitimate
+# repeating content (e.g. category-page boilerplate that should still
+# inform clustering).
+BOILERPLATE_THRESHOLD = 0.80
+
 
 def _clean_noise(text: str) -> str:
     """Strip URLs and markdown link targets that pollute embeddings.
@@ -129,6 +137,53 @@ def _clean_noise(text: str) -> str:
     # Any remaining bare URLs.
     text = _URL_PATTERN.sub("", text)
     return text
+
+
+def _detect_boilerplate_lines(
+    texts: list[str], threshold: float = BOILERPLATE_THRESHOLD
+) -> set[str]:
+    """Find lines that appear on >= threshold fraction of pages.
+
+    These are global nav / footer / sidebar elements that pollute
+    embeddings on short pages where chrome dominates the body.
+
+    Below 10 pages, boilerplate detection is a no-op: the statistical
+    signal isn't strong enough to distinguish chrome from genuine
+    repeating content, and tiny corpora (unit tests, debug runs)
+    would otherwise have every line marked as boilerplate.
+    """
+    import math
+
+    if not texts or len(texts) < 10:
+        return set()
+    n_pages = len(texts)
+    line_pages: dict[str, int] = {}
+    for text in texts:
+        # Unique non-trivial lines per page (don't double-count
+        # repeated nav within one page).
+        seen_in_page: set[str] = set()
+        for line in text.splitlines():
+            stripped = line.strip()
+            if len(stripped) < 3:
+                continue
+            seen_in_page.add(stripped)
+        for line in seen_in_page:
+            line_pages[line] = line_pages.get(line, 0) + 1
+    # ceil so 75% at threshold 0.80 does NOT qualify (4 pages -> need 4,
+    # not 3). int truncation would let 75% through.
+    cutoff = max(1, math.ceil(n_pages * threshold))
+    return {line for line, count in line_pages.items() if count >= cutoff}
+
+
+def _strip_boilerplate(text: str, boilerplate: set[str]) -> str:
+    """Drop lines that match the detected boilerplate set."""
+    if not boilerplate:
+        return text
+    kept_lines = []
+    for line in text.splitlines():
+        if line.strip() not in boilerplate:
+            kept_lines.append(line)
+    return "\n".join(kept_lines)
 
 
 def _build_text_from_sf(df: pd.DataFrame, body_col: str) -> pd.DataFrame:
@@ -148,6 +203,25 @@ def _build_text_from_sf(df: pd.DataFrame, body_col: str) -> pd.DataFrame:
         "text": df.apply(row_text, axis=1),
     })
     out = out[out["text"].str.len() > 0].reset_index(drop=True)
+
+    # Two-pass site-wide boilerplate strip: detect lines that appear
+    # on >= BOILERPLATE_THRESHOLD of pages (global nav/footer chrome),
+    # then drop them from every page. This must run AFTER url cleanup
+    # so the lines being compared aren't differentiated by URL targets.
+    boilerplate = _detect_boilerplate_lines(out["text"].tolist())
+    if boilerplate:
+        logger.info(
+            "text_loader: stripping %d boilerplate line(s) "
+            "(present on >= %.0f%% of pages)",
+            len(boilerplate),
+            BOILERPLATE_THRESHOLD * 100,
+        )
+        out["text"] = out["text"].apply(
+            lambda t: _strip_boilerplate(t, boilerplate)
+        )
+        # Drop pages whose entire content was boilerplate.
+        out = out[out["text"].str.len() > 0].reset_index(drop=True)
+
     return out
 
 

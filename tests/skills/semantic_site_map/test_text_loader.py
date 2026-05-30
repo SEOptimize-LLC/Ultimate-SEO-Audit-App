@@ -6,9 +6,91 @@ import pandas as pd
 
 from Skills.semantic_site_map.text_loader import (
     _clean_noise,
+    _detect_boilerplate_lines,
+    _strip_boilerplate,
     detect_body_column,
     load_page_text,
 )
+
+
+def test_detect_boilerplate_finds_lines_on_most_pages():
+    """With >=10 pages and a high-frequency line, detection fires."""
+    texts = [
+        f"Pricing\nUnique content {i}\nContact" for i in range(12)
+    ]
+    bp = _detect_boilerplate_lines(texts, threshold=0.80)
+    assert "Pricing" in bp
+    assert "Contact" in bp
+    assert "Unique content 0" not in bp
+
+
+def test_detect_boilerplate_respects_threshold():
+    """75% line should fail @ 0.80 threshold, pass @ 0.50."""
+    # 12 pages: 9 have "Common line" (75%), 3 do not.
+    texts = (
+        [f"Common line\n{c}" for c in "ABCDEFGHI"]
+        + [f"Different\n{c}" for c in "XYZ"]
+    )
+    bp_strict = _detect_boilerplate_lines(texts, threshold=0.80)
+    assert "Common line" not in bp_strict
+    bp_loose = _detect_boilerplate_lines(texts, threshold=0.50)
+    assert "Common line" in bp_loose
+
+
+def test_detect_boilerplate_ignores_very_short_lines():
+    """Single chars / tiny noise shouldn't get marked as boilerplate."""
+    texts = [f"x\nfull line {i}" for i in range(12)]
+    bp = _detect_boilerplate_lines(texts, threshold=0.80)
+    assert "x" not in bp
+
+
+def test_detect_boilerplate_skips_tiny_corpora():
+    """Below 10 pages, detection is a no-op (statistical noise)."""
+    texts = ["Pricing\nA", "Pricing\nB", "Pricing\nC"]
+    assert _detect_boilerplate_lines(texts, threshold=0.80) == set()
+
+
+def test_strip_boilerplate_removes_matched_lines():
+    text = "Pricing\nReal content here\nContact"
+    bp = {"Pricing", "Contact"}
+    stripped = _strip_boilerplate(text, bp)
+    assert "Real content here" in stripped
+    assert "Pricing" not in stripped
+    assert "Contact" not in stripped
+
+
+def test_strip_boilerplate_noop_when_empty():
+    text = "Pricing\nReal content"
+    assert _strip_boilerplate(text, set()) == text
+
+
+def test_build_text_strips_site_wide_boilerplate(tmp_path):
+    """Lines on >=80% of pages get dropped end-to-end.
+
+    Uses 12 pages so detection clears the <10-page short-circuit.
+    """
+    import pandas as pd_local
+    from Skills.semantic_site_map.text_loader import _build_text_from_sf
+
+    unique_words = [
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta",
+        "eta", "theta", "iota", "kappa", "lambda", "mu",
+    ]
+    df = pd_local.DataFrame({
+        "url": [f"https://x.com/{w}" for w in unique_words],
+        "title": [f"Title {w}" for w in unique_words],
+        "Content": [
+            f"Pricing\nUnique {w} content\nContact"
+            for w in unique_words
+        ],
+    })
+    out = _build_text_from_sf(df, "Content")
+    combined = "\n".join(out["text"].tolist())
+    assert "Pricing" not in combined
+    assert "Contact" not in combined
+    # Unique content survives.
+    assert "alpha" in combined
+    assert "mu" in combined
 
 
 def test_clean_noise_strips_bare_urls():
