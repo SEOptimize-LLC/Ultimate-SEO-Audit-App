@@ -78,7 +78,7 @@ The Streamlit app exposes two new file-upload slots (slot 7: `topical_map.json`,
 - **Embeddings**: `openai/text-embedding-3-small` via OpenRouter (1536-dim, $0.02/1M tokens). Override with `--model`.
 - **Text source**: Hybrid. If the SF crawl has a body-text column (`Content`, `Body Text`, `Custom Extraction 1`, etc.), use it. Otherwise fall back to Crawl4AI (concurrency 8 by default; aborts if >20% of fetches fail).
 - **Clustering**: HDBSCAN with `min_cluster_size = max(5, n_urls // 50)`. K-means k=4 fallback when HDBSCAN finds <2 clusters; in that fallback the 5% farthest-from-centroid points are marked as outliers so the `-1` semantics carry through.
-- **Cluster labels**: LLM-generated (default `anthropic/claude-3.5-sonnet`), 1 OpenRouter call per cluster, n-gram fallback on failure.
+- **Cluster labels**: LLM-generated (default `anthropic/claude-sonnet-4.5`), 1 OpenRouter call per cluster, n-gram fallback on failure.
 - **Ring assignment**: quartiles of `site_radius` among clustered URLs; outliers in `-1` go to the `outliers` list.
 - **High-click off-topic threshold**: cluster clicks >= 75th percentile of cluster click totals AND median `site_radius` > 0.6 (cosine distance).
 
