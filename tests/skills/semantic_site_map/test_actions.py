@@ -1,7 +1,5 @@
 """Tests for the Keep/Grow/Relocate/Prune classifier."""
 
-import pytest
-
 from Skills.semantic_site_map.report import classify_pages_by_action
 
 
@@ -66,6 +64,26 @@ def test_every_url_gets_classified():
     assert set(out.keys()) == set(urls)
     for action in out.values():
         assert action in {"keep", "grow", "relocate", "prune"}
+
+
+def test_zero_median_does_not_collapse_to_one_side():
+    """When most clicks tie at 0, ties should split roughly 50/50.
+
+    Regression: a previous version used strict `clicks > median`, which
+    meant that with most URLs at 0 clicks (median=0), every zero-click
+    URL fell to the 'low clicks' side and the 2x2 collapsed to grow/prune.
+    """
+    urls = [f"https://x.com/{i}" for i in range(10)]
+    # 8 URLs have 0 clicks, 2 have some clicks. Median = 0.
+    clicks = {urls[0]: 50, urls[1]: 10}
+    # Values evenly split high/low.
+    value = {u: (90 if i < 5 else 10) for i, u in enumerate(urls)}
+    out = classify_pages_by_action(urls, clicks, value)
+    n_keep_or_relocate = sum(
+        1 for a in out.values() if a in ("keep", "relocate")
+    )
+    # Should be roughly half (5) on the high-clicks side, not zero.
+    assert n_keep_or_relocate >= 3
 
 
 def test_median_split_threshold_on_boundary():

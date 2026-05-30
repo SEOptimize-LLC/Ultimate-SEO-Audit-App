@@ -63,27 +63,61 @@ def classify_pages_by_action(
     if not urls:
         return {}
 
-    clicks = [float(clicks_per_url.get(u, 0)) for u in urls]
-    values = [float(value_per_url.get(u, 0)) for u in urls]
-    # numpy.median to avoid sorting twice; mirrors how the rest of the
-    # report computes quartile thresholds.
     import numpy as np
-    clicks_median = float(np.median(clicks))
-    value_median = float(np.median(values))
+
+    clicks = np.array(
+        [float(clicks_per_url.get(u, 0)) for u in urls],
+        dtype=np.float64,
+    )
+    values = np.array(
+        [float(value_per_url.get(u, 0)) for u in urls],
+        dtype=np.float64,
+    )
+
+    clicks_hi = _balanced_high_mask(clicks)
+    values_hi = _balanced_high_mask(values)
 
     actions: dict[str, str] = {}
-    for url, c, v in zip(urls, clicks, values):
-        is_high_clicks = c > clicks_median
-        is_high_value = v > value_median
-        if is_high_clicks and is_high_value:
+    for url, c_hi, v_hi in zip(urls, clicks_hi, values_hi):
+        if c_hi and v_hi:
             actions[url] = "keep"
-        elif not is_high_clicks and is_high_value:
+        elif (not c_hi) and v_hi:
             actions[url] = "grow"
-        elif is_high_clicks and not is_high_value:
+        elif c_hi and (not v_hi):
             actions[url] = "relocate"
         else:
             actions[url] = "prune"
     return actions
+
+
+def _balanced_high_mask(scores: "np.ndarray") -> "np.ndarray":
+    """Return a boolean mask marking the 'high' half of `scores`.
+
+    Naive strict-greater-than median fails when many values tie at the
+    median (e.g. lots of zero-click pages). Instead: route every value
+    strictly above the median to high, every value strictly below to
+    low, then split the tie group as evenly as possible by index order
+    so the final high/low ratio is closest to 50/50.
+    """
+    import numpy as np
+
+    n = len(scores)
+    if n == 0:
+        return np.zeros(0, dtype=bool)
+    median = float(np.median(scores))
+    above = scores > median
+    below = scores < median
+    n_above = int(above.sum())
+    target_high = n // 2  # how many "high" we want
+    deficit = target_high - n_above
+    if deficit <= 0:
+        return above
+    # Need `deficit` more pages on the high side, sourced from ties.
+    tie_indices = np.where(scores == median)[0]
+    promote = tie_indices[:deficit]
+    mask = above.copy()
+    mask[promote] = True
+    return mask
 
 
 def aggregate_clicks_by_cluster(
@@ -737,9 +771,15 @@ def build_outputs(
     from Skills.semantic_site_map.value import derive_business_value
     value_per_url = derive_business_value(urls, gsc_df=gsc, ga4_df=ga4)
 
-    # Keep / Grow / Relocate / Prune classifier.
-    page_actions = classify_pages_by_action(
-        urls, clicks_per_url, value_per_url
+    # Keep / Grow / Relocate / Prune classifier. Requires click data to
+    # be meaningful - without it the median click is 0 and the 2x2
+    # collapses to a 1x2 (every URL is either grow or prune). Skip the
+    # classifier entirely when GSC isn't present so the deliverable
+    # doesn't ship a misleading bucket split.
+    has_clicks = sum(clicks_per_url.values()) > 0
+    page_actions: dict[str, str] = (
+        classify_pages_by_action(urls, clicks_per_url, value_per_url)
+        if has_clicks else {}
     )
 
     # Click-weighted centroid drift (the leak-grounded "is traffic
