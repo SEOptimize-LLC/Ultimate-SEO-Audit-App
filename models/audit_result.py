@@ -64,6 +64,20 @@ class AuditCategory(Enum):
     REDIRECTS = "redirects"
     PERFORMANCE = "performance"
     SECURITY = "security"
+    JS_RENDERING = "js_rendering"
+    URL_STRUCTURE = "url_structure"
+    CANNIBALIZATION = "cannibalization"
+    MOBILE_FIRST = "mobile_first"
+    PAGE_EXPERIENCE = "page_experience"
+    INTERNATIONAL = "international"
+
+    # Content & strategy
+    CONTENT_PRUNING = "content_pruning"
+
+    # Specialized
+    ECOMMERCE_PATTERNS = "ecommerce_patterns"
+    LOCAL_SEO = "local_seo"
+    DISCOVER = "discover"
 
     # On-Page SEO
     TITLE_TAGS = "title_tags"
@@ -92,6 +106,16 @@ class AuditCategory(Enum):
             AuditCategory.REDIRECTS: "Redirects",
             AuditCategory.PERFORMANCE: "Performance",
             AuditCategory.SECURITY: "Security",
+            AuditCategory.JS_RENDERING: "JavaScript Rendering",
+            AuditCategory.URL_STRUCTURE: "URL Structure",
+            AuditCategory.CANNIBALIZATION: "Keyword Cannibalization",
+            AuditCategory.MOBILE_FIRST: "Mobile-First Indexing",
+            AuditCategory.PAGE_EXPERIENCE: "Page Experience",
+            AuditCategory.INTERNATIONAL: "International / Hreflang",
+            AuditCategory.CONTENT_PRUNING: "Content Pruning",
+            AuditCategory.ECOMMERCE_PATTERNS: "Ecommerce Patterns",
+            AuditCategory.LOCAL_SEO: "Local SEO",
+            AuditCategory.DISCOVER: "Google Discover",
             AuditCategory.TITLE_TAGS: "Title Tags",
             AuditCategory.META_DESCRIPTIONS: "Meta Descriptions",
             AuditCategory.HEADINGS: "Headings",
@@ -116,6 +140,14 @@ class AuditCategory(Enum):
             AuditCategory.REDIRECTS,
             AuditCategory.PERFORMANCE,
             AuditCategory.SECURITY,
+            AuditCategory.JS_RENDERING,
+            AuditCategory.URL_STRUCTURE,
+            AuditCategory.CANNIBALIZATION,
+            AuditCategory.MOBILE_FIRST,
+            AuditCategory.ECOMMERCE_PATTERNS,
+            AuditCategory.LOCAL_SEO,
+            AuditCategory.PAGE_EXPERIENCE,
+            AuditCategory.INTERNATIONAL,
         ]
         onpage = [
             AuditCategory.TITLE_TAGS,
@@ -124,6 +156,8 @@ class AuditCategory(Enum):
             AuditCategory.CONTENT,
             AuditCategory.INTERNAL_LINKS,
             AuditCategory.IMAGES,
+            AuditCategory.CONTENT_PRUNING,
+            AuditCategory.DISCOVER,
         ]
         backlink = [
             AuditCategory.BACKLINKS,

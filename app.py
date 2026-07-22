@@ -33,6 +33,8 @@ from auditors.anchor_quality_auditor import AnchorQualityAuditor
 from auditors.date_freshness_auditor import DateFreshnessAuditor
 from auditors.topical_authority_auditor import TopicalAuthorityAuditor
 from auditors.click_signal_auditor import ClickSignalAuditor
+from auditors.query_count_auditor import QueryCountAuditor
+from auditors.backlink_profile_auditor import BacklinkProfileAuditor
 from services.dataforseo_client import DataForSEOClient, BacklinkData, CompetitorData
 from services.openrouter_client import OpenRouterClient
 from services.report_generator import ReportGenerator
@@ -269,6 +271,32 @@ def render_upload_section():
             ),
         )
 
+    st.markdown("**GSC Page Indexing exports (optional)**")
+    col_c, col_d = st.columns(2)
+    with col_c:
+        crawled_not_indexed_file = st.file_uploader(
+            "9. GSC — 'Crawled - currently not indexed'",
+            type=["csv", "xlsx", "xls"],
+            key="upload_crawled_not_indexed",
+            help=(
+                "GSC Indexing → Pages → click 'Crawled - currently not "
+                "indexed' → Export. Google has no bulk Index Coverage API, "
+                "so this must be exported manually. Unlocks content-quality "
+                "non-indexation diagnosis."
+            ),
+        )
+    with col_d:
+        discovered_not_indexed_file = st.file_uploader(
+            "10. GSC — 'Discovered - currently not indexed'",
+            type=["csv", "xlsx", "xls"],
+            key="upload_discovered_not_indexed",
+            help=(
+                "GSC Indexing → Pages → click 'Discovered - currently "
+                "not indexed' → Export. Unlocks crawl-budget / internal-"
+                "linking diagnosis."
+            ),
+        )
+
     if not crawl_file:
         st.info("Upload at least the SF HTML Internal report to begin.")
         return False
@@ -282,6 +310,8 @@ def render_upload_section():
                 dates_file=dates_file,
                 gsc_file=gsc_file,
                 topical_map_file=topical_file,
+                crawled_not_indexed_file=crawled_not_indexed_file,
+                discovered_not_indexed_file=discovered_not_indexed_file,
             )
 
             if ctx.crawl_df is None:
@@ -298,6 +328,8 @@ def render_upload_section():
             st.session_state.dates_df = ctx.dates_df
             st.session_state.gsc_df = ctx.gsc_df
             st.session_state.topical_map = ctx.topical_map
+            st.session_state.crawled_not_indexed_df = ctx.crawled_not_indexed_df
+            st.session_state.discovered_not_indexed_df = ctx.discovered_not_indexed_df
 
             # Persist optional computed-map uploads to temp paths so the
             # auditor (which expects file paths) can consume them later.
@@ -333,12 +365,12 @@ def render_upload_section():
 
 
 def _render_input_availability(ctx: AuditContext) -> None:
-    """Render the availability matrix for the 6 inputs and the analyses they unlock."""
+    """Render the availability matrix for the 8 inputs and the analyses they unlock."""
     inputs = ctx.available_inputs
     analyses = ctx.available_analyses
 
     st.markdown("### 📊 Input Availability")
-    cols = st.columns(6)
+    cols = st.columns(8)
     labels = [
         ("Crawl", "crawl"),
         ("Backlinks", "backlinks"),
@@ -346,6 +378,8 @@ def _render_input_availability(ctx: AuditContext) -> None:
         ("Dates", "dates"),
         ("GSC", "gsc"),
         ("Topical Map", "topical_map"),
+        ("Crawled-NI", "crawled_not_indexed"),
+        ("Discov.-NI", "discovered_not_indexed"),
     ]
     for col, (label, key) in zip(cols, labels):
         with col:
@@ -364,6 +398,8 @@ def _render_input_availability(ctx: AuditContext) -> None:
             "click_signal_grounding": "Click-signal grounding (NavBoost / Glue)",
             "topical_authority_outliers": "Topical outliers (siteRadius)",
             "site_radius_analysis": "Site focus / radius (QualityAuthorityTopicEmbeddings)",
+            "crawled_not_indexed_diagnosis": "GSC 'Crawled - not indexed' quality diagnosis",
+            "discovered_not_indexed_diagnosis": "GSC 'Discovered - not indexed' crawl-budget diagnosis",
         }
         for analysis_key, label in analysis_labels.items():
             mark = "✅" if analyses.get(analysis_key) else "⛔"
@@ -430,6 +466,7 @@ def run_audit(options: dict) -> AuditResult:
     df = st.session_state.df
     domain = st.session_state.domain
     integrations = st.session_state.integrations
+    ctx = st.session_state.get("audit_context")
 
     # Initialize summary
     summary = AuditSummary(
@@ -449,7 +486,12 @@ def run_audit(options: dict) -> AuditResult:
     # Technical Audit
     status.text("Running technical SEO audit...")
     progress.progress(10)
-    technical_auditor = TechnicalAuditor(df)
+    technical_auditor = TechnicalAuditor(
+        df,
+        gsc_df=ctx.gsc_df if ctx else None,
+        crawled_not_indexed_df=ctx.crawled_not_indexed_df if ctx else None,
+        discovered_not_indexed_df=ctx.discovered_not_indexed_df if ctx else None,
+    )
     result.technical_issues = technical_auditor.run_audit()
     progress.progress(20)
 
@@ -502,7 +544,6 @@ def run_audit(options: dict) -> AuditResult:
     progress.progress(50)
 
     # ==== Leak-grounded auditors (gracefully skip when inputs absent) ====
-    ctx = st.session_state.get("audit_context")
     if ctx is not None:
         # Anchor Quality Audit (requires SF Anchor Text report)
         if ctx.anchors_df is not None:
@@ -569,6 +610,15 @@ def run_audit(options: dict) -> AuditResult:
                 result.onpage_issues.extend(cs_auditor.run_audit())
             except Exception as e:
                 st.warning(f"Click signal audit failed: {e}")
+
+        # Query Count Audit (query-breadth / dead-page / serve-rate dilution)
+        if ctx.gsc_df is not None:
+            status.text("Running query-count audit...")
+            try:
+                qc_auditor = QueryCountAuditor(df, ctx.gsc_df)
+                result.onpage_issues.extend(qc_auditor.run_audit())
+            except Exception as e:
+                st.warning(f"Query count audit failed: {e}")
         progress.progress(66)
     # ====================================================================
 
@@ -586,6 +636,16 @@ def run_audit(options: dict) -> AuditResult:
         except Exception as e:
             st.warning(f"Backlink analysis failed: {str(e)}")
     progress.progress(70)
+
+    # Backlink Profile Audit (deterministic SEMrush per-link segmentation)
+    # Runs AFTER the DFS backlink section, which reassigns backlink_issues.
+    if ctx is not None and ctx.backlinks_df is not None:
+        status.text("Running backlink profile audit...")
+        try:
+            bp_auditor = BacklinkProfileAuditor(ctx.backlinks_df)
+            result.backlink_issues.extend(bp_auditor.run_audit())
+        except Exception as e:
+            st.warning(f"Backlink profile audit failed: {e}")
 
     # Competitor Analysis (optional)
     if options.get("enable_competitors") and domain:

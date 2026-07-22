@@ -107,6 +107,18 @@ Emerging      | Generalist
 - SERP feature changes
 - Traffic estimates
 
+### Recommendations to Avoid (Outdated or Unsupported)
+
+When recommending competitive responses, do NOT recommend any of these:
+
+- **"Match competitor word count."** Word count is a side effect of depth, not a target. If the competitor's page is longer because it covers more, recommend covering the missing topics — not hitting their word count.
+- **"Copy the competitor's keyword density"** or "match their TF-IDF profile." These are not optimization targets that produce ranking gains.
+- **"They rank #1 because they have higher domain authority — build DA."** Domain Authority is a third-party metric (Moz). It is not a Google ranking factor. Recommend the underlying signals (link profile quality, content depth, technical health), not the metric.
+- **"Ramp up content velocity to match the competitor."** Volume is not a ranking factor. One pillar piece that earns links outperforms a year of weekly thin posts.
+- **"They have more social shares — increase social activity."** Social signals are not direct ranking factors.
+- **"Their featured snippet is taking your traffic."** Owning the featured snippet does not remove the standard #1 ranking; the page can hold both. Don't recommend fighting the snippet for "lost traffic" without measuring actual impact.
+- **Recommendations that worsen UX** in pursuit of competitive parity. If a competitor uses an aggressive tactic (interstitials, autoplay video, keyword stuffing) — don't recommend matching it.
+
 ## Your Task
 
 Analyze the competitive data provided and:

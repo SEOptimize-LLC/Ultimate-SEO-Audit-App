@@ -75,6 +75,14 @@ def get_backlink_prompt() -> str:
 - Hacked sites
 - Spam farms
 
+### Seed Trust & Homepage-Trust Weighting (per Google API leak May 2024)
+
+Beyond raw authority tiers, the leak documents that trust propagates from a set of trusted seed sources, and that a linking site's trust is anchored to its homepage. Both are leak-derived, not confirmed levers — use them to explain *why* some links are worth chasing, not as scores to reverse-engineer.
+
+- **`trustedAnchors` (seed trust):** the AnchorsAnchor module documents a trusted-anchor concept — links carrying anchor text from trusted seed sources are weighted differently from ordinary links. This is the TrustRank-style idea that trust flows outward from a vetted seed set, and links closer (in link-graph distance) to those seeds carry more of it. Audit implication: a handful of links from genuinely trusted, established sources close to the seed set are worth more than a large volume of ordinary links. When prioritizing link acquisition, weight "how trusted and how close to the trusted core is the source" above sheer count.
+
+- **Linking-site homepage-trust weighting:** the leak indicates a site's trust/PageRank is computed at the homepage and distributed inward to its pages, so a link's value depends partly on the trust of the *linking site's homepage*, not just the specific linking URL in isolation. Audit implication: a link from a deep, weakly-linked page on a site whose homepage is highly trusted still benefits from that homepage trust flowing down; conversely, a link from a site whose own homepage has little trust passes little, regardless of the individual page's on-page metrics. When evaluating a prospect or an existing referring domain, look at the trust and link strength of the linking *site as a whole* (anchored at its homepage), not only the single page hosting the link.
+
 ### Domain Diversity Metrics
 
 **Healthy Ratios:**
@@ -84,22 +92,25 @@ def get_backlink_prompt() -> str:
 
 ### Disavow Decision Framework
 
-**Definitely Disavow:**
-- Confirmed PBN links
-- Links from hacked sites
-- Obvious link farm links
-- Negative SEO attacks (documented)
-- Links you paid for that can't be removed
+**Default position: most sites should never use the disavow tool.** Google has stated this directly. Aggressive disavowing can actively hurt rankings by stripping out signals from links Google was already discounting on its own. Only recommend disavow when there is concrete evidence of a problem the algorithm cannot handle on its own.
 
-**Consider Disavowing:**
-- High percentage exact match anchors from suspicious sources
-- Links from irrelevant foreign sites
-- Low-quality directory spam
+**Link spam is neutralised, not penalised.** The mechanism behind the "don't routine-disavow" stance is neutralisation. SpamBrain and Google's link-spam systems (the leak documents ML spam scoring such as `spambrainTotalDocSpamScore`, and a per-document `spamrank` measuring likelihood of linking to known spammers) are designed to *ignore* or *devalue* untrusted links at ranking time, not to hand the receiving site a penalty for them. This is leak-derived / consistent with Google's public statements — treat it as the working model, not a confirmed lever. The practical consequence for audits: for the overwhelming majority of unnatural or low-quality inbound links, Google has already neutralised them algorithmically, so disavowing is redundant at best and, by stripping signal Google was discounting on its own, occasionally harmful. Reserve disavow for the narrow algorithmically-unhandled cases below (a live manual action, or a documented negative-SEO attack), and lead with "these are almost certainly already neutralised — no action needed" for everything else.
 
-**Don't Disavow:**
-- Low DA but legitimate sites
-- Nofollow links (already ignored)
-- Links you're unsure about
+**Recommend disavow only when:**
+- A manual penalty has been issued for unnatural inbound links (confirmed in Search Console)
+- A documented negative SEO attack has occurred and the link patterns are demonstrably manipulative
+- The site has a known history of paid-link schemes that need cleanup before recovery
+- Confirmed PBN, link farm, or hacked-site links exist and removal outreach has failed
+
+**Do NOT recommend disavow for:**
+- "Suspicious looking" but unverified links
+- Low domain authority sites that are otherwise legitimate
+- Nofollow links (Google already treats them as hints, no signal to remove)
+- Links from foreign-language sites (irrelevance is not toxicity)
+- "Just to be safe" routine cleanup
+- Anything you cannot point to specific evidence for
+
+**Anchor text concerns** are usually better handled by addressing the root cause (over-optimized internal anchors, paid-link operations, etc.) than by disavowing. Disavow does not fix an active link-buying problem.
 
 ### Link Building Opportunities
 
@@ -114,6 +125,18 @@ def get_backlink_prompt() -> str:
 - Resource page outreach: 5-10% success
 - HARO/journalist queries: 5-20% success
 - Unlinked brand mentions: 20-40% success
+
+### Recommendations to Avoid (Outdated or Unsupported)
+
+The following are common backlink recommendations that current Google guidance, public statements from Google engineers, or repeatable testing have rendered outdated, ineffective, or actively risky. Do NOT recommend any of these:
+
+- **Routine disavow as preventive maintenance.** See the disavow framework above. Disavow without specific cause can actively reduce rankings.
+- **Buying links, "guest posts" with paid placement, or link exchanges.** These violate Google's link spam policy and risk manual action.
+- **Treating nofollow links as worthless.** Google has stated nofollow is a hint, not a directive — they may pass signal in some cases. Don't tell clients "those nofollows don't count, ignore them."
+- **Recommending disavow based on "spam score" or third-party toxicity scores alone.** These tools are estimates, not Google's own assessment. Use evidence (anchor patterns, link-scheme indicators) not vendor scores.
+- **Reciprocal linking agreements** as a strategy. They produce unnatural patterns and provide marginal-at-best value.
+- **Comment links, forum signature links, or directory submissions** as a primary strategy. Effort produces minimal return.
+- **Social signals as link equity.** Facebook, Twitter, LinkedIn engagement does not directly improve rankings. Social can drive earned links — but the link is the SEO signal, not the share count.
 
 ## Your Task
 

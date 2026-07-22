@@ -242,6 +242,18 @@ SCREAMING_FROG_COLUMNS = {
     "Robots.txt Status": "robots_txt_status",
     "Meta Refresh 1": "meta_refresh",
 
+    # Meta robots PLACEMENT (head vs body) — NOT a native Screaming Frog
+    # column. Google ignores a noindex placed outside <head>, but a standard
+    # SF crawl cannot tell where in the document the tag sits. This data only
+    # exists when the crawl includes a custom extraction (XPath/regex) that
+    # captures the tag's location. These header variants are the common names
+    # such an extraction is given; they gate `_check_noindex_in_body` in the
+    # technical auditor (which no-ops when the column is absent — by design).
+    "Meta Robots Position": "meta_robots_position",
+    "Meta Robots Placement": "meta_robots_position",
+    "Robots Position": "robots_position",
+    "Meta Robots Location": "meta_robots_location",
+
     # Redirects
     "Redirect URL": "redirect_url",
     "Redirect Type": "redirect_type",
@@ -264,6 +276,44 @@ SCREAMING_FROG_COLUMNS = {
     "Unique JS Inlinks": "js_inlinks",
     "Unique JS Outlinks": "js_outlinks",
     "Link Score": "link_score",
+
+    # JavaScript Rendering — comparison columns from Screaming Frog's
+    # Response vs Render report (only present when JS rendering is enabled).
+    # SF column naming varies by version, so map several known variants.
+    "Raw Word Count": "raw_word_count",
+    "Source Word Count": "raw_word_count",
+    "Word Count (Raw)": "raw_word_count",
+    "Rendered Word Count": "rendered_word_count",
+    "Word Count (Rendered)": "rendered_word_count",
+    "Raw HTML Word Count": "raw_word_count",
+    "Rendered HTML Word Count": "rendered_word_count",
+    "Source HTML Word Count": "raw_word_count",
+    "Raw Outlinks": "raw_outlinks",
+    "Rendered Outlinks": "rendered_outlinks",
+    "Outlinks (Raw)": "raw_outlinks",
+    "Outlinks (Rendered)": "rendered_outlinks",
+    "Raw Inlinks": "raw_inlinks",
+    "Rendered Inlinks": "rendered_inlinks",
+    "Raw HTML Size (Bytes)": "raw_html_size",
+    "Rendered HTML Size (Bytes)": "rendered_html_size",
+    "Page Size (Raw)": "raw_html_size",
+    "Page Size (Rendered)": "rendered_html_size",
+    "DOM Size": "dom_size",
+    "Total DOM Size": "dom_size",
+    "Source: Title 1": "raw_title",
+    "Raw Title 1": "raw_title",
+    "Title 1 (Raw)": "raw_title",
+    "Source: Meta Description 1": "raw_meta_description",
+    "Raw Meta Description 1": "raw_meta_description",
+    "Source: H1-1": "raw_h1",
+    "Raw H1-1": "raw_h1",
+    "Source: Canonical Link Element 1": "raw_canonical",
+    "Raw Canonical Link Element 1": "raw_canonical",
+    "Source: Meta Robots 1": "raw_meta_robots",
+    "Raw Meta Robots 1": "raw_meta_robots",
+    "Crawl Mode": "crawl_mode",
+    "Rendered Crawl": "rendered_crawl",
+    "JavaScript Rendered": "js_rendered",
 
     # Images
     "Images": "image_count",
@@ -384,6 +434,12 @@ SCREAMING_FROG_COLUMNS = {
     "amphtml Link Element": "amphtml_link",
     "Mobile Alternate Link": "mobile_alternate_link",
 
+    # Hreflang / international — Screaming Frog stores each declared hreflang
+    # annotation on a page as a numbered column pair (the alternate URL and its
+    # language code). Header naming varies by SF version, so several known
+    # variants map to the same internal name. The numbered variants (1..10) are
+    # generated below and merged in — see _HREFLANG_COLUMN_VARIANTS.
+
     # Misc
     "Published Date 1": "published_date",
     "rel=\"next\" 1": "rel_next",
@@ -391,6 +447,49 @@ SCREAMING_FROG_COLUMNS = {
     "HTTP rel=\"next\" 1": "http_rel_next",
     "HTTP rel=\"prev\" 1": "http_rel_prev",
 }
+
+def _build_hreflang_column_variants(max_annotations: int = 10) -> dict:
+    """Generate SF hreflang column-name variants -> internal names.
+
+    Screaming Frog exports each declared hreflang annotation on a page as a
+    numbered column. The alternate-URL column and (when languages are stored)
+    the language-code column both vary in wording across SF versions, so every
+    known variant for annotation ``i`` maps onto the internal names
+    ``hreflang_{i}_url`` and ``hreflang_{i}_lang``.
+
+    Args:
+        max_annotations: Highest annotation index to generate columns for.
+
+    Returns:
+        Mapping of SF header string -> internal standardized column name.
+    """
+    variants: dict = {}
+    for i in range(1, max_annotations + 1):
+        url_name = f"hreflang_{i}_url"
+        lang_name = f"hreflang_{i}_lang"
+        for header in (
+            f"hreflang {i}",
+            f"hreflang {i} URL",
+            f"HTML hreflang {i}",
+            f"HTML hreflang {i} URL",
+        ):
+            variants[header] = url_name
+        for header in (
+            f"hreflang {i} Language",
+            f"hreflang {i} Language Code",
+            f"HTML hreflang {i} Language",
+            f"HTML hreflang {i} Language Code",
+        ):
+            variants[header] = lang_name
+    return variants
+
+
+# Merge the generated hreflang variants in. Explicit entries in
+# SCREAMING_FROG_COLUMNS win over generated ones if they ever collide.
+_HREFLANG_COLUMN_VARIANTS = _build_hreflang_column_variants()
+for _sf_header, _internal_name in _HREFLANG_COLUMN_VARIANTS.items():
+    SCREAMING_FROG_COLUMNS.setdefault(_sf_header, _internal_name)
+
 
 # Reverse mapping for lookup
 COLUMN_TO_SF = {v: k for k, v in SCREAMING_FROG_COLUMNS.items()}
@@ -496,7 +595,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         "performance_score", "redirect_count", "crawl_depth",
         "near_duplicates", "spelling_errors", "grammar_errors",
         "ga_sessions", "ga_pageviews", "ga_total_users", "ga_new_users",
-        "link_score", "image_count"
+        "link_score", "image_count",
+        # JS rendering comparison metrics
+        "raw_word_count", "rendered_word_count",
+        "raw_outlinks", "rendered_outlinks",
+        "raw_inlinks", "rendered_inlinks",
+        "raw_html_size", "rendered_html_size", "dom_size",
     ]
     for col in numeric_columns:
         if col in df.columns:
@@ -649,6 +753,488 @@ def get_domain_from_urls(df: pd.DataFrame) -> Optional[str]:
         return match.group(1)
 
     return None
+
+
+# ============================================================================
+# Expanded Input Stack — leak-grounded framework inputs
+# ============================================================================
+#
+# The Google API leak (May 2024) and Cyrus Shepard's click-signal analysis
+# require additional inputs beyond the SF Internal HTML report to fully ground
+# the audit in evidence:
+#
+#   1. SF HTML Internal report      — core crawl (already supported above)
+#   2. SEMrush backlink report      — domain authority + anchor sourceType tiers
+#   3. SF Anchor Text report        — anchorMismatchDemotion + phraseAnchorSpam
+#   4. SF custom extraction (dates) — semanticDate / lastSignificantUpdate
+#   5. GSC Search Analytics export  — position-adjusted CTR + click signals
+#   6. Koray topical map (markdown) — siteFocusScore / siteRadius proxy
+#
+# Each parser below is defensive — it accepts varying column names from the
+# common export sources and produces a standardized DataFrame for the auditor.
+
+
+# SEMrush backlink export column mappings
+SEMRUSH_BACKLINK_COLUMNS = {
+    "Source URL": "source_url",
+    "Source url": "source_url",
+    "Page URL": "source_url",
+    "Source Title": "source_title",
+    "Target URL": "target_url",
+    "Target url": "target_url",
+    "Target Page": "target_url",
+    "Anchor": "anchor_text",
+    "Anchor Text": "anchor_text",
+    "Source Domain": "source_domain",
+    "Source Domain Authority": "source_authority",
+    "Authority Score": "source_authority",
+    "Page AS": "page_authority",
+    "Domain AS": "source_authority",
+    "Source IP": "source_ip",
+    "Source Country": "source_country",
+    "First Seen": "first_seen",
+    "Last Seen": "last_seen",
+    "Type": "link_type",
+    "Link Type": "link_type",
+    "Nofollow": "nofollow",
+    "Newlink": "is_new",
+    "Lostlink": "is_lost",
+    "External Links": "external_links_on_page",
+    "Internal Links": "internal_links_on_page",
+}
+
+
+def parse_semrush_backlinks(file: BytesIO | str | Path) -> pd.DataFrame:
+    """Parse a SEMrush backlinks export.
+
+    Args:
+        file: File path or BytesIO object containing SEMrush backlink CSV/Excel
+
+    Returns:
+        DataFrame with standardized columns: source_url, target_url, anchor_text,
+        source_domain, source_authority, link_type, nofollow, first_seen, last_seen
+    """
+    file_type = _infer_file_type(file)
+
+    if file_type in ("xlsx", "xls"):
+        df = pd.read_excel(file, engine="openpyxl")
+    else:
+        df = _read_csv_robust(file)
+
+    df.columns = [str(c).strip() for c in df.columns]
+
+    rename_map = {}
+    for col in df.columns:
+        if col in SEMRUSH_BACKLINK_COLUMNS:
+            rename_map[col] = SEMRUSH_BACKLINK_COLUMNS[col]
+        else:
+            col_lower = col.lower()
+            for sr_col, std_col in SEMRUSH_BACKLINK_COLUMNS.items():
+                if sr_col.lower() == col_lower:
+                    rename_map[col] = std_col
+                    break
+
+    df = df.rename(columns=rename_map)
+
+    if "source_authority" in df.columns:
+        df["source_authority"] = pd.to_numeric(df["source_authority"], errors="coerce")
+
+    if "nofollow" in df.columns:
+        df["nofollow"] = df["nofollow"].astype(str).str.lower().isin(["true", "yes", "1"])
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.strip().replace("nan", "")
+
+    print(f"[DEBUG] SEMrush backlinks: {len(df)} rows, columns: {list(df.columns)[:10]}")
+    return df
+
+
+# Screaming Frog Anchor Text report column mappings
+SF_ANCHOR_COLUMNS = {
+    "Source": "source_url",
+    "Source URL": "source_url",
+    "Destination": "target_url",
+    "Target": "target_url",
+    "Destination URL": "target_url",
+    "Anchor": "anchor_text",
+    "Anchor Text": "anchor_text",
+    "Alt Text": "alt_text",
+    "Type": "link_type",
+    "Link Type": "link_type",
+    "Position": "link_position",
+    "Link Position": "link_position",
+    "Status Code": "target_status_code",
+    "Status": "target_status",
+    "Follow": "follow",
+    "Rel": "rel",
+    "Link Path": "link_path",
+}
+
+
+def parse_sf_anchor_report(file: BytesIO | str | Path) -> pd.DataFrame:
+    """Parse a Screaming Frog Anchor Text (All Anchor Text) report.
+
+    Args:
+        file: File path or BytesIO containing SF anchor export
+
+    Returns:
+        DataFrame with: source_url, target_url, anchor_text, link_type, follow, rel
+    """
+    file_type = _infer_file_type(file)
+
+    if file_type in ("xlsx", "xls"):
+        df = pd.read_excel(file, engine="openpyxl")
+    else:
+        df = _read_csv_robust(file)
+
+    df.columns = [str(c).strip() for c in df.columns]
+
+    rename_map = {}
+    for col in df.columns:
+        if col in SF_ANCHOR_COLUMNS:
+            rename_map[col] = SF_ANCHOR_COLUMNS[col]
+        else:
+            col_lower = col.lower()
+            for sf_col, std_col in SF_ANCHOR_COLUMNS.items():
+                if sf_col.lower() == col_lower:
+                    rename_map[col] = std_col
+                    break
+
+    df = df.rename(columns=rename_map)
+
+    if "target_status_code" in df.columns:
+        df["target_status_code"] = pd.to_numeric(
+            df["target_status_code"], errors="coerce"
+        ).fillna(0).astype(int)
+
+    if "follow" in df.columns:
+        df["follow"] = df["follow"].astype(str).str.lower().isin(["true", "yes", "1"])
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.strip().replace("nan", "")
+
+    print(f"[DEBUG] SF anchors: {len(df)} rows, columns: {list(df.columns)[:10]}")
+    return df
+
+
+# Content publish/update dates extraction column mappings
+CONTENT_DATES_COLUMNS = {
+    "Address": "url",
+    "URL": "url",
+    "Page URL": "url",
+    "Published Date 1": "byline_date",
+    "Published Date": "byline_date",
+    "Byline Date": "byline_date",
+    "Date Published": "byline_date",
+    "Visible Date": "byline_date",
+    "Article Published Date": "byline_date",
+    "datePublished": "schema_published",
+    "Schema Date Published": "schema_published",
+    "Schema Published": "schema_published",
+    "Schema datePublished": "schema_published",
+    "dateModified": "schema_modified",
+    "Schema Date Modified": "schema_modified",
+    "Schema Modified": "schema_modified",
+    "Schema dateModified": "schema_modified",
+    "Last Modified": "last_modified",
+    "HTTP Last Modified": "last_modified",
+    "Last-Modified": "last_modified",
+    "Author": "author",
+    "Author Name": "author",
+    "Schema Author": "schema_author",
+}
+
+
+def parse_content_dates(file: BytesIO | str | Path) -> pd.DataFrame:
+    """Parse a Screaming Frog custom extraction report for content dates.
+
+    Expected to contain at minimum: URL, byline date (visible), schema dates,
+    and HTTP Last-Modified header. Used for date triangulation against
+    semanticDate and lastSignificantUpdate signals.
+
+    Args:
+        file: File path or BytesIO containing custom extraction CSV/Excel
+
+    Returns:
+        DataFrame with: url, byline_date, schema_published, schema_modified,
+        last_modified, author
+    """
+    file_type = _infer_file_type(file)
+
+    if file_type in ("xlsx", "xls"):
+        df = pd.read_excel(file, engine="openpyxl")
+    else:
+        df = _read_csv_robust(file)
+
+    df.columns = [str(c).strip() for c in df.columns]
+
+    rename_map = {}
+    for col in df.columns:
+        if col in CONTENT_DATES_COLUMNS:
+            rename_map[col] = CONTENT_DATES_COLUMNS[col]
+        else:
+            col_lower = col.lower()
+            for sf_col, std_col in CONTENT_DATES_COLUMNS.items():
+                if sf_col.lower() == col_lower:
+                    rename_map[col] = std_col
+                    break
+
+    df = df.rename(columns=rename_map)
+
+    date_columns = ["byline_date", "schema_published", "schema_modified", "last_modified"]
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce", utc=True)
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.strip().replace("nan", "")
+
+    print(f"[DEBUG] Content dates: {len(df)} rows, columns: {list(df.columns)[:10]}")
+    return df
+
+
+# GSC Search Analytics export column mappings
+GSC_PERFORMANCE_COLUMNS = {
+    "Query": "query",
+    "Top queries": "query",
+    "Queries": "query",
+    "Page": "page",
+    "Pages": "page",
+    "Top pages": "page",
+    "Landing Page": "page",
+    "Clicks": "clicks",
+    "Impressions": "impressions",
+    "CTR": "ctr",
+    "Average CTR": "ctr",
+    "Position": "position",
+    "Average Position": "position",
+    "Country": "country",
+    "Device": "device",
+    "Date": "date",
+}
+
+
+def parse_gsc_performance(file: BytesIO | str | Path) -> pd.DataFrame:
+    """Parse a GSC Search Analytics export.
+
+    Accepts the standard GSC web export (CSV) with query/page dimensions.
+    Used for position-adjusted CTR analysis and click-signal grounding.
+
+    Args:
+        file: File path or BytesIO containing GSC export
+
+    Returns:
+        DataFrame with: query, page, clicks, impressions, ctr, position
+    """
+    file_type = _infer_file_type(file)
+
+    if file_type in ("xlsx", "xls"):
+        df = pd.read_excel(file, engine="openpyxl")
+    else:
+        df = _read_csv_robust(file)
+
+    df.columns = [str(c).strip() for c in df.columns]
+
+    rename_map = {}
+    for col in df.columns:
+        if col in GSC_PERFORMANCE_COLUMNS:
+            rename_map[col] = GSC_PERFORMANCE_COLUMNS[col]
+        else:
+            col_lower = col.lower()
+            for gsc_col, std_col in GSC_PERFORMANCE_COLUMNS.items():
+                if gsc_col.lower() == col_lower:
+                    rename_map[col] = std_col
+                    break
+
+    df = df.rename(columns=rename_map)
+
+    if "clicks" in df.columns:
+        df["clicks"] = pd.to_numeric(df["clicks"], errors="coerce").fillna(0).astype(int)
+    if "impressions" in df.columns:
+        df["impressions"] = pd.to_numeric(df["impressions"], errors="coerce").fillna(0).astype(int)
+    if "position" in df.columns:
+        df["position"] = pd.to_numeric(df["position"], errors="coerce")
+
+    if "ctr" in df.columns:
+        if df["ctr"].dtype == object:
+            df["ctr"] = df["ctr"].astype(str).str.replace("%", "").str.strip()
+        df["ctr"] = pd.to_numeric(df["ctr"], errors="coerce")
+        if df["ctr"].max() and df["ctr"].max() > 1:
+            df["ctr"] = df["ctr"] / 100.0
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].astype(str).str.strip().replace("nan", "")
+
+    print(f"[DEBUG] GSC performance: {len(df)} rows, columns: {list(df.columns)[:10]}")
+    return df
+
+
+def parse_gsc_index_coverage(
+    file: BytesIO | str | Path, status_label: Optional[str] = None
+) -> pd.DataFrame:
+    """Parse a GSC Page Indexing report export for a single status category.
+
+    Google Search Console has no bulk Index Coverage API — the "Page indexing"
+    report (Indexing → Pages) must be exported one status at a time from the
+    UI's Export button on that status's detail view. This parser is deliberately
+    tolerant of column-name variation across GSC's export formats, since the
+    exact header names aren't guaranteed stable across accounts/locales.
+
+    Args:
+        file: File path or BytesIO containing the GSC export
+        status_label: Status name to tag every row with (e.g. "Crawled - currently
+            not indexed"). Used when the export itself has no status/reason column
+            — the normal case, since GSC's detail-view export is already filtered
+            to one status and only lists URL + last-crawled date.
+
+    Returns:
+        DataFrame with: url, index_status, last_crawled (last_crawled only if
+        present in the source export)
+    """
+    file_type = _infer_file_type(file)
+
+    if file_type in ("xlsx", "xls"):
+        df = pd.read_excel(file, engine="openpyxl")
+    else:
+        df = _read_csv_robust(file)
+
+    df.columns = [str(c).strip() for c in df.columns]
+
+    url_candidates = ["URL", "Page", "Address", "url", "page"]
+    reason_candidates = ["Reason", "Coverage state", "Indexing state", "Status", "Verdict"]
+    date_candidates = ["Last crawled", "Last Crawled", "Date crawled"]
+
+    def _find_column(candidates: list[str]) -> Optional[str]:
+        for candidate in candidates:
+            for col in df.columns:
+                if col.lower() == candidate.lower():
+                    return col
+        return None
+
+    url_col = _find_column(url_candidates)
+    if url_col is None:
+        raise ValueError(
+            "Could not find a URL column in the GSC Page Indexing export. "
+            f"Columns found: {list(df.columns)}"
+        )
+    df = df.rename(columns={url_col: "url"})
+
+    reason_col = _find_column(reason_candidates)
+    if reason_col is not None:
+        df = df.rename(columns={reason_col: "index_status"})
+    else:
+        df["index_status"] = status_label or "unknown"
+
+    date_col = _find_column(date_candidates)
+    if date_col is not None:
+        df = df.rename(columns={date_col: "last_crawled"})
+        df["last_crawled"] = pd.to_datetime(df["last_crawled"], errors="coerce")
+
+    df["url"] = df["url"].astype(str).str.strip()
+
+    keep_cols = [c for c in ("url", "index_status", "last_crawled") if c in df.columns]
+    print(f"[DEBUG] GSC index coverage ({status_label or 'unlabeled'}): {len(df)} rows")
+    return df[keep_cols]
+
+
+def parse_topical_map(file: BytesIO | str | Path) -> dict:
+    """Parse a Koray-style topical map markdown document.
+
+    Expected structure (any subset is acceptable):
+        # Topical Map for <site>
+        ## Central Entity
+        <one sentence describing what the site is about>
+        ## Ring 1 — Core Topics
+        - topic / page url
+        ## Ring 2 — Supporting Topics
+        ## Ring 3 — Peripheral Topics
+        ## Outliers
+        - off-topic page url
+
+    Args:
+        file: File path or BytesIO containing markdown
+
+    Returns:
+        Dict with: central_entity (str), rings (dict of ring_name -> list),
+        outliers (list), raw_text (str), urls_by_ring (dict)
+    """
+    if isinstance(file, BytesIO):
+        file.seek(0)
+        content = file.read()
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            text = content.decode("utf-8", errors="ignore")
+    elif isinstance(file, (str, Path)):
+        with open(file, "r", encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+    else:
+        text = str(file)
+
+    result = {
+        "central_entity": "",
+        "rings": {},
+        "outliers": [],
+        "raw_text": text,
+        "urls_by_ring": {},
+    }
+
+    current_section = None
+    current_items = []
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        section_match = re.match(r"^#{1,3}\s+(.*)$", line)
+        if section_match:
+            if current_section and current_items:
+                _assign_section(result, current_section, current_items)
+            current_section = section_match.group(1).strip()
+            current_items = []
+            continue
+
+        if line.startswith(("-", "*", "•")):
+            current_items.append(line.lstrip("-*•").strip())
+        elif current_section and current_section.lower().startswith("central"):
+            current_items.append(line)
+
+    if current_section and current_items:
+        _assign_section(result, current_section, current_items)
+
+    url_pattern = re.compile(r"https?://[^\s\)\]]+|/[A-Za-z0-9\-_/]+")
+    for ring_name, items in result["rings"].items():
+        urls = []
+        for item in items:
+            urls.extend(url_pattern.findall(item))
+        result["urls_by_ring"][ring_name] = urls
+
+    print(
+        f"[DEBUG] Topical map: central='{result['central_entity'][:50]}...', "
+        f"rings={list(result['rings'].keys())}, outliers={len(result['outliers'])}"
+    )
+    return result
+
+
+def _assign_section(result: dict, section: str, items: list) -> None:
+    """Helper to route a parsed markdown section into the topical map result."""
+    section_lower = section.lower()
+    if "central" in section_lower or "entity" in section_lower:
+        result["central_entity"] = " ".join(items).strip()
+    elif "outlier" in section_lower or "off-topic" in section_lower:
+        result["outliers"].extend(items)
+    elif "ring" in section_lower or "core" in section_lower or "supporting" in section_lower or "peripheral" in section_lower:
+        result["rings"][section] = items
+
+
+def _infer_file_type(file: BytesIO | str | Path) -> str:
+    """Infer file extension from a path or named BytesIO."""
+    if isinstance(file, (str, Path)):
+        return Path(file).suffix.lower().replace(".", "") or "csv"
+    if hasattr(file, "name") and file.name:
+        return Path(file.name).suffix.lower().replace(".", "") or "csv"
+    return "csv"
 
 
 def get_export_summary(df: pd.DataFrame) -> dict:
