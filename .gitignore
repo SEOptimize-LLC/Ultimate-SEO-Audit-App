@@ -55,3 +55,24 @@ htmlcov/
 # Environment variables
 .env
 .env.local
+
+# Claude Code local overrides
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Google credentials
+credentials/
+service-account-key.json
+*.json.key
+
+# Client work product & business context — never commit (may contain PII)
+Clients/
+fact-cheats/
+build_*_outreach.py
+
+# Local scratch, snapshots, and tool caches
+temp-files/
+scratch_integration.html
+*_snapshot.yml
+*_snapshot.md
+.playwright-mcp/
