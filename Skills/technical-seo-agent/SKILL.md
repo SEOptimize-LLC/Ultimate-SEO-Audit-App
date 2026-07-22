@@ -7,6 +7,20 @@ description: "Analyzes, prioritizes, and recommends fixes for technical SEO issu
 
 You are a Technical SEO Agent specialized in analyzing crawlability, indexability, performance, and technical health of websites. Use this knowledge to analyze data, identify issues, explain their impact, and recommend prioritized fixes.
 
+## Core Framework References
+
+Load these references when the audit scope touches the corresponding area:
+
+- **[SEO Fundamentals (2026)](references/seo-fundamentals-2026.md)** — Load this first for any audit. The durable reference covering how search engines actually work in 2026, indexability and canonicalization rules, internal linking principles, content strategy (cannibalization, pruning, freshness), site migrations, local SEO, schema, mobile-first indexing, and an explicit list of common SEO myths to avoid recommending (routine disavow, word-count quotas, keyword density, TF-IDF/LSI as targets, bounce rate as ranking signal, etc.).
+
+- **[Ranking-Factors Checklist (2026)](references/ranking-factors-checklist-2026.md)** — the leak-grounded ranking-factors master checklist; walk it for technical + indexation + click-signal + NSR clusters. Sharded into 19 audit-execution clusters that mirror the auditor/skill split, so each item lands with the stage that owns it. Every audit must return a verdict on each in-scope cluster (see the mandatory-verdicts contract in [seo-audit-methodology/SKILL.md](../seo-audit-methodology/SKILL.md)); treat leaked attributes it cites as LEAK-DERIVED, not confirmed ranking weights.
+
+- **[Robots.txt Framework for Ecommerce](references/robots-txt-ecommerce-framework.md)** — Use when auditing robots.txt, crawl budget, URL parameters, faceted navigation, product variants, or AI bot policy. Covers Shopify/WooCommerce/Magento platform specifics, the three-tool distinction (robots.txt vs noindex vs canonical), common wildcard pattern bugs, Googlebot separate-block mistakes, and a full audit checklist.
+
+- **[JavaScript SEO Framework (2026)](references/javascript-seo-framework.md)** — Use when auditing any site that relies on JavaScript for content, navigation, or critical SEO elements (title, canonical, meta description, H1, meta robots). Covers Google's rendering pipeline, the pre-render indexability decision, AI crawler invisibility, the rendering hierarchy (SSG/SSR/ISR/Dynamic/CSR), 9 common failure patterns with detection thresholds, ecommerce-specific JS issues, testing methods, the December 2025 docs clarification on non-200 rendering, and the **on-demand Raw vs Rendered HTML Diff Protocol** for single-URL diagnostics (use whenever a high-severity finding needs live verification, when a page is "Crawled — currently not indexed" without an obvious cause, or when a redirect/canonical target's authoritative state is in question).
+
+- **[Click Signals & ABC Framework](references/click-signals-abc-framework.md)** — Use when an audit surfaces low CTR, high bounce-back behavior, or any recommendation that touches user-engagement signals. Covers Google's NavBoost (13-month memory window), Glue, RankEmbedBERT, the documented click attributes from the May 2024 API leak (goodClicks/badClicks/lastLongestClicks), the ABC mental model (Anchors/Body/Clicks), the 3-step practitioner workflow (earn the click → prove usefulness → prove satisfaction), and a recommendation translation table mapping common surface metrics to underlying-cause fixes. Also: what NOT to recommend (click farms, manipulation tactics, "improve dwell time" framed as a tactical lever).
+
 ## Issue Severity Framework
 
 ### Critical (Immediate Action Required)
@@ -36,6 +50,22 @@ Minor issues or informational findings.
 ---
 
 ## Indexability Issues
+
+### REQUIRED — Indexability-Directive Verdict (every audit, full-site AND single-URL)
+
+Every audit MUST return an explicit verdict on indexability directives — no exceptions. This runs on a **full-site crawl** (read the directive columns across the crawl) and on a **single-URL audit** alike (for one URL: `curl -I <url>` for the response headers, and fetch + inspect the `<head>` for robots/canonical directives). **A missing indexability verdict is an audit defect** — the same mandatory-verdict contract the ranking-factors checklist applies to every in-scope cluster (see [seo-audit-methodology/SKILL.md](../seo-audit-methodology/SKILL.md)). When indexability is clean, say so explicitly; never silently omit it.
+
+The verdict must cover all four checks:
+
+1. **Meta robots `noindex` (head-level).** Is the page set to `noindex`/`none` via a `<meta name="robots">` in the `<head>`? Confirm whether the exclusion is intentional (see Acceptable vs Problematic noindex below) or accidental on a page meant to rank.
+
+2. **`X-Robots-Tag` HTTP header `noindex`.** Check the **response header**, not just the HTML. A page can be noindexed via the header with no visible meta tag — invisible in "view source." Always inspect headers directly (`curl -I <url>`, or DevTools Network panel); cross-reference the `X-Robots-Tag` column against `meta_robots` when a crawl is present. See "X-Robots-Tag vs Meta Robots Mismatch" below for root causes.
+
+3. **`noindex` placed in the BODY (invalid — reports as a false verdict either way).** Google only honours robots directives in the `<head>`; a `noindex` in the `<body>` is **ignored**. This cuts both ways and both are defects to flag: an owner who put `noindex` in the body *thinks* a page is excluded when it is actually fully indexable — and, conversely, a page the owner *believes* is safely noindexed may be leaking into the index. Verify placement, not just presence, of every noindex directive.
+
+4. **Canonical: declared vs Google-selected divergence.** Compare the page's **declared** canonical (rel=canonical in the head/header) against **Google's selected** canonical (GSC URL Inspection). Divergence means Google is overriding the site's choice — index confusion, equity landing on the wrong URL, or a duplicate-cluster problem. Report the declared value, the Google-selected value, and the gap.
+
+State each of the four as a discrete finding with its source (crawl column, response header, live head inspection, or GSC URL Inspection). For single-URL audits the same four verdicts are required — the input is one live fetch + header check instead of a crawl export.
 
 ### Canonical Tag Problems
 
@@ -81,6 +111,26 @@ Minor issues or informational findings.
 - Blog posts meant for organic traffic
 - Category/collection pages with unique content
 
+### X-Robots-Tag vs Meta Robots Mismatch
+
+Google treats a `noindex` value in the `X-Robots-Tag` HTTP response header identically to a `noindex` meta tag in the HTML — but the header is applied server-side, at a CDN, load balancer, or middleware layer, and is **invisible when viewing page source**. This makes it the most commonly missed source of accidental noindex: a page can look completely fine in "view source" (no noindex meta tag) while still being fully excluded from the index because of a header no one thought to check.
+
+**Diagnostic method:** Don't rely on view-source alone. Check response headers directly — `curl -I <url>`, or the Network panel in browser DevTools — for any page suspected of an indexing problem with no visible cause. If a Screaming Frog crawl is available, cross-reference the `X-Robots-Tag` column against the `meta_robots` column: any page where the header carries noindex but the HTML meta tag does not is the dangerous, invisible case.
+
+**Common root causes:** a CDN rule applied to a URL pattern that's broader than intended, a reverse-proxy config left over from a staging setup, a WAF rule, or an app-level middleware rule applied by content type or path prefix.
+
+---
+
+## GSC Index Coverage — Crawled / Discovered Not Indexed
+
+Screaming Frog crawl data can only ever show what a page's HTML and HTTP response look like — it cannot show Google's own decision NOT to index a page despite no technical block existing. Two GSC "Page indexing" report statuses fall entirely outside what a crawl can reveal:
+
+**Crawled — currently not indexed.** Google crawled the page but chose not to index it — a content-quality judgment, not a technical block. Common drivers: thin or low-value content, near-duplication that doesn't fit a formal duplicate category, weak internal + external signals combined, or rendering issues leaving the page looking empty. The fix is never technical (redirects, canonicals, robots.txt) — only content depth, originality, and internal-linking improvements move this status. Re-submitting for indexing without an on-page change does not help.
+
+**Discovered — currently not indexed.** Google knows the URL exists but hasn't crawled it yet (no last-crawl date recorded). Usually a crawl-budget or perceived-low-value signal: rationing on large sites, the page buried many clicks from the homepage with weak internal linking, or mass low-value URL generation (faceted nav, parameter explosion) competing for the same crawl budget. Unlike "Crawled — not indexed", this status often resolves through internal-linking and crawl-budget fixes alone, without any content rewrite.
+
+Both statuses require a manual export from GSC's Page indexing report (Google has no bulk Index Coverage API) since they are Google's own crawl/index decisions, invisible to any other data source.
+
 ---
 
 ## Redirect Issues
@@ -112,6 +162,38 @@ Minor issues or informational findings.
 | Trailing Slash Mismatch | /page redirects to /page/ | Pick one, be consistent |
 | HTTP to HTTPS Chain | http→https→www | Single redirect http→final |
 | Redirect to 4XX/5XX | Redirect leads nowhere | Update destination |
+
+### Redirect Keep / Remove Decision Tree
+
+A URL that GSC reports under **"Page with redirect"** is usually benign — Google indexes the destination, not the source. The mistake is treating every reported redirect as cleanup work. Redirects are keep-by-default; only a specific subset should be touched. Decide per source URL:
+
+**Keep the redirect (do NOT remove) when any of these is true:**
+- **It's structural / rule-based** — HTTP→HTTPS, `www`↔non-`www`, or trailing-slash normalisation. These are consistency rules, not cruft. (A cosmetic 301 that already resolves correctly — e.g. singular→plural, trailing-slash variant — belongs on a "leave as-is" list, never an active correction list. Per `.claude/rules/audit-workflow.md` Rule 12c.)
+- **The source URL has external backlinks** — the redirect preserves that link equity. Leave it in place indefinitely.
+- **It still passes traffic.**
+
+**Fix the linking source (not the redirect) when:**
+- The redirect is **active on the crawl** — i.e. an internal link or sitemap entry still points to the redirecting source. Update the link/sitemap entry to point directly to the final destination (Screaming Frog: select the redirecting URL → Inlinks tab → find and fix the linking page). This is the common, high-value cleanup.
+
+**Remove the redirect rule only when ALL are true:**
+- Non-structural, **no external backlinks**, and **no traffic**. Then the developer can drop the server rule, shrinking the reported count. Low priority.
+
+**Address immediately when:**
+- The redirect points to a **spam / irrelevant / hijacked destination** — a real problem hiding under a benign status.
+
+**Always live-verify first.** GSC's redirect list is not 100% accurate: it reports source URLs that no longer redirect and far more than exist live (redirect memory persists months→years because server rules don't expire). Bulk-check exported URLs against live status (e.g. httpstatus.io, or `curl -I`) before acting, and **verify every proposed destination URL** per `.claude/rules/audit-workflow.md` Rule 12 — a wrong target becomes a 301-cemented mistake the moment a developer implements it. The full per-state context is in [references/gsc-indexation-states.md](references/gsc-indexation-states.md).
+
+---
+
+## 4xx Error Disambiguation (401/403/429)
+
+Not all 4xx status codes mean the same thing for indexability, and treating them identically produces false work items.
+
+**401 Unauthorized** — the page sits behind authentication Googlebot cannot pass. If intentional (staging, member content, paywall), no action needed beyond keeping it out of the sitemap. If accidental, remove the auth requirement or scope it to allow Googlebot through.
+
+**403 Forbidden — requires disambiguation before recommending a fix.** A 403 returned to a Screaming Frog crawl does not prove Googlebot is also blocked. WAFs, bot-protection rules, and rate-limiters frequently allow Googlebot's IP ranges and user-agent while blocking a generic crawler. Before recommending any WAF/firewall change, verify via GSC URL Inspection's live test (uses Google's own fetch) or check Search Console coverage status for the URL. Never recommend loosening bot-protection based on a third-party crawl's 403 alone.
+
+**429 Too Many Requests — a crawl-rate artifact, not a confirmed issue.** This almost always means the crawler exceeded a rate limit during the crawl itself, not a real problem with the URL. Re-crawl at a slower rate to get the real status code before including these URLs in any correction or cleanup list. Treating 429s as confirmed problems produces false work items — this exact mistake has occurred on real client audits in this project (hundreds of URLs miscategorized as broken when they were simply rate-limited during the crawl).
 
 ---
 
@@ -157,6 +239,8 @@ Robots.txt blocks → Can't crawl → Can't index → No rankings
 DNS/Server issues → Slow/no response → Reduced crawl frequency
 Redirect chains → Lost PageRank → Reduced authority → Lower rankings
 ```
+
+**Important nuance — robots.txt is a crawl directive, not an index directive.** A URL blocked in robots.txt CAN still appear in search results if linked externally (as a title-less SERP entry). Combining `robots.txt Disallow` with `noindex` on the same URL is a trap — Google can't see the noindex if crawling is blocked. See [Robots.txt Framework](references/robots-txt-ecommerce-framework.md) for the full three-tool decision matrix.
 
 ### Indexability Chain
 ```

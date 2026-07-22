@@ -7,6 +7,73 @@ description: "Provides the overarching framework for conducting SEO audits, prio
 
 You are an SEO Audit Methodology expert that provides the overarching framework for conducting comprehensive SEO audits. Use this knowledge to structure audits, prioritize findings, and communicate recommendations effectively to different stakeholders.
 
+## Site Type Classification (Mandatory Step 0)
+
+Before scoping the audit, classify the client into one of the categories below. The classification determines which audit areas get extra emphasis, which checks are non-negotiable, and which findings are likely to be high-severity. Skipping this step is how auditors miss site-type-specific issues — e.g., running a generic technical audit on a news publisher and overlooking Top Stories eligibility, or auditing an e-commerce site without checking faceted-navigation handling.
+
+**Run the classification once per client at onboarding** and re-check whenever the client expands into a new business model (e.g., a SaaS company launching an e-commerce arm, a local business adding a blog).
+
+| Site Type | Primary Identifier | Audit Emphasis | Non-Negotiable Checks |
+|---|---|---|---|
+| **Local Service Business** | Geographic targeting; service pages by city; GBP-dependent | Local schema (LocalBusiness, Service, GeoCoordinates), GBP optimization, NAP consistency, citation profile, location landing pages, review schema | GBP-website parity, LocalBusiness schema, hours/phone/address visible in raw HTML, service-area markup, review snippets |
+| **E-commerce** | Product catalog; faceted navigation; cart/checkout flow | Product schema, faceted URL handling, canonical strategy for variants, robots.txt parameter rules, inventory/availability signals, internal search hygiene | Product schema with `offers`, faceted nav not creating thin duplicates, out-of-stock handling, internal search not indexed, breadcrumb schema |
+| **SaaS / Lead-gen** | Conversion-driven; demo/trial CTAs; long-form blog supporting funnel | Conversion tracking reliability, GA4/GTM/server-side tagging, comparison/alternatives content, landing-page schema, demo/pricing page indexation, JS rendering for marketing pages | Conversion event firing on canonical URL, no `noindex` on money pages, comparison pages have unique value, blog supports funnel not just traffic |
+| **News / Publisher** | Daily content output; bylines; date-sensitive; Top Stories visibility | NewsArticle vs Article schema, `dateModified` discipline, `max-snippet` / `max-image-preview` directives, author E-E-A-T, publisher logo (raster ≤600×60), Discover readiness, sitemap freshness | NewsArticle schema, accurate `datePublished`/`dateModified`, author pages with credentials, publisher logo correct format, news sitemap separate from main sitemap |
+| **Content / Blog (non-news)** | Educational content; longer publication cadence; authority-building | Article schema, FAQPage schema for comparison/how-to posts, author schema with credentials, internal linking around topical clusters, content freshness signals | Article schema with author, FAQPage on Q&A-style posts, topical cluster integrity, no thin tag/category pages, dateModified updated when content materially changes |
+| **JS-heavy / SPA** | Next.js / Nuxt / Vue / React with client-side routing | Raw HTML vs rendered HTML diff (per `technical-seo-agent` JS framework), pre-render indexability decision, AI-crawler visibility, render budget, hash-routing detection | Critical SEO elements (title, canonical, meta robots, H1, schema) in raw HTML; AI-crawler-equivalent `curl -A "ChatGPT-User"` passes; no JS-injected canonicals or robots directives |
+| **Multi-tenant / Multi-location** | Single platform serving many locations/brands | Hreflang or geo-targeting strategy, location-page differentiation, duplicate-content risk across locations, sitemap segmentation | Each location page has unique value beyond city-name swaps, hreflang or geo-signals correctly implemented, no canonical war between location pages |
+
+### Cross-cutting classifications (apply on top of primary)
+
+Some sites carry one or more cross-cutting characteristics that adjust the audit emphasis regardless of primary type:
+
+- **Bilingual / Multilingual (EN + ES, EN + FR_CA, etc.)** — Hreflang implementation, language-specific GSC properties, locale-specific schema, localized meta descriptions (not just translated copy). Every URL-level finding needs to be applied to both/all locales unless explicitly stated otherwise.
+- **Behind Cloudflare / CDN with script-rewriting features** — Rocket Loader, Email Obfuscation, and similar features can mask script behavior in audits. Tech-stack fingerprint must capture this, and Core Web Vitals findings should account for it.
+- **Recently migrated (within 6 months)** — Redirect chains, broken inlinks, hreflang regressions, schema drift are all elevated risks. Include a migration-specific section in findings.
+
+### How to use the classification
+
+1. Determine the primary site type in 30 seconds based on the homepage + a sample of internal pages. If unclear, ask the client directly — don't guess.
+2. Note any cross-cutting classifications.
+3. Carry the classification forward into the audit deliverable's opening context (e.g., "Cudio is a SaaS / Lead-gen site on Odoo Website Builder, bilingual EN + fr_CA, behind Cloudflare with Rocket Loader active").
+4. Use the Non-Negotiable Checks column as a hard checklist — every audit must report a verdict on each of those checks for the relevant site type, even if the verdict is "no issue found." A missing verdict on a non-negotiable check is an audit defect.
+5. Use the Audit Emphasis column to allocate analysis depth. Don't run a 4-hour faceted-navigation analysis on a SaaS site; don't run a 4-hour conversion-tracking analysis on a news site.
+
+**Adopted from** Islam Eldiasti's technical-SEO-skill-claude (https://github.com/eslamdeasty/technical-seo-skill-claude), which uses a similar 5-category site-type matrix to gate audit emphasis. Extended here with Local Service Business (primary use case for this framework), Multi-tenant, and cross-cutting classifications.
+
+## Ranking-Factors Coverage (mandatory verdicts)
+
+The Non-Negotiable Checks column above gates site-type-specific findings. A parallel contract gates ranking-factor coverage across every audit — technical, on-page, keyword, or full-site. Both work the same way: a defined list of checks, and a required verdict on each relevant one, even when the verdict is "no issue found." Skipping a check silently is the failure mode both rules exist to prevent.
+
+The master list lives in the leak-grounded ranking-factors checklist at `Skills/technical-seo-agent/references/ranking-factors-checklist-2026.md`. Walk it — don't duplicate it here. The checklist is sharded into **19 audit-execution clusters** that mirror the existing auditor/skill split, so each item lands with the stage that owns it:
+
+1. Crawl Accessibility & Bot Access
+2. Rendering & JavaScript
+3. Indexation & Canonicalization
+4. Non-Value Content & Crawl Budget
+5. On-Page (Titles / Meta / Headings)
+6. Content Quality & Originality
+7. Relevance & Query Matching
+8. Internal Linking & Anchors
+9. Backlinks & Off-Page
+10. Click Signals & User Behaviour (NavBoost)
+11. Domain-Level Quality & NSR
+12. Demotions, Spam & Suppression
+13. SERP Context & Twiddlers
+14. Schema & Structured Data
+15. Freshness & Dates
+16. Page Experience & UX
+17. Locale & International
+18. Entity, Author & Brand
+19. AI Search / LLM Visibility (GEO/AEO)
+
+### The coverage contract
+
+1. **Every audit walks the clusters relevant to its scope and returns a verdict on each in-scope cluster in the deliverable — even "no issue found."** A technical-only audit walks the crawl/rendering/indexation/crawl-budget/schema/page-experience clusters; an on-page audit walks the on-page/content-quality/relevance/internal-linking/schema/entity clusters; a keyword audit walks relevance/query-matching/click-signal/SERP-context clusters; a full-site audit walks all 19. Scope determines which clusters are in-scope, not whether the walk happens.
+2. **A missing verdict on an in-scope cluster is an audit defect** — the same standard as a missing verdict on a Step 0 Non-Negotiable Check. The Pass 2 self-review (see `.claude/rules/audit-workflow.md`) must confirm every in-scope cluster carries a verdict before the deliverable ships.
+3. **Clusters whose required input file is absent are skipped-and-flagged, not silently dropped.** This follows the Expanded Input Stack graceful-degradation contract: when the input that unlocks a cluster (e.g. `anchors_internal.csv` for anchor/demotion analysis, `backlinks_semrush.csv` for off-page NSR proxies, the Koray topical map for `siteFocusScore`/`siteRadius`, the GSC Page-indexing exports for Crawled/Discovered-not-indexed) is not present, record the cluster's verdict as "not assessed — missing input [file], flagged" rather than omitting it. A skipped-and-flagged cluster satisfies the contract; a missing cluster does not.
+4. **Leaked attributes cited by the checklist are LEAK-DERIVED.** Clusters 10–12 (click signals, NSR/domain quality, demotions/spam) lean on attributes documented in the May 2024 Content Warehouse leak — `goodClicks`/`badClicks`/`lastLongestClicks`, `siteAuthority`, `clutterScore`, `hostAge`, the various demotion signals. State these as leak-derived, not as confirmed Google ranking weights, using the same hedged framing the rest of this framework applies to leaked signals (see the Evidence Hierarchy section below).
+
 ## Audit Frequency Framework
 
 | Audit Type | Frequency | Scope |
@@ -81,6 +148,33 @@ Effort: 5 (simple fix) to 1 (major development)
 
 ---
 
+## Expected Outcome Classification
+
+Every recommendation in a client-facing audit should be tagged with one of four expected-outcome categories. Priority and effort tell the client WHEN to do something. Expected outcome tells the client WHAT TO EXPECT when it ships. Without this, clients fix infrastructure issues and conclude SEO doesn't work when rankings don't move — because no one told them not to expect ranking movement from infrastructure work.
+
+### The Four Outcome Types
+
+| Type | Definition | Example recommendations | What to tell the client |
+|---|---|---|---|
+| **Ranking Lever** | Likely to move rankings on specific queries when shipped | Recover de-indexed money pages; rewrite thin content on revenue pages; fix canonical bugs that suppress indexable URLs; consolidate near-duplicate cannibalizing pages; remove noindex tags blocking commercial pages | "Expect movement on [specific queries] within [reasonable window]. Track via GSC." |
+| **Infrastructure Hygiene** | Cleaner architecture; rankings should NOT be expected to move | Crawl-waste cleanup (faceted nav, filter URLs); flatten redirect chains; minify JS/CSS on already-indexed pages; noindex paginated category pages; consolidate sitemap entries | "This protects crawl budget and gives Google a cleaner picture of the site. Don't expect ranking movement — that's not what this fix does." |
+| **Risk Mitigation** | Prevents future ranking damage; no immediate ranking impact | Fix mixed-content warnings; resolve security headers; correct hreflang errors before they cause de-indexation; address E-E-A-T signal contradictions before a quality-update penalty | "This stops a future problem. The cost of NOT doing it is bigger than the upside of doing it." |
+| **UX (indirect ranking)** | Improves user behavior; ranking effect is indirect via click signals | Improve LCP on revenue pages; fix cumulative layout shift on conversion templates; improve CTAs/internal CTA placement | "This affects how users behave on the page. Ranking effect comes through click-signal feedback (NavBoost), so it's slower and harder to attribute, but real over time." |
+
+### Classification Rules
+
+1. **Tag every recommendation.** No exceptions. If you can't classify it, the recommendation is too vague.
+2. **A recommendation can be ONE type, not multiple.** "Fix faceted nav" is Infrastructure Hygiene, not "hygiene + ranking." Picking one forces honesty about the dominant expected outcome.
+3. **Bundle related fixes that share an outcome type.** "Flatten 19 redirect chains + fix 14 redirect loops" is one Infrastructure Hygiene line item, not 33.
+4. **A "Ranking Lever" tag is a load-bearing claim.** If you say a fix is a ranking lever and it ships clean and rankings don't move within the stated window, the client will (rightly) ask why. Don't over-classify into this bucket. When in doubt, downgrade to Hygiene or UX.
+5. **Cross-check with the Click-Signals framework.** UX-tagged recommendations should reference the ABC framework (Anchors / Body / Clicks) — these are click-signal-mediated and behave differently from direct ranking levers.
+
+### Why this rule exists
+
+Mainstream technical SEO consensus: most "feels impactful" infrastructure fixes (crawl-waste cleanup, redirect flattening, minification, sitemap hygiene) do NOT directly move rankings. They protect crawl budget, reduce bot-induced server cost, and prevent future problems. Selling them as ranking levers — even implicitly, by listing them next to actual ranking levers without distinction — burns client trust when results don't materialize. The one-line outcome tag fixes this without making audits longer or more complex.
+
+---
+
 ## Presentation Best Practices
 
 ### Report Structure
@@ -88,8 +182,8 @@ Effort: 5 (simple fix) to 1 (major development)
 ```
 1. Executive Summary (1 page)
    - Site health score
-   - Top 3 critical issues
-   - Top 3 quick wins
+   - Top 5 critical issues
+   - Top 5 quick wins (preview — full list lives in Section 5)
    - Estimated impact
 
 2. Priority Issues (by category)
@@ -102,16 +196,42 @@ Effort: 5 (simple fix) to 1 (major development)
    - On-Page SEO
    - Backlink Analysis
    - Competitive Insights
+   - Ranking-Factors cluster verdicts — one verdict per in-scope checklist cluster (even "no issue found"), per the Ranking-Factors Coverage contract above
 
 4. Action Plan
    - Prioritized task list
+   - Priority (P0–P4)
    - Effort estimates
+   - Expected outcome tag (per audit-workflow rule)
+   - Likely effect (one specific sentence)
+   - Validation method (one specific instruction per audit-workflow rule)
    - Dependencies noted
 
-5. Appendix
+5. Quick Wins (dedicated section)
+   - High-impact fixes under 1 hour each
+   - Suitable for ad-hoc dev sprints between major releases
+   - Same format as Action Plan rows (priority, effort, expected outcome, likely effect, validation method)
+   - Surfacing these separately gives clients a path to immediate, low-risk progress while
+     the larger Action Plan items go through scoping. Adopted from the Islam Eldiasti
+     technical-SEO-skill-claude framework where Quick Wins is a standalone audit section.
+
+6. Appendix
    - Full issue export
    - Supporting data
 ```
+
+**Required format for every Action Plan row and every Quick Win row:**
+
+```
+[Recommendation title]
+Priority: P0/P1/P2/P3/P4
+Effort: [estimate]
+Expected outcome: [Ranking Lever | Infrastructure Hygiene | Risk Mitigation | UX]
+Likely effect: [one specific sentence describing what the client should observe]
+Validation method: [one specific instruction the dev can run to confirm the fix shipped correctly]
+```
+
+The Expected outcome and Validation method fields are enforced by `.claude/rules/audit-workflow.md`. See that file for the rationale and examples of good vs bad validation methods.
 
 ### Communication Principles
 
@@ -125,6 +245,37 @@ Effort: 5 (simple fix) to 1 (major development)
 - Provide specific, actionable steps
 - Understand platform limitations before finalizing recommendations
 - Ask developers their preferred format/style
+
+### Setting Realistic Timelines (Click-Signal Aware)
+
+When recommendations touch user-engagement signals (CTR improvements, snippet rewrites, intent matching, content depth changes), the timeline language MUST account for how Google's click-signal systems propagate. Clients commonly expect "we shipped the change Monday, can we re-evaluate Friday?" — that expectation is wrong and needs to be reset before the work begins, not after.
+
+**The mechanics:**
+
+- **NavBoost** memorizes ~13 months of click data per query (per the Google API leak and DOJ antitrust testimony). Changes need enough new clicks to overcome the historical baseline.
+- **RankEmbedBERT and FastSearch** train on ~70 days of search log data.
+- Click signals are **squashed and contextually weighted** — Google filters noise before signals affect rankings, which means small changes need a meaningful sample to register.
+
+**Standard timeline language to use in audit recommendations and client messages:**
+
+- **First 2-4 weeks after change:** Google re-crawls and re-indexes. New title/snippet may start showing in SERPs. Click-signal feedback loop has barely begun. "Don't panic if rankings haven't moved yet."
+- **Weeks 4-8:** Click signals from the new snippet/content start accumulating. Initial directional signal becomes visible if the change was meaningful. Position shifts may be modest.
+- **Weeks 8-16:** Full click-signal feedback through NavBoost. This is when the bulk of the ranking impact (positive or negative) materializes.
+- **Beyond 16 weeks:** Signals continue to update against the 13-month rolling window. A page that started moving up at week 8 may continue to drift up over months as the historical baseline fades.
+
+**What NOT to say to clients:**
+
+- "Expect rankings to improve within 2 weeks." (Too aggressive — sets up disappointment.)
+- "Check Search Console daily after we ship the change." (Encourages noise-watching that obscures the signal.)
+- "We'll see CTR-driven ranking lift by end of month." (Overly specific and likely wrong.)
+
+**What TO say:**
+
+- "Initial directional signal in 4-8 weeks; full impact takes 8-16 weeks to materialize through Google's click-signal systems."
+- "Don't evaluate this change in less than 6 weeks — the click-signal feedback Google uses operates on a multi-month window."
+- "Expect ranking positions to drift over the coming quarter rather than jump suddenly."
+
+This timeline guidance applies specifically to changes affecting click signals (snippets, titles, intent matching, content depth, internal linking patterns). Pure technical fixes (broken canonicals, redirect chains, indexation errors) propagate faster and have shorter expected timelines (1-4 weeks).
 
 ### Stakeholder-Specific Formats
 
@@ -270,6 +421,29 @@ Effort: 5 (simple fix) to 1 (major development)
 
 ---
 
+## Keyword Strategy: Cannibalization-Aware Planning
+
+When recommending new content or new keyword targets, run two checks BEFORE the content is written. These are planning-stage rules — fixing cannibalization at the strategy stage is dramatically cheaper than fixing it post-publish.
+
+### SERP-overlap check (the 70% rule)
+
+For any pair of keywords being considered as separate page targets, look at the live top-10 SERP for each. If more than 70% of the URLs overlap, Google sees them as the same intent. Don't write separate pages for them. Instead:
+
+1. Pick the higher-volume keyword as the primary target
+2. Write a single page targeting that keyword
+3. Mention the lower-volume keyword as a secondary entity in the same content
+4. Internal-link the page from related supporting content
+
+This produces a stronger page than two thin pages splitting the same intent's demand. It also prevents you from creating a cannibalization problem you'll have to fix later.
+
+### Sequence rule (recommendation, not requirement)
+
+When a site has detected cannibalization in a topic cluster, finish resolving the existing competition before publishing new content targeting the same query family. Adding new pages targeting an already-cannibalizing intent extends the rotation problem rather than solving it.
+
+This is a recommendation — the editorial team makes the final call on content sequencing based on broader business priorities. The principle: cannibalization gets worse with more content effort, not better. The auditor's output flags clusters as Priority A/B/C using ROI scoring; resolving Priority A clusters before publishing new content in the same family is good practice.
+
+For full detection methodology, mechanism explanation, resolution paths, and winner-selection rules, see `Skills/cannibalization/SKILL.md`.
+
 ## Common Audit Mistakes to Avoid
 
 ### Methodology Mistakes
@@ -298,3 +472,71 @@ Effort: 5 (simple fix) to 1 (major development)
 - Not tracking impact of changes
 - Skipping re-audit after major fixes
 - Not documenting what was done
+
+## Evidence Hierarchy: Which Sources Carry Weight
+
+When recommendations require citing evidence (especially for ranking-signal claims, algorithm behavior, or contested SEO topics), use this hierarchy. Higher-tier sources should override lower-tier sources when they conflict.
+
+### Tier 1 — Primary Source Documents (Highest Authority)
+
+These are first-hand evidence from inside Google or the legal record:
+
+- **Google API Content Warehouse Leak (May 2024)** — Leaked internal documentation that exposed many of Google's actual ranking-signal data structures, including NavBoost click attributes (goodClicks, badClicks, lastLongestClicks), squashed signal handling, and slicing by query/position/device. When the leak documents a signal, treat it as confirmed-real — even if Google publicly downplays it.
+
+- **US v. Google Antitrust Trial Testimony (2024-2025)** — DOJ trial record includes sworn testimony from Google engineers confirming click signals as fundamental ranking inputs, the role of user click data as Google's competitive moat, and specific systems (NavBoost, Glue) by name. Public record.
+
+- **Google Patents** — Long-click ratios (US8661029B1), re-ranking based on engagement, and many other ranking-signal mechanics are documented in filed patents. Patents describe what Google has implemented or considered implementing.
+
+- **Google's Official Documentation** — Search Central docs, developer guides, GSC help center. Authoritative for current stated behavior, but Google's published statements occasionally minimize or omit signals confirmed by the leak/testimony.
+
+### Tier 2 — Senior Practitioner Synthesis
+
+Industry voices who synthesize multiple primary sources and have a track record of accurate, evidence-grounded analysis:
+
+- **Cyrus Shepard (Zyppy)** — Notable for grounding claims in the API leak, antitrust testimony, and patents.
+- **Mark Williams-Cook** — Practical, evidence-based observations from large-scale client work.
+- **Rand Fishkin (SparkToro)** — Original publisher of the Google API leak documents.
+- **Mike King (iPullRank)** — Deep technical analyses of leaked documents.
+- **Glenn Gabe** — Algorithm-update analysis with consistent forensic rigor.
+
+Treat their claims as reliable when they cite primary sources. Treat their unsupported assertions as opinion to be verified.
+
+### Tier 3 — Google Employee Public Statements
+
+Google engineers (Gary Illyes, John Mueller, Martin Splitt, Danny Sullivan) on Twitter/X, podcasts, and conference talks. Useful for understanding Google's official stance and for clarifications of edge cases.
+
+**Caveat:** Google employees have a documented pattern of downplaying or denying signals that the API leak later confirmed exist. Treat denials with skepticism when they conflict with leaked documentation. Treat confirmations as durable.
+
+### Tier 4 — Industry Studies & Tool Vendor Data
+
+Published studies from established SEO companies (Backlinko, SEMrush, Ahrefs, Moz, SISTRIX) often contain useful correlations and observed patterns. **Correlation studies are not causation.** Use them to identify patterns worth investigating, not as proof of causal mechanisms.
+
+### Tier 5 — Anecdotal Reports & Forum Discussions
+
+Reddit threads, blog posts, Twitter screenshots showing specific behavior on specific sites. Useful as leads for further investigation; not as evidence.
+
+### What This Means for Audit Recommendations
+
+When making a claim in a recommendation:
+
+1. **If a Tier 1 source confirms it**, you can state it as fact without hedging.
+2. **If only Tier 2-3 sources confirm it**, frame as "documented by multiple practitioners" or "Google has stated."
+3. **If only Tier 4 sources show it**, frame as "industry studies suggest" — and don't promise causal outcomes.
+4. **If only Tier 5 sources show it**, don't include it in a client deliverable.
+
+When a Tier 3 statement conflicts with a Tier 1 source, the Tier 1 source wins. Don't cite a Google denial of a signal that the leaked documentation confirms exists.
+
+### Quick Reference: Common Claims and Their Sources
+
+| Claim | Strongest source |
+|---|---|
+| NavBoost / Glue use click signals for ranking | Tier 1 (API leak + DOJ testimony) |
+| 13-month NavBoost memory window | Tier 1 (API leak) |
+| RankEmbedBERT trains on 70 days of search logs | Tier 1 (court documents) |
+| `goodClicks`, `badClicks`, `lastLongestClicks` exist as ranking attributes | Tier 1 (API leak schema) |
+| Pages with backlinks from Tier-1 publications outperform | Tier 4 (correlation studies) |
+| Specific dwell-time thresholds correlate with rankings | Tier 4 (Backlinko et al.) — directional only, not causal |
+| Long titles get truncated in SERPs at ~60 chars | Tier 1 (Google docs + observation) |
+| HTTPS is a ranking signal | Tier 3 (Google employee statements) |
+
+When in doubt, cite the source, note the tier, and let the reader weigh it.
