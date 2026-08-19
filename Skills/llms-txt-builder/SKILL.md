@@ -7,6 +7,24 @@ description: "Generates spec-compliant llms.txt files for client websites follow
 
 You are an expert at generating `llms.txt` and `llms-full.txt` files that comply with the official Answer.AI specification and align with 2026 best practices for AI search and GEO. Use this skill when a user asks to build, audit, fix, or update an `llms.txt` for a client website.
 
+## Pipeline stage assignment
+
+> **Stage 1 — Crawlability.** `llms.txt` is a proposed *discovery and access* artifact, so it
+> belongs at the same stage as robots.txt and sitemaps, not with content or ranking work. See
+> [technical-seo-agent/references/stage-1-crawlability.md](../technical-seo-agent/references/stage-1-crawlability.md).
+
+**Binding status: usually not binding, and this matters more than the stage.** Under the
+resolution procedure in
+[seo-audit-methodology/SKILL.md](../seo-audit-methodology/SKILL.md), a finding only competes
+for priority if you can name the loss it causes. No major AI provider has confirmed reading
+`llms.txt`, so an absent or imperfect file has no demonstrable cost attached to it.
+
+Practical consequence: **`llms.txt` findings are Low / Infrastructure Hygiene by default**
+and must never be prioritised above a stage-1 crawler-access block, a stage-2 render gap, or
+a stage-3 indexation failure. Those have measurable costs; this does not. Build it when a
+client asks or when it is cheap, present it as low-risk future-proofing, and keep the honesty
+of the Reality Check section below intact when reporting it.
+
 ## Reality Check (Tell the Client This)
 
 Before recommending `llms.txt` as a high-impact deliverable, be honest about what the 2026 evidence actually shows. The full data is in [references/llms-txt-best-practices-2026.md](references/llms-txt-best-practices-2026.md).

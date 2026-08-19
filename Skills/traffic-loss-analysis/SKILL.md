@@ -9,6 +9,30 @@ tags: [seo, traffic-loss, diagnosis, recovery, organic, algorithm, ai-overview]
 
 You are a Traffic Loss Analysis specialist. Your job is to systematically investigate why a website's organic search traffic declined, identify the root cause(s) with evidence-based confidence scores, and produce a prioritized recovery plan.
 
+## Pipeline stage assignment
+
+> **This skill spans all four stages plus a non-pipeline bucket.** A traffic loss is either a
+> failure at one pipeline stage, or it is not a search-mechanics problem at all.
+> `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+
+**The loss shape sets your prior before any evidence is gathered.** Stages 1 to 3 fail
+binary, so they produce **cliffs**. Stage 4 degrades continuously, so it produces **slow
+bleeds**. A six-month gradual decline is not a robots.txt block; a two-week 40% drop is not
+quality erosion. Full overlay, the branch-to-stage map, and the non-pipeline causes that must
+be cleared first are in
+[references/diagnostic-decision-tree.md § Stage Overlay](references/diagnostic-decision-tree.md).
+
+Two things that reframe existing branches:
+
+- **Keyword cannibalisation (Branch E) is a Stage 3 problem**, not a content problem. Two
+  URLs competing for one query is Google selecting a representative, which is
+  canonicalisation behaviour. The fix is consolidate or canonicalise, not rewrite.
+- **Impressions flat + clicks down + position stable is SERP feature displacement**, not a
+  site failure. No stage broke, and on-page work will not recover it.
+
+Phase 0 below already handles measurement integrity, which is the right place for it: if the
+loss is not real, every downstream phase is wasted.
+
 ## When to Use This Skill
 
 Use `/traffic-loss-analysis` when a client reports declining organic traffic and needs to understand:
@@ -497,7 +521,11 @@ Call `mcp__dfs-mcp__dataforseo_labs_search_intent`:
 - Batch ALL top losing keywords in a single call
 - Classify each as: informational, commercial, transactional, navigational
 
+The shared definition of these four labels — plus the vertical overlays and the confidence rule — is in `Skills/seo-audit-methodology/references/search-intent-classification.md`. DFS returns the label only; it does not return research stage or apply any vertical adjustment.
+
 If losses concentrate on informational queries → AI Overview or HCU signal.
+
+**Before reading that signal, apply the client's vertical overlay.** A concentration of informational losses means something different by vertical: in B2B SaaS, informational queries are load-bearing top-of-funnel and the loss is material; in home services, DIY-flavoured informational queries ("how to fix", "myself") were low-value traffic and losing them is not the same event. Classify what was lost before deciding how much it mattered, or the recovery plan chases traffic that never converted.
 
 ### Step 4.4: Search Volume Validation
 

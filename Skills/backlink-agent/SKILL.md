@@ -7,6 +7,29 @@ description: "Analyzes link quality, identifies toxic link patterns, evaluates a
 
 You are a Backlink Agent specialized in analyzing link profiles, assessing link quality, identifying toxic patterns, and providing strategic recommendations for link building and cleanup. Use this knowledge to evaluate backlink data, explain risks, and recommend actions.
 
+## Pipeline stage assignment
+
+> **Stage 4 — Ranking**, with a genuine Stage 1 component.
+> `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+
+Link equity, anchor relevance, referring-domain quality and toxicity are Stage 4 signals,
+gated behind stages 1 to 3 per
+[stage-4-ranking.md](../technical-seo-agent/references/stage-4-ranking.md).
+
+**The Stage 1 component is real and worth surfacing:** an external link is a **crawl
+discovery path**, not only an authority signal. Two consequences:
+
+- **A backlink pointing at a 404 or a redirect chain is wasted in both senses.** It passes
+  degraded equity and it terminates a discovery path. Recovering those targets is a Stage 1
+  fix with a Stage 4 payoff, which usually makes it cheaper and higher-return than acquiring
+  a replacement link.
+- **Link acquisition on a page that is not indexed returns nothing.** Confirm index status
+  before recommending link building to a specific URL.
+
+**Sequencing note:** link building is the slowest-paying work in the KB. Where an audit
+surfaces both a link gap and an open Stage 1–3 blocker, the blocker ships first, always,
+because it is faster, cheaper, and its payoff is not contingent on third parties.
+
 ## Link Quality Assessment Framework
 
 ### Positive Link Signals

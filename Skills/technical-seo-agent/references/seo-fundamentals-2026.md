@@ -12,15 +12,27 @@ Every recommendation in every audit should be evaluated against this rule. If a 
 
 ### The Pipeline
 
+**Four stages, in this order. State it this way, always.**
+
 ```
-Crawl → Initial HTML processing → Indexability decision → Render Queue (if JS)
-   → Web Rendering Service → Index → Ranking (with re-rankers)
+CRAWLABILITY → RENDERING → INDEXABILITY → RANKING
 ```
+
+Every audit decision inherits this sequence, because a failure at any stage makes every stage downstream of it unreachable. No amount of ranking work rescues a page that cannot be indexed, and no indexing work rescues a page whose content only exists after a render that never happened.
+
+Expanded, with the mechanism inside each stage:
+
+```
+Crawl → Initial HTML processing → Render-eligibility gate (raw-HTML directives)
+   → Render Queue (if JS) → Web Rendering Service → Index → Ranking (with re-rankers)
+```
+
+**Naming discipline on the gate.** The render-eligibility gate is a checkpoint inside the crawl-to-render transition. It is NOT the Indexability stage. Earlier versions of this file called it the "indexability decision" and placed it before Rendering in the chain, which produced audit output that stated the stage order wrongly and read as not knowing the fundamentals. The gate decides whether a URL proceeds to the renderer. Indexability is the later stage that decides whether the rendered document enters the index. Two different things, and the four-stage order above is what gets stated first in any deliverable, prioritization framework, or client explanation.
 
 Several things follow from this pipeline that shape every audit decision:
 
-- **Indexability decisions are made on raw HTML** before the renderer runs. JS-injected canonicals, robots directives, and status indicators may be skipped. This is the December 2025 Google clarification: pages with non-200 status codes may not be rendered.
-- **Rendering is queued and budgeted.** Google's Web Rendering Service uses an approximate 5-second snapshot window. Long JS tasks push critical content past this window.
+- **Render-eligibility is judged on raw HTML** before the renderer runs. JS-injected canonicals, robots directives, and status indicators may be skipped entirely, and if the raw response signals non-indexability the page never reaches the renderer at all. This is the December 2025 Google clarification: pages with non-200 status codes may not be rendered.
+- **Rendering is queued, and budgeted on a virtual clock rather than wall-clock time.** The widely repeated "5-second render window" is a mistranslation: Martin Splitt's five seconds was the **median queue wait**, not a render timeout. The Web Rendering Service runs a virtual clock that it **pauses while network requests are in flight**, so network latency does not spend render budget. What spends it is JavaScript execution and parse cost. A separate real-time ceiling of roughly 52 seconds cancels outstanding requests. Practical consequence: never tell a client to speed up their server so Googlebot can "finish rendering in time" — target JS execution cost instead. Full mechanics, measurements and attribution in [javascript-seo-framework.md](javascript-seo-framework.md), section "The render budget, correctly stated".
 - **Re-rankers ("Twiddlers") sit on top of the core algorithm.** They handle conditional re-ranking — local pack signals, freshness boosts, query-deserves-diversity adjustments. This is why a page can rank differently for two near-identical queries. (Enumerated with per-layer diagnostic questions in the Twiddler catalog below.)
 - **AI crawlers do not render JavaScript at all.** ChatGPT, Claude, Perplexity, Bing's AI Overviews scrape raw HTML. Render-only content is invisible to AI search visibility.
 
@@ -106,7 +118,12 @@ When any of these have multiple accessible variants, you have duplicate content.
 
 ### Sitemaps
 
-XML sitemaps should contain only canonical, indexable URLs. Non-indexable URLs in the sitemap (redirects, 404s, canonicalized URLs) waste crawl budget and confuse search engines about what's important.
+XML sitemaps should contain only canonical, indexable URLs. Non-indexable entries (redirects, 404s, canonicalized URLs) send crawlers to dead ends and dilute the signal about what the site considers important.
+
+**Two corrections to the common framing of sitemaps:**
+
+- **A sitemap is a discovery mechanism and does not directly influence crawl budget or crawl demand.** Bad entries spend crawl activity on dead ends, which matters at a scale where crawl budget binds, but the sitemap itself is not a lever on how much Google crawls.
+- **Unprocessed child sitemaps ("0 discovered URLs") are a symptom, not a defect.** The chain runs: rendering or quality problems make pages look empty → crawl demand falls → Google deprioritises sitemap processing. Resubmitting, splitting or restructuring the sitemap will not fix it. Fix the upstream cause and processing follows. Source: Barry Hunter, Google Search Central Community, Oct 2025; full detail in [stage-2-rendering.md](stage-2-rendering.md).
 
 HTML sitemaps are unnecessary if the site is well-linked from a clear hierarchy. They're a UX patch for sites with weak internal linking.
 

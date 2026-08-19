@@ -40,7 +40,7 @@ Before presenting any audit findings to the user:
    **Triggers — apply this rule whenever any of these are true:**
    - A spreadsheet column is named "New Target," "Proposed New Target," "Redirect To," "Should Point To," "Replacement URL," or similar
    - A finding's recommendation field says "redirect to X," "update the link to point to Y," "use Z instead"
-   - You're propagating recommendations from an upstream document (prior audit, GSC export, agency handoff doc, client-supplied list) — **NEVER trust upstream targets without verification**
+   - You're propagating recommendations from an upstream document (prior audit, GSC export, agency handoff doc, client-supplied list, or an AI-/script-generated candidate map such as `/generate-redirect-map` output) — **NEVER trust upstream targets without verification**
    - You're parsing action-item text with regex/extraction logic to pull URLs from prose
 
    **Required actions before publishing the deliverable:**
@@ -54,6 +54,8 @@ Before presenting any audit findings to the user:
    d. **Cross-vertical sanity check** — if a recommendation moves a URL from one top-level subfolder to a different one (e.g., `/plumbing/water-heaters/` → `/water/water-heaters/`), it crosses an architectural boundary and requires explicit user confirmation. These are content architecture decisions, not redirect cleanups, and they should never be quietly bundled into a "redirect corrections" deliverable.
 
    e. **Source attribution** — every proposed target must cite where the target came from: live-site verification, GSC URL Inspection, prior agency audit (and which one), or "inferred from URL pattern." If the source is "extracted from action-item prose by regex," that is NOT sufficient — verify against the live site before publishing.
+
+   f. **Post-implementation validation** — verification of the proposed targets (a–e) happens BEFORE the deliverable ships; this step closes the loop AFTER the developer or VA reports the redirect map implemented. Run the `/validate-redirects` command (which wraps `python scripts/validate_redirect_map.py --input <map.csv>` — the user never runs the script by hand) against the shipped map (it auto-detects generic source/target columns and Rank Math export layouts; pass `--base-url` for relative paths). The script fires a live request at every source URL and reports PASS/WARN/FAIL per row on whether it actually lands on the approved target. Trailing-slash and http→https differences count as matches by default (`--strict-slash` / `--strict-scheme` to tighten), and a hop that only normalizes scheme, slash, or www does not count against the chain — those site-wide normalization redirects are the first hop on most sources and are not mapping errors. Substantive findings: a source still returning 200 (redirect never implemented), a 302 where a 301 was specified, a landing URL that isn't the approved target, or a target that has since gone 404/noindex. Any FAIL reopens the implementation ticket with the report attached — do not wait for the next audit to catch it. This is also the standard Validation Method for redirect-map deliverables: one command validates the whole map instead of a per-row curl instruction.
 
    **The Superior Water & Air Nov 24 GSC audit incident (April 2026)** is the reference case for this rule. The original audit doc proposed targets that were inconsistent across rows (`/plumbing/` vs `/plumbing-services/` for similar URLs), included cosmetic fixes (singular→plural that didn't need fixing), and crossed verticals without justification (`/plumbing/water-heaters/` → `/water/water-heaters/`). The build script extracted those targets via regex without verification and produced a 29-correction list that the user's VA implemented before review. The fix is upstream — never publish a redirect target that hasn't been verified.
 
@@ -95,11 +97,29 @@ Every recommendation in a client-facing deliverable (audit report, action plan, 
 ```
 [Recommendation title]
 Priority: P0/P1/P2/P3/P4
-Effort: [estimate]
+Scope: [what the work consists of, in concrete terms]
 Expected outcome: [one of the four tags above]
 Likely effect: [one specific sentence describing what the client should observe]
 Validation method: [one specific instruction the dev can run to confirm the fix shipped correctly]
 ```
+
+**No time estimates. Owner's rule, set August 2026, no exceptions.** The former
+`Effort: [estimate]` field is gone and must not be reintroduced under another
+name. Do not write hours, days, "roughly an hour", "half a day", or any
+duration attached to how long work takes. This applies to every
+recommendation-bearing deliverable: .md reports, .xlsx sheets, action plans,
+roadmaps, and branded PDFs.
+
+**`Scope` replaces it, and carries the same information better.** The reason a
+reader wants an effort figure is to judge how big the job is, and naming the
+work answers that more usefully than a number that can be held against you
+later. "Three dependency settings that already exist in the tool" tells a
+developer more than "1 hour" does. Sequence is carried by `Priority`, which is
+what it was always for.
+
+Calendar language is unaffected. Recrawl windows ("Google needs three to four
+weeks to re-read the site"), reporting periods and data ranges are all still
+required wherever a finding depends on them.
 
 **Why this rule exists:** clients who ship infrastructure-hygiene fixes and don't see rankings move conclude SEO doesn't work — when in fact those fixes were never going to move rankings (and we knew that). The fix is to tell them upfront, not to defend it after delivery. This rule applies to .md reports, .xlsx files, action plans, and any recommendation-bearing client communication.
 

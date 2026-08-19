@@ -74,6 +74,20 @@ The master list lives in the leak-grounded ranking-factors checklist at `Skills/
 3. **Clusters whose required input file is absent are skipped-and-flagged, not silently dropped.** This follows the Expanded Input Stack graceful-degradation contract: when the input that unlocks a cluster (e.g. `anchors_internal.csv` for anchor/demotion analysis, `backlinks_semrush.csv` for off-page NSR proxies, the Koray topical map for `siteFocusScore`/`siteRadius`, the GSC Page-indexing exports for Crawled/Discovered-not-indexed) is not present, record the cluster's verdict as "not assessed — missing input [file], flagged" rather than omitting it. A skipped-and-flagged cluster satisfies the contract; a missing cluster does not.
 4. **Leaked attributes cited by the checklist are LEAK-DERIVED.** Clusters 10–12 (click signals, NSR/domain quality, demotions/spam) lean on attributes documented in the May 2024 Content Warehouse leak — `goodClicks`/`badClicks`/`lastLongestClicks`, `siteAuthority`, `clutterScore`, `hostAge`, the various demotion signals. State these as leak-derived, not as confirmed Google ranking weights, using the same hedged framing the rest of this framework applies to leaked signals (see the Evidence Hierarchy section below).
 
+## Search Intent Classification (shared definition)
+
+Three skills classify query intent independently — `Skills/content-expansion` (Step 3 and Step 5), `Skills/cannibalization` (Priority A/B/C tiering), and `Skills/traffic-loss-analysis` (Phase 4.3) — plus `auditors/cannibalization_auditor.py` programmatically. They previously carried three separate definitions, so the same query could be "commercial" in one deliverable and "money-bearing" in another with nothing reconciling the two.
+
+The single definition now lives at [references/search-intent-classification.md](references/search-intent-classification.md). Walk it — don't duplicate it. It carries:
+
+- The four-label taxonomy (Broder 2002 / Do-Know-Go), which is also the DataForSEO integration boundary
+- The **research-stage dimension** (early / evaluating / decided), which separates queries the label alone collapses together and which DFS does not return
+- **Vertical overlays** for home services, B2B SaaS, ecommerce, and health/YMYL, because the same modifier flips meaning between them
+- The primary/secondary label rule and the tie-break for contested queries
+- The confidence rule, and the constraint that a low-confidence classification cannot on its own justify a new page
+
+The stage dimension and the vertical-variance principle are adopted as **method pending one implementation cycle**, not as measured fact — provenance and limits are stated at the foot of that file.
+
 ## Audit Frequency Framework
 
 | Audit Type | Frequency | Scope |
@@ -103,7 +117,85 @@ The master list lives in the leak-grounded ranking-factors checklist at `Skills/
 
 ## Prioritization Framework
 
-### Impact × Effort Scoring
+### The resolution procedure (run this before any scoring)
+
+Impact × Effort cannot answer "which of these two findings first?" because it has no concept
+of dependency. Two findings can score identically and still have a correct order between
+them. Run these five tests in sequence. **The first test that separates them decides it.**
+
+```
+1. STAGE GATE      → which pipeline stage does each finding belong to?
+2. BINDING TEST    → is the variable actually causing a loss on THIS site?
+3. PAGE VALUE      → does the affected set contain revenue or lead pages?
+4. OUTCOME TYPE    → Ranking Lever > Risk Mitigation > UX > Hygiene
+5. EFFORT          → cheapest first, among what survives
+```
+
+**1. Stage gate.** `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`. The lower stage
+wins, always, regardless of volume or severity label. A failure at any stage makes
+everything downstream unreachable, so ranking work on a page that cannot be crawled,
+rendered or indexed returns nothing. Stage assignment for all 143 checklist variables is in
+[ranking-factors-checklist-2026.md § Stage Index](../technical-seo-agent/references/ranking-factors-checklist-2026.md).
+
+**2. Binding test.** *Is the absence actually causing a loss, or is it merely an absence?*
+This is the test that gets skipped, and skipping it is what fills deliverables with items
+that cannot move anything. Ask: **what specifically is broken as a result of this?** If you
+cannot name the loss, the finding is not binding and it does not compete for priority.
+
+A directive that is absent but correctly inferred by Google is not binding. A signal that is
+missing on pages that already rank for their target terms is not binding. **Volume never
+converts a non-binding absence into a binding one.** Five hundred instances of something
+that costs nothing still costs nothing.
+
+**3. Page value.** Does the affected set include money pages? Volume is a **multiplier on
+the value of the affected pages**, never an axis of its own. One broken revenue page beats
+five hundred broken tag archives. Filter out non-SEO URLs (pagination, PPC landers,
+thank-you pages, utility pages) per `.claude/rules/audit-workflow.md` Rule 7 before volume
+influences anything, and report unique URLs rather than export row counts per Rule 10.
+
+**4. Outcome type.** Within the same stage, a Ranking Lever precedes Risk Mitigation,
+which precedes UX, which precedes Infrastructure Hygiene. See Expected Outcome
+Classification below.
+
+**5. Effort.** Only now does cost break the tie.
+
+### Worked example: 50 missing H1s vs 20 missing canonicals
+
+The question a senior consultant actually gets asked, and the reasoning matters more than
+the answer.
+
+**Test 1, stage gate.** Canonicals are Stage 3 (Indexability, cluster 3). H1s are Stage 4
+(Ranking, cluster 5). Stage 3 gates Stage 4, so **the canonicals win on ordering and the
+50-vs-20 volume difference is irrelevant.** Volume lost the moment the two findings landed
+in different stages.
+
+**But test 2 is where the real answer lives**, and it can reverse the outcome:
+
+- **Are those 20 URLs part of a duplicate cluster?** If competing variants exist
+  (parameters, filters, `www`/non-`www`, trailing-slash pairs, print versions), the missing
+  canonical means Google is choosing the representative URL for you. That is a live
+  index-selection failure, it is binding, and it is a **Ranking Lever**. Ship it first.
+- **Are they single, unduplicated URLs?** Then Google self-canonicalises them correctly by
+  default and nothing is broken. The finding is **Low, Infrastructure Hygiene**, and it
+  should not be near the top of any list. Verify with GSC URL Inspection: if the
+  Google-selected canonical already equals the URL itself, the absence costs nothing.
+- **Are the 50 H1-less pages ranking for their target terms?** If yes, H1 absence is not
+  binding on those pages. Google derives topic from the title, body and links. If those
+  pages are *not* ranking, H1 is still unlikely to be the binding constraint, and treating
+  it as one substitutes a checkbox for a diagnosis.
+
+**The verdict on the example as posed:** if any of the 20 sit in a duplicate cluster,
+canonicals ship first on stage order alone. If none do, **neither finding is urgent**, and
+the more important observation is that the audit is reporting *absences* rather than
+*losses*. Two findings that both fail the binding test should not be consuming a
+prioritisation conversation at all, and the audit should go back and find what actually is
+binding.
+
+**The general lesson.** Stage order settles sequence. The binding test settles whether an
+item belongs on the list. Most bloated audits fail the second test, not the first, and
+volume is the number most often mistaken for importance.
+
+### Tie-breaker: Impact × Effort Scoring
 
 **Scoring Method:**
 ```
@@ -157,7 +249,7 @@ Every recommendation in a client-facing audit should be tagged with one of four 
 | Type | Definition | Example recommendations | What to tell the client |
 |---|---|---|---|
 | **Ranking Lever** | Likely to move rankings on specific queries when shipped | Recover de-indexed money pages; rewrite thin content on revenue pages; fix canonical bugs that suppress indexable URLs; consolidate near-duplicate cannibalizing pages; remove noindex tags blocking commercial pages | "Expect movement on [specific queries] within [reasonable window]. Track via GSC." |
-| **Infrastructure Hygiene** | Cleaner architecture; rankings should NOT be expected to move | Crawl-waste cleanup (faceted nav, filter URLs); flatten redirect chains; minify JS/CSS on already-indexed pages; noindex paginated category pages; consolidate sitemap entries | "This protects crawl budget and gives Google a cleaner picture of the site. Don't expect ranking movement — that's not what this fix does." |
+| **Infrastructure Hygiene** | Cleaner architecture; rankings should NOT be expected to move | Crawl-waste cleanup (faceted nav, filter URLs); flatten redirect chains; minify JS/CSS on already-indexed pages; noindex paginated category pages; consolidate sitemap entries | **Scale-dependent phrasing.** Large site or heavy churn: "this protects crawl budget and gives Google a cleaner picture of the site. Don't expect ranking movement." Small or new site: **do not cite crawl budget at all** — it is not the constraint at that size. Say "this gives Google a cleaner picture of the site and removes places for future bugs to hide. Don't expect ranking movement." |
 | **Risk Mitigation** | Prevents future ranking damage; no immediate ranking impact | Fix mixed-content warnings; resolve security headers; correct hreflang errors before they cause de-indexation; address E-E-A-T signal contradictions before a quality-update penalty | "This stops a future problem. The cost of NOT doing it is bigger than the upside of doing it." |
 | **UX (indirect ranking)** | Improves user behavior; ranking effect is indirect via click signals | Improve LCP on revenue pages; fix cumulative layout shift on conversion templates; improve CTAs/internal CTA placement | "This affects how users behave on the page. Ranking effect comes through click-signal feedback (NavBoost), so it's slower and harder to attribute, but real over time." |
 

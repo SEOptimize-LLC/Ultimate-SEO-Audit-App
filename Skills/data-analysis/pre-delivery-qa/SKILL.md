@@ -141,6 +141,45 @@ Subagent must return PASS for every proposed rewrite before delivery. Any FLAG b
 
 **Common failure mode (the Beehive local pages incident, May 2026):** shipping a title pattern that reads "[City] Plumber: Drain, Water Heater & Emergency Plumbing in [City], UT | Beehive Plumbing" — city repeated twice, "Plumber"/"Plumbing" stacked three times. The data-validator and live-url-verifier subagents pass it because the URLs and numbers are correct; the prose quality is what fails. CHECK 11 is the only check that catches this.
 
+### CHECK 12: AI-tell scrub (always required)
+
+**Rule:** No deliverable may contain an em dash (—), en dash (–), horizontal bar (―), or Unicode minus (−). The user's boss and clients read these as proof the document was machine-written, which discredits the work regardless of its accuracy.
+
+Real hyphens are fine and must be preserved: `K-12`, `top-of-page`, `district-wide`.
+
+**How to run it:**
+
+```bash
+python scripts/scrub_ai_tells.py "Clients/<name>/Full SEO Audit/<file>.md"
+```
+
+Exit 0 = clean. Exit 1 = dashes found, delivery blocked. The script also scans `.xlsx` cell text, so it covers Excel deliverables.
+
+`--fix` auto-corrects only the unambiguous mechanical cases (heading separators, bold-label separators, lone dashes in table cells). **Dashes inside sentences must be rewritten by hand** — replacing one with a comma reliably produces a clunky sentence. Recast the sentence instead: use a colon before an explanation, commas or parentheses for an aside, or split into two sentences.
+
+The script also reports AI vocabulary (`delve`, `leverage`, `robust`, `seamless`, `crucial`, `underscore`, `furthermore`, `in today's`, and similar) as advisory. Those don't block delivery, but plainer words are almost always better.
+
+**Source:** the Education Walkthrough teacher evaluation software report, July 2026, which shipped with 46 em dashes and had to be rewritten after the user flagged it.
+
+### CHECK 13: Prose quality (always required, internal reports included)
+
+**Rule:** A report must read as connected human writing, not as bullet points with the bullets removed. This is a **recurring** correction, so treat it as blocking rather than advisory, and apply it to internal reports as well as client-facing ones.
+
+Read the narrative sections and check each of these:
+
+- **No stacked declaratives.** Three consecutive sentences that each open with a noun and state a fact is the signature failure. Connect them with "which", "until", "so", "because", "even as".
+- **No figure repeated in adjacent sentences.** State a number once, then refer back to it in words ("that increase", "the entire gain").
+- **Varied sentence length.** A short sentence only lands when it follows a longer one.
+- **One argument per paragraph,** handing off to the next. No jumping between ideas mid-paragraph or between sections without a transition.
+- **Tables carry data, prose carries meaning.** Never narrate a table back in sentences. After a table, explain what it means.
+- **Interpretation over recitation.** "Mobile did not just grow, it changed places with desktop" beats "Mobile grew 74.1%."
+
+**Watch the interaction with CHECK 12.** Removing an em dash without rewriting the sentence is what produces this failure: the subordinate clause the dash was carrying becomes an orphaned fragment. Never satisfy the dash rule by chopping a sentence in two. Recast it so the clause is carried by a comma, colon, semicolon or parentheses.
+
+**How to run it:** read the narrative sections aloud. If it sounds like a machine reading a spreadsheet, rewrite before shipping. The scrub script cannot detect this; it is a judgement check.
+
+**Source:** the SameDay Utah 30-day post-relaunch report, July 31 2026. Data, findings and structure were all accepted; the report was rejected on writing quality alone, with the user noting this had come up multiple times before.
+
 ## How to run the QA pass
 
 Before saving the file, mentally walk through each check above. For checks that require subagent dispatch (1, 2, 3, 4), actually dispatch the subagent — don't shortcut by "I think it's probably fine."
@@ -160,6 +199,9 @@ CHECK 7 (cross-refs): PASS — self-contained
 CHECK 8 (URL truncation): PASS — all URLs full-length
 CHECK 9 (marketing lang): N/A — no body copy proposed
 CHECK 10 (audience): PASS — written for client Elementor admin
+CHECK 11 (rec prose): N/A — no rewrites proposed
+CHECK 13 (prose quality): PASS — read aloud, connected paragraphs, no stacked declaratives
+CHECK 12 (AI-tell scrub): PASS — scrub_ai_tells.py exit 0, zero dashes
 
 Deliverable approved for delivery: Clients/<name>/Full SEO Audit/<file>.xlsx
 ```

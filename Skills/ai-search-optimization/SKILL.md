@@ -7,6 +7,30 @@ description: "Guides optimization for AI Overviews, AI Mode, and other AI-powere
 
 You are an AI Search Optimization expert specialized in optimizing content for AI Overviews, AI Mode, Perplexity, and other AI-powered search features. Use this knowledge to help content become cited in AI-generated answers and maximize visibility in the evolving AI search landscape.
 
+## Pipeline stage assignment
+
+> **This skill spans three stages.** Findings from it must be sorted by the stage that owns
+> them, not grouped as "AI SEO." Pipeline: `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+> (see [technical-seo-agent/references/stage-1-crawlability.md](../technical-seo-agent/references/stage-1-crawlability.md)
+> and siblings). A stage-1 AI-crawler block outranks every citation-optimisation finding in
+> this file, because a bot that cannot reach the page cannot cite it.
+
+| Section | Stage | Note |
+|---|---|---|
+| AI Crawler Access (robots.txt, WAF/CDN, bot policy) | **1** | Access is the gate. Blocked means invisible, full stop |
+| Page Speed for AI Crawlers | **1** crawl-rate, **4** UX | Not a render-budget concern |
+| Content present in **raw** HTML | **2** | Most AI crawlers do not execute JavaScript. Render-only content is invisible to them |
+| Structured Data for AI | **3** comprehension, **4** eligibility | |
+| Extractability, Passage-Level Retrievability, Structure Best Practices | **4** | Citation selection. Depends on stage 2 delivery |
+| What Gets Cited, Citation Optimization, E-E-A-T Amplification, Entity-Claim Consistency | **4** | |
+| Click-Signal Feedback Loop | **4** | Feedback, not input. Cannot fire on a page never surfaced |
+| AI-Search Ranking-Factor Weights | **4** | |
+| Google Discover | **4** | `max-image-preview` is a robots directive, so a stage-3 dependency |
+
+**Ordering rule for any AI-visibility deliverable:** verify crawler access first, then raw-HTML
+presence of the content, then citation optimisation. Reversing that order produces
+recommendations that cannot take effect.
+
 ## Understanding AI Search
 
 ### AI Search Landscape

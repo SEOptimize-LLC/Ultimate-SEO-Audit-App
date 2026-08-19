@@ -9,6 +9,25 @@ You are the content-expansion analyst. Your job: take ONE URL the client cares a
 
 This skill is the methodology layer. The `/page-content-expansion` slash command is the user-facing trigger. Audits may also call this skill ad-hoc when a single URL warrants deep treatment (Cudio's `/services/odoo-migration` at position 2.7 with 0.49% CTR is the canonical example).
 
+## Pipeline stage assignment
+
+> **Stage 4 — Ranking.** `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+
+Gated behind stages 1 to 3 per
+[stage-4-ranking.md](../technical-seo-agent/references/stage-4-ranking.md). This skill already
+requires a live 200, indexability and a canonical check in its pre-flight, which is the stage
+gate in practice — keep those checks, they are not optional formality.
+
+**The Stage 3 interaction is this skill's core risk.** The expansion-vs-cannibalisation gate
+exists because adding content targeting a query another URL already holds creates an
+index-selection conflict, which is a Stage 3 failure introduced by Stage 4 work. Never skip
+the gate. See [cannibalization/SKILL.md](../cannibalization/SKILL.md), which is itself a
+Stage 3 skill.
+
+**Prerequisite worth stating explicitly:** a page with impressions but poor CTR is a valid
+target. A page with **no impressions** is not, and the reason it has none is the real finding,
+sitting somewhere in stages 1 to 3.
+
 ## When this skill applies
 
 - User asks "what should I add to this page?" / "how can I improve this article?" / "this page has impressions but no clicks — why?"
@@ -56,9 +75,12 @@ Sanity check the result:
 - **>500 queries returned:** the page is a high-traffic hub. Filter to queries with ≥5 impressions to keep the analysis manageable.
 - **The page has clicks but no impressions:** GSC is reporting strangely. Re-run with a longer window (180 days) before trusting the data.
 
-### Step 3 — Classify each query by intent and position
+### Step 3 — Classify each query by intent, research stage, and position
 
-For every query in the page's mix, assign two dimensions:
+For every query in the page's mix, assign three dimensions. The shared definition for the first
+two — including the vertical overlays, the secondary-label tie-break, and the confidence rule —
+lives in `Skills/seo-audit-methodology/references/search-intent-classification.md`. This step is
+the applied version; when the two disagree, the shared reference wins.
 
 **Intent classification (4 categories):**
 
@@ -94,6 +116,24 @@ The query-text patterns in the table above are a first pass. Confirm intent by r
 | cheap, buy, discount, for sale, price, cost, order, near me, book | **Transactional** — the searcher is ready to act. Sub-classify by which word: "price/cost" = comparison-transactional (still weighing); "buy/order/book" = ready-to-buy |
 
 The trap this avoids: "best luxury watches" *looks* transactional (luxury, watches) but the "best" lexicon word plus an article-and-listicle SERP make it **informational** — briefing it as a product page targets the wrong intent. Classify from furniture and lexicon together, then brief.
+
+**Apply the client's vertical overlay before you trust the lexicon.**
+
+The lexicon above is generic, and generic is where misclassification originates. The same word flips meaning between verticals: "emergency" is a decided-stage money query for a plumber and an informational one for a SaaS blog; "how to fix" is a low-value DIY query in home services and a legitimate lead-magnet in B2B. Pull the overlay for this client's vertical from `Skills/seo-audit-methodology/references/search-intent-classification.md` (home services, B2B SaaS, ecommerce, health/YMYL) and apply it on top of the base lexicon. Check the client's memory file too — a standing content constraint overrides any intent classification.
+
+**A query may carry a primary and a secondary label.** The primary determines the page type; the secondary determines section content. "plumber near me" is transactional (primary) plus local (secondary), so it wants a service page (primary) carrying service-area content and NAP (secondary). Local is always a secondary modifier, never a primary label. The tie-break for genuinely contested queries is in the shared reference.
+
+**Research stage (3 stages) — read off the modifier, not the head term:**
+
+| Stage | The searcher is | Modifiers |
+|---|---|---|
+| **Early** | Still defining the problem; doesn't know the solution category | "what is", "why", "how does", "types of", "symptoms of" |
+| **Evaluating** | Knows the category; choosing between options or providers | "best", "vs", "alternatives", "review", "cost", "how much", "for [use case]" |
+| **Decided** | Has chosen; executing | "buy", "order", "book", "hire", "near me", "emergency", "[brand] + [service]" |
+
+Stage is the dimension that separates queries the intent label alone collapses together. "odoo migration cost" and "odoo migration vs netsuite pricing" both classify commercial-to-transactional, but the first wants a pricing block on the page you already have and the second wants a comparison page you don't. Without the stage, Step 5 routes both to the same recommendation and one of them is wrong.
+
+If you've labelled a query **informational + decided**, re-read the SERP. That combination is almost always a misclassification of a transactional query wearing an instructional modifier ("how to book a plumber").
 
 **Position bucket (4 buckets):**
 
@@ -166,7 +206,8 @@ Now group the surviving queries (those that passed steps 3, 4, and 4.5) into top
 
 **Clustering rules:**
 
-- Cluster by **shared head term** plus **shared intent**. "odoo migration cost" and "odoo migration services pricing" belong in the same cluster — same head, same transactional intent. "odoo migration" (informational) and "odoo migration services" (transactional) belong in DIFFERENT clusters, even though they share a head term.
+- Cluster by **shared head term** plus **shared intent** plus **shared research stage**. "odoo migration cost" and "odoo migration services pricing" belong in the same cluster — same head, same transactional intent, both evaluating-stage. "odoo migration" (informational) and "odoo migration services" (transactional) belong in DIFFERENT clusters, even though they share a head term.
+- **A stage split is a cluster split, even when the intent label matches.** "odoo migration cost" (evaluating) and "book an odoo migration" (decided) share a head term and both read transactional, but they are separate clusters. A page serves two stages only when its page type genuinely serves both, which is rare; a service page that also tries to absorb evaluating-stage comparison queries becomes a hybrid that ranks for neither, because the SERP for each stage rewards a different content type.
 - Cluster size matters: a cluster with 1-2 queries is usually a section addition. A cluster with 5+ queries and shared intent is usually a new page.
 - The page's existing title/H1/primary topic is the "home cluster." Queries that fit the home cluster are expansion candidates for the page itself. Queries that fit a clearly different cluster are new-page candidates.
 
@@ -176,11 +217,16 @@ Now group the surviving queries (those that passed steps 3, 4, and 4.5) into top
 |---|---|---|
 | Cluster size | 1-4 queries | 5+ queries |
 | Shared intent with target page | Yes | No |
+| **Shared research stage with target page** | **Yes** | **No** |
 | Total cluster impression volume | < 500/month | ≥ 500/month |
 | Top SERP results for the cluster | Same content type as target page | Different content type (e.g., target is comparison, cluster wants a how-to) |
 | Would a section/H2 satisfy the cluster? | Yes | No — needs dedicated treatment |
 
-When the answer is mixed (cluster has 4 queries with shared intent but high volume), default to **section expansion first**. Only recommend a new page when the case is clear. The Sehgal "20 new pages from 1 export" headline is a thin-content trap — your default is fewer, better pages.
+**The stage row overrides the size and volume rows.** A cluster that shares the target page's intent but sits at a different research stage is a new-page candidate even at 2 queries and low volume, because no amount of section-writing makes one page type serve two stages. This is the one row that can promote a small cluster to a new page on its own.
+
+When the answer is mixed on every other row (cluster has 4 queries with shared intent and shared stage but high volume), default to **section expansion first**. Only recommend a new page when the case is clear. The Sehgal "20 new pages from 1 export" headline is a thin-content trap — your default is fewer, better pages.
+
+**A low-confidence intent classification cannot promote a cluster to a new page on its own.** Per the confidence rule in `Skills/seo-audit-methodology/references/search-intent-classification.md`, when the lexicon and the SERP disagree, or the top 5 results split with no majority, default to the reversible option (section expansion) and state the low confidence in the deliverable. A section that underperforms is recoverable; a new page built on a misread SERP becomes a cannibalization source that has to be redirected later.
 
 **Coverage / cluster audit — rank the cluster, not the page.**
 
@@ -237,6 +283,8 @@ The deliverable (whether written to a `.md` file under `Clients/<name>/` or retu
 - 90-day GSC totals: clicks, impressions, blended CTR, top 5 queries by impressions
 - Position distribution: how many queries are in each of the 4 position buckets
 - Intent distribution: how many queries are in each of the 4 intent buckets
+- Research-stage distribution: how many queries are early / evaluating / decided, and whether that matches what the page is actually built to serve
+- Any queries classified at low confidence, and what made them low confidence
 - Cannibalization status (passed gate / blocked / escalated)
 
 ### 2. Intra-Page Content Additions

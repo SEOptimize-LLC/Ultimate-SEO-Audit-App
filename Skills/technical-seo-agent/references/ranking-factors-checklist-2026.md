@@ -16,6 +16,182 @@ Leak-attribute names are **grounding evidence for the auditor's reasoning**, nev
 
 ---
 
+## Stage Index — read this before walking the checklist
+
+**Every variable belongs to a pipeline stage, and stage position is the primary sort.**
+
+```
+CRAWLABILITY → RENDERING → INDEXABILITY → RANKING
+```
+
+A failure at any stage makes every stage downstream of it unreachable. Severity and
+Impact × Effort only break ties **within** a stage. Stage mechanics live in
+[stage-1-crawlability.md](stage-1-crawlability.md),
+[stage-2-rendering.md](stage-2-rendering.md),
+[stage-3-indexability.md](stage-3-indexability.md).
+
+### Why this index exists
+
+This checklist holds **143 variables across 20 clusters**, distributed like this:
+
+| Coverage | Variables | Share |
+|---|---|---|
+| Clusters 1–4 (gating stages 1–3) | 27 | 18.9% |
+| Clusters 5–20 (predominantly stage 4) | 116 | 81.1% |
+
+Severity does not rescue you from that imbalance: only **4 of 143 rows are Critical** (all
+four fall in clusters 1–3), against 43 High, 65 Medium and 31 Low. Walking the clusters in
+numeric order therefore spends roughly four fifths of the audit effort on ranking variables
+that cannot pay out until the three gating stages pass. **Sort by stage first, then walk
+severity inside the stage.**
+
+### Cluster → stage map
+
+| Cluster | Primary stage | Notes |
+|---|---|---|
+| 1 Crawl Accessibility & Bot Access | **1** | 3 rows are dual with stage 2 (see exceptions) |
+| 2 Rendering & JavaScript | **2** | 3 rows are actually stage 4 (see exceptions) |
+| 3 Indexation & Canonicalization | **3** | Clean. Carries the mandatory directive verdict |
+| 4 Non-Value Content & Crawl Budget | **SPLIT 1 / 3** | Genuinely two stages in one cluster |
+| 5 On-Page (Titles / Meta / Headings) | 4 | |
+| 6 Content Quality & Originality | 4 | **Also the stage-3 index gate.** "Crawled, not indexed" is a quality judgment |
+| 7 Relevance & Query Matching | 4 | |
+| 8 Internal Linking & Anchors | **DUAL 1 + 4** | Discovery mechanism at stage 1, PageRank and anchor signals at stage 4 |
+| 9 Backlinks & Off-Page | 4 | External links are also a stage-1 discovery path |
+| 10 Click Signals & User Behaviour | 4 | Post-ranking feedback. Cannot fire until indexed |
+| 11 Domain-Level Quality & NSR | 4 | |
+| 12 Demotions, Spam & Suppression | 4 | |
+| 13 SERP Context & Twiddlers | 4 | Re-rankers, strictly post-index |
+| 14 Schema & Structured Data | **3 + 4** | Index comprehension and SERP-feature eligibility |
+| 15 Freshness & Dates | 4 | Interacts with stage-1 crawl frequency |
+| 16 Page Experience & UX | 4 | |
+| 17 Locale & International | **SPLIT 3 / 4**, evenly | hreflang and international duplication are index-selection (3); click-signal slicing and locality signals are ranking (4). Commonly misfiled wholesale as "international SEO" |
+| 18 Entity, Author & Brand | 4 | |
+| 19 AI Search / LLM Visibility | **SPANS 1 + 2 + 4** | Crawler access (1), no JS rendering (2), citation selection (4) |
+| 20 Discover Visibility | 4 | `max-image-preview` is a robots directive, so a stage-3 dependency |
+
+### Per-row exceptions (rows whose stage differs from their cluster)
+
+**Cluster 1, dual with stage 2:**
+- "Are CSS/JS resources crawlable so the page can render?" — stage-1 cause, stage-2 effect
+- "Is primary nav present in raw DOM (no JS-only navigation)?" — detected at stage 2, but the damage is stage-1 discovery
+- "Is content served to GPTBot / ClaudeBot / PerplexityBot?" — "not blocked" is stage 1, "not JS-gated" is stage 2
+
+**Cluster 2, actually stage 4:**
+- "Is above-the-fold dominated by content vs ad/clutter density?" (`clutterScore`) — page-experience quality
+- "Does layout give visual weight to the primary terms?" (`avgTermWeight`) — relevance
+- "Is the key answer above the LLM token-truncation threshold?" — AI citation selection, delivery-dependent on stage 2
+
+**Cluster 4, split:**
+- Stage 1: "Discovered — not indexed" crawl-budget/internal-link starvation; crawl budget wasted on parameter/faceted/paginated URLs
+- Stage 3: aged/stagnant zero-traffic pages in lower index tiers; non-value pages to eliminate (also stage-4 site quality)
+
+**Cluster 6 — Content Quality & Originality. The conditional rule, and the most important
+item in this index.**
+
+**The same quality variable changes stage depending on index status.**
+
+- **Page NOT indexed** → the quality rows are **Stage 3**. They *are* the index gate.
+  "Crawled, currently not indexed" is Google declining to store the document on quality
+  grounds, so `OriginalContentScore`, `contentEffort` and information-gain findings are
+  indexability findings on those URLs.
+- **Page IS indexed but not ranking** → the same rows are **Stage 4**.
+
+Check index status before assigning severity to any quality finding. And per
+[stage-2-rendering.md](stage-2-rendering.md), check the raw HTML first: if the raw document is
+hollow, the "quality" problem is a Stage 2 render failure and no content work will fix it.
+
+One further row: "Does the page fit the site's own embedding" (`siteRadius`, `pageEmbedding`)
+is Stage 4, but the semantic map that computes it is built from crawled body text, so it
+inherits the Stage 2 verdict. A render gap produces wrong clusters.
+
+**Cluster 8 — Internal Linking & Anchors. Genuinely three-way split.**
+
+| Row | Stage |
+|---|---|
+| Internal anchors describe the destination (`anchorMismatchDemotion`) | **4** |
+| Important internal links placed high, not just footer | **4** equity, **1** discovery |
+| Internal links point directly to 200s, not through redirects | **1** |
+| High-authority pages linking out to money pages | **4** |
+| **Dropped anchors: links present in raw HTML but lost in render** | **2** |
+| Click depth ≤3 for money pages | **1** |
+
+The dropped-anchors row is worth noting because it is the **inverse** of the usual render
+failure. Normally links exist after JS and not in raw. Here they exist in raw and are
+destroyed by the render, which means the crawler may follow them but a rendering-dependent
+consumer will not. It is a Stage 2 finding either way.
+
+**Cluster 14 — Schema & Structured Data. One row is misfiled.**
+
+| Row | Stage |
+|---|---|
+| Valid, non-misleading schema for the page type | **4** |
+| Person/Organization schema `@id`-connected for the entity graph | **4** |
+| Structured data machine-parseable for AI/LLM grounding | **4**, with a **Stage 2** dependency: it must be in raw HTML for non-rendering AI crawlers |
+| **Self-referential canonicals on every indexable page** | **3 — misfiled.** This is a canonical check and belongs in Cluster 3. Also note it is **Low / non-binding** where no duplication exists |
+
+**Cluster 17 — Locale & International. A clean 50/50 split, not "Stage 3 primary".**
+
+| Row | Stage |
+|---|---|
+| hreflang in exactly one location, valid return tags, `x-default` | **3** — index selection per locale |
+| International duplication controlled (subfolders over subdomains/TLDs) | **3** — duplication and canonicalisation |
+| Click signals sliced correctly by country/language | **4** |
+| Localness signals aligned for the target market (`localityScore`) | **4** |
+
+**Cluster 19 — AI Search / LLM Visibility. One row gates the other five.**
+
+| Row | Stage |
+|---|---|
+| **Can AI crawlers access content without JS (raw-HTML answerability)?** | **1 access + 2 rendering. Run this first.** |
+| Brand cited in AI Overviews, and how often | **4** — outcome measurement |
+| Content chunk-extractable for AI grounding | **4** |
+| Brand present in LLM training/grounding data | **4** |
+| Factual claims consistent across the web | **4** |
+| Competitor share of voice in AI answers | **4** |
+
+Most AI crawlers do not execute JavaScript. If the raw-HTML row fails, the five Stage 4 rows
+cannot pay out no matter how well the content is optimised, because the crawler never sees it.
+
+### Execution rule
+
+1. **Gate on stages 1–3 first.** Run clusters 1, 2, 3, and the stage-1 rows of cluster 4.
+   That is 27 variables and it contains all four Critical rows.
+2. **Return an explicit verdict per stage, including "clean".** A missing stage verdict is
+   an audit defect, on the same contract as the indexability-directive verdict.
+3. **Do not begin cluster 5 onward until stages 1–3 are clean or the failures are
+   documented as blockers.** Ranking work on a page that cannot be crawled, rendered or
+   indexed produces no return, and recommending it inflates the deliverable with items that
+   cannot move.
+4. **Inside a stage, sort by Severity, then Impact × Effort.**
+5. **Tag the outcome type** on every recommendation per `.claude/rules/audit-workflow.md`.
+   Stage-1-to-3 fixes that unblock previously invisible content are **Ranking Levers**, not
+   Infrastructure Hygiene.
+
+### Coverage status of this index
+
+**Row-level assignment is complete for every cluster that needed it.** Clusters 1–4 were
+assigned row by row, and clusters 6, 8, 14, 17 and 19 (the dual and split ones) are assigned
+row by row above. The remaining clusters — 5, 7, 9, 10, 11, 12, 13, 15, 16, 18, 20 — are
+uniformly Stage 4 and need no row-level exceptions, because every row in them is a
+post-index comparative signal.
+
+**What the row-level pass changed, beyond adding tags:**
+
+1. **Cluster 6 is conditional, not fixed.** Quality variables sit at Stage 3 when the page is
+   not indexed and Stage 4 when it is. This is the only conditional assignment in the
+   checklist and it is the one most likely to be got wrong.
+2. **Cluster 8 splits three ways**, not two: Stage 1, 2 and 4 all appear inside six rows.
+3. **One row is misfiled.** "Self-referential canonicals on every indexable page" sits in
+   Cluster 14 (Schema) and belongs in Cluster 3 (Indexation). Left in place to avoid breaking
+   the auditor-module mapping in the "Where covered" column, but tagged Stage 3.
+4. **Cluster 17 is a 50/50 split**, not "Stage 3 primary" as the cluster-level map first
+   recorded. That table has been corrected.
+5. **Cluster 19 has an internal gate.** The raw-HTML answerability row must run before the
+   five Stage 4 rows, or the audit optimises content that no AI crawler can read.
+
+---
+
 ## Cluster 1 — Crawl Accessibility & Bot Access
 
 Can Google and the AI crawlers reach, fetch, and follow the site at all? (Foley Carter cat. 1 ACCESSIBILITY.)

@@ -7,6 +7,28 @@ description: "Detection methodology, technical mechanism, prioritization rules, 
 
 You are a keyword cannibalization expert. Cannibalization is one of the most underdiagnosed SEO problems and one of the easiest to over-fix — the discipline is knowing which clusters actually deserve attention.
 
+## Pipeline stage assignment
+
+> **Stage 3 — Indexability.** Not a content problem, and not a Stage 4 ranking problem.
+> `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+
+Two URLs competing for one query is **Google selecting a representative document**, which is
+the same mechanism as canonicalisation. It sits at the index-selection sub-phase described in
+[stage-3-indexability.md](../technical-seo-agent/references/stage-3-indexability.md), alongside
+declared-vs-Google-selected canonical divergence and duplicate clustering.
+
+**Why the stage assignment changes the fix.** Filed as a content problem, the instinct is
+"rewrite one page to differentiate it." Filed correctly as index selection, the options are
+consolidate (301 the weaker into the stronger), canonicalise (keep both reachable, declare one
+authoritative), or genuinely re-target (different query, different intent). Rewriting to
+differentiate is the *slowest* of those and often does not resolve the selection conflict at
+all, because Google's choice was driven by signals the rewrite does not touch.
+
+**Priority consequence:** cannibalisation outranks every Stage 4 finding on the same URLs. A
+page whose query is being split cannot have its ranking meaningfully assessed until the split
+is resolved, so do not stack title, content-depth or link recommendations on top of an
+unresolved cannibalisation cluster.
+
 ## What Cannibalization Actually Is (the mechanism)
 
 Cannibalization is a duplicative-entry problem in Google's index. When two pages on the same site are semantically too close, BERT-driven semantic indexing decides they shouldn't both appear in the top 10 for a query. The canonical-tag mechanism designed to handle technical duplicates does NOT catch semantic overlap. Google rotates between the pages, neither ranks consistently, and traffic suffers.
@@ -24,6 +46,12 @@ Reference: Matt Cutts (former Google head of web spam), "How does Google handle 
 | Money keyword (transactional/commercial intent) AND at least one URL in top 10 | Priority A — fix immediately |
 | Money keyword OR top-10, but not both | Priority B — fix if bandwidth allows |
 | Informational query at deep position (11+) | Priority C — usually skip |
+
+"Money keyword" here means the DataForSEO label is `transactional` or `commercial`, matching `COMMERCIAL_INTENT_VALUES` in `auditors/cannibalization_auditor.py`. The shared definition of all four labels is in `Skills/seo-audit-methodology/references/search-intent-classification.md`.
+
+**Note what that test does not distinguish.** It is a Dimension 1 test only, so an evaluating-stage "best plumber salt lake" and a decided-stage "emergency plumber near me" both score as money keywords despite very different conversion value. When two clusters tie on this tiering, break the tie on research stage: **decided-stage clusters outrank evaluating-stage clusters** at equal position and volume, because the realized loss is closer to the transaction. Read the stage manually per the shared reference; DFS does not return it.
+
+The vertical overlays in that reference also apply here. In home services a DIY-flavoured informational query is genuinely Priority C, but in B2B SaaS an informational query at position 11+ may be a shortlist-forming term worth fixing, so do not apply the Priority C row mechanically across verticals.
 
 **Top-3 cannibalization is the most damaging.** When competing pages rank in positions 1-3, you're already capturing visibility — the rotation between pages directly costs you clicks. Fix these first regardless of total impressions volume. Cannibalization at positions 20+ is theoretical loss; cannibalization at positions 1-3 is realized loss.
 
@@ -56,6 +84,8 @@ When both apply, the cluster is downgraded to REVIEW. The recommendation is "man
 | Two informational blog posts on different angles | `bidet toilet` (misconceptions + how-to) | Skip — different intents within informational SERP |
 
 **Critical rule:** before treating any REVIEW-tier cluster as cannibalization, confirm by manual SERP inspection or content-fit review that the URLs are competing for the same intent. The fix-first instinct on a REVIEW cluster usually destroys legitimate traffic.
+
+Run that confirmation through the tie-break in `Skills/seo-audit-methodology/references/search-intent-classification.md`: SERP furniture beats query text, and a query whose top 5 organic results split across two labels with no majority is a genuine mixed-intent seed term, not a cannibalization cluster. Two of the site's pages can hold that SERP legitimately. Check research stage as well as label, since two pages serving the same label at different stages (a definitional page and a book-now page) are not competing either.
 
 ## Winner Sanity Check + Architecture Fix Detection
 

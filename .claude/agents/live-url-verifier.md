@@ -14,6 +14,7 @@ The main agent calls you with either:
 1. **A list of URLs** to verify (e.g., "verify these 7 redirect targets")
 2. **A path to a file or column in a spreadsheet** containing URLs
 3. **A reference to a deliverable** ("verify all proposed targets in `Clients/Superior/Full SEO Audit/superior_gsc_redirect_corrections_plan.xlsx`")
+4. **A source→target redirect map to validate post-implementation** ("confirm the shipped redirect map works"). For this mode, do NOT use `verify_urls.py` — run `python scripts/validate_redirect_map.py --input <map.csv> --output /tmp/<purpose>_map_verify.json` instead (Rule 12f). It auto-detects generic and Rank Math column layouts, treats trailing-slash and http→https differences as matches by default, and reports per row whether each source actually lands on the approved target. Summarize its PASS/WARN/FAIL output in the same format as below.
 
 ## Your workflow
 

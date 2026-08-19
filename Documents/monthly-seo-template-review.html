@@ -1,0 +1,713 @@
+<title>Monthly SEO Template: Structural Review</title>
+
+<style>
+  :root {
+    --ground: #F6F7F9;
+    --surface: #FFFFFF;
+    --surface-2: #ECEFF3;
+    --ink: #171B24;
+    --ink-2: #414958;
+    --ink-3: #6C7484;
+    --rule: #D7DBE3;
+    --rule-soft: #E6E9EF;
+    --accent: #2F5D7C;
+    --accent-soft: #E2EAF1;
+    --crit: #A63D40;
+    --crit-soft: #F6E5E5;
+    --good: #3D6E4C;
+    --good-soft: #E1ECE4;
+    --shadow: 0 1px 2px rgba(23,27,36,.05), 0 10px 28px rgba(23,27,36,.05);
+
+    --font-head: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+    --font-body: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1218;
+      --surface: #171B23;
+      --surface-2: #1E232D;
+      --ink: #E9ECF1;
+      --ink-2: #B2B9C6;
+      --ink-3: #838B99;
+      --rule: #2C323E;
+      --rule-soft: #242A35;
+      --accent: #82B3D1;
+      --accent-soft: #1A2831;
+      --crit: #E28B8D;
+      --crit-soft: #2D1E20;
+      --good: #86BD97;
+      --good-soft: #172320;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0F1218;
+    --surface: #171B23;
+    --surface-2: #1E232D;
+    --ink: #E9ECF1;
+    --ink-2: #B2B9C6;
+    --ink-3: #838B99;
+    --rule: #2C323E;
+    --rule-soft: #242A35;
+    --accent: #82B3D1;
+    --accent-soft: #1A2831;
+    --crit: #E28B8D;
+    --crit-soft: #2D1E20;
+    --good: #86BD97;
+    --good-soft: #172320;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 28px 100px; }
+  .col { max-width: 66ch; }
+
+  h1, h2, h3, h4, .eyebrow, .lede, th, .chip, .num, .kicker, figcaption, .legend-t {
+    font-family: var(--font-head);
+  }
+
+  header.masthead {
+    padding: 66px 0 38px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 46px;
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(2rem, 1.1rem + 3.6vw, 3.3rem);
+    line-height: 1.05; letter-spacing: -.03em; font-weight: 700;
+    margin: 0 0 24px; text-wrap: balance; max-width: 19ch;
+  }
+  .lede {
+    font-family: var(--font-body); font-size: clamp(1.06rem, .98rem + .4vw, 1.28rem);
+    color: var(--ink-2); margin: 0; max-width: 60ch;
+  }
+
+  .stats { display: flex; flex-wrap: wrap; margin-top: 42px; border-top: 1px solid var(--rule); }
+  .stat { flex: 1 1 140px; padding: 18px 22px 14px 0; border-right: 1px solid var(--rule-soft); }
+  .stat:last-child { border-right: 0; }
+  .stat .num {
+    display: block; font-size: 30px; font-weight: 700; letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 7px;
+  }
+  .stat .lbl {
+    font-family: var(--font-head); font-size: 11px; letter-spacing: .05em;
+    color: var(--ink-3); text-transform: uppercase;
+  }
+  .stat.is-crit .num { color: var(--crit); }
+  .stat.is-good .num { color: var(--good); }
+
+  section { margin: 0 0 72px; }
+
+  h2 {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 26px; padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: clamp(1.32rem, 1.06rem + .85vw, 1.72rem); line-height: 1.18;
+    letter-spacing: -.022em; font-weight: 700; margin: 30px 0 16px; text-wrap: balance;
+  }
+  h3:first-child { margin-top: 0; }
+  h4 { font-size: 1.04rem; font-weight: 700; margin: 0 0 9px; line-height: 1.32; }
+
+  p { margin: 0 0 18px; }
+  .col > p:last-child { margin-bottom: 0; }
+  strong { font-weight: 700; }
+
+  .id {
+    font-family: var(--font-mono); font-size: .8em; font-weight: 500;
+    background: var(--surface-2); border: 1px solid var(--rule-soft);
+    border-radius: 3px; padding: .12em .4em; white-space: nowrap;
+  }
+
+  figure {
+    margin: 32px 0 0; padding: 24px 22px 18px; background: var(--surface);
+    border: 1px solid var(--rule); border-radius: 8px; box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; min-width: 1000px; height: auto; color: var(--ink); }
+  figcaption {
+    font-size: 13.5px; line-height: 1.55; color: var(--ink-3); margin-top: 18px;
+    padding-top: 14px; border-top: 1px solid var(--rule-soft); max-width: 82ch;
+  }
+  .fig-lead { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 4px; }
+
+  .node-box { fill: var(--surface-2); stroke: var(--rule); stroke-width: 1.2; }
+  .node-key { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+  .node-bad { fill: var(--crit-soft); stroke: var(--crit); stroke-width: 1.8; stroke-dasharray: 5 3; }
+  .n-id { font-family: var(--font-mono); font-size: 12px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  .n-nm { font-family: var(--font-head); font-size: 11px; fill: var(--ink-2); text-anchor: middle; }
+  .wk-t { font-family: var(--font-head); font-size: 11px; font-weight: 700; letter-spacing: .12em; fill: var(--ink-3); text-anchor: middle; }
+  .wk-s { font-family: var(--font-head); font-size: 10.5px; fill: var(--ink-3); text-anchor: middle; opacity: .8; }
+  .legend-t { font-size: 12.5px; fill: var(--ink-2); }
+  .flag-t { font-family: var(--font-head); font-size: 12px; font-weight: 700; fill: var(--crit); }
+
+  .findings { display: grid; gap: 16px; }
+  .find {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--crit);
+    border-radius: 6px; padding: 22px 24px; box-shadow: var(--shadow);
+  }
+  .find-top { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-bottom: 12px; }
+  .chip {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    padding: 3.5px 8px; border-radius: 3px; white-space: nowrap;
+    background: var(--crit-soft); color: var(--crit);
+  }
+  .chip.loc {
+    background: transparent; color: var(--ink-3); border: 1px solid var(--rule);
+    font-family: var(--font-mono); letter-spacing: 0; text-transform: none; font-weight: 500;
+  }
+  .find p { font-size: 16.5px; margin-bottom: 14px; }
+  .find p:last-child { margin-bottom: 0; }
+  .find .plain { font-weight: 700; color: var(--ink); }
+
+  .fix {
+    margin-top: 15px; padding: 13px 15px; background: var(--surface-2);
+    border-radius: 5px; font-size: 15.5px; line-height: 1.55;
+  }
+  .fix b {
+    font-family: var(--font-head); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 5px;
+  }
+
+  .keep { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 14px; }
+  .keep-item {
+    background: var(--good-soft); border: 1px solid color-mix(in srgb, var(--good) 24%, transparent);
+    border-radius: 6px; padding: 16px 18px;
+  }
+  .keep-item h4 { font-size: .96rem; margin-bottom: 6px; }
+  .keep-item p { font-size: 15px; margin: 0; color: var(--ink-2); }
+
+  .tw { overflow-x: auto; border: 1px solid var(--rule); border-radius: 7px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15.5px; }
+  th {
+    text-align: left; font-size: 10.5px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3); padding: 12px 16px;
+    border-bottom: 1px solid var(--rule); background: var(--surface-2); white-space: nowrap;
+  }
+  td { padding: 13px 16px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; line-height: 1.5; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+  td.tot { font-weight: 700; }
+  tfoot td { border-top: 1px solid var(--rule); background: var(--surface-2); }
+
+  .phase { margin-top: 32px; }
+  .phase:first-of-type { margin-top: 0; }
+  .phase-h {
+    display: flex; align-items: baseline; gap: 12px; padding-bottom: 9px;
+    border-bottom: 1px solid var(--rule); margin-bottom: 2px;
+  }
+  .phase-h .tag {
+    font-family: var(--font-mono); font-size: 12.5px; font-weight: 700;
+    color: var(--ground); background: var(--ink); padding: 2px 8px; border-radius: 3px;
+  }
+  .phase-h .ttl { font-family: var(--font-head); font-weight: 700; font-size: 1.04rem; letter-spacing: -.01em; }
+  .phase-h .when { font-family: var(--font-head); font-size: 12px; color: var(--ink-3); margin-left: auto; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+  ol.steps li {
+    counter-increment: s; display: flex; gap: 14px; padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft); font-size: 16.5px; line-height: 1.55;
+  }
+  ol.steps li:last-child { border-bottom: 0; }
+  ol.steps li::before {
+    content: counter(s, decimal-leading-zero); font-family: var(--font-mono);
+    font-size: 12px; color: var(--ink-3); flex: 0 0 26px; padding-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .note {
+    margin-top: 30px; padding: 19px 21px; border: 1px dashed var(--rule);
+    border-radius: 6px; font-size: 16px; color: var(--ink-2); background: var(--surface);
+    max-width: 74ch;
+  }
+  .note b {
+    font-family: var(--font-head); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 7px;
+  }
+
+  footer {
+    margin-top: 76px; padding-top: 22px; border-top: 2px solid var(--ink);
+    font-family: var(--font-head); font-size: 12.5px; color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 8px 28px;
+  }
+
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 18px 64px; }
+    header.masthead { padding-top: 44px; }
+    .stat { border-right: 0; padding-right: 0; flex-basis: 46%; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Internal review &middot; 10 August 2026</p>
+  <h1>Reading the Monthly SEO Template as a Machine</h1>
+  <p class="lede">Twenty-five tasks that run every month, plus seven more every third month. The sequence is right and the thinking behind it is better than most agency retainers ever get. The gap is between what the tasks say and what the system actually enforces, and closing it is mostly clicking.</p>
+
+  <div class="stats">
+    <div class="stat"><span class="num">32</span><span class="lbl">Tasks reviewed</span></div>
+    <div class="stat is-crit"><span class="num">7</span><span class="lbl">Fix before deploy</span></div>
+    <div class="stat"><span class="num">7</span><span class="lbl">Missing wires</span></div>
+    <div class="stat"><span class="num">5</span><span class="lbl">Broken handoffs</span></div>
+    <div class="stat is-good"><span class="num">9</span><span class="lbl">Keep untouched</span></div>
+  </div>
+</header>
+
+<section>
+  <h2>What was reviewed</h2>
+  <div class="col">
+    <p>Every task description and its dependency list, fed in one at a time and mapped into a single graph. Where two tasks disagreed, or where a task named something that didn't exist, that went on the list. Nothing here is a judgement about SEO tactics. It's about whether the machine does what its own instructions say it does.</p>
+  </div>
+
+  <div class="tw" style="margin-top:26px;max-width:760px">
+    <table>
+      <thead><tr><th>Container</th><th>Subtasks</th><th>How many</th><th>Runs</th></tr></thead>
+      <tbody>
+        <tr><td>Week 1 &middot; Diagnose &amp; Plan</td><td class="mono">1.1 to 1.8</td><td class="tot">8</td><td>Monthly</td></tr>
+        <tr><td>Week 2 &middot; Execute I</td><td class="mono">2.1 to 2.5</td><td class="tot">5</td><td>Monthly</td></tr>
+        <tr><td>Week 3 &middot; Execute II</td><td class="mono">3.1 to 3.4</td><td class="tot">4</td><td>Monthly</td></tr>
+        <tr><td>Week 4 &middot; Ship, QA &amp; Proof</td><td class="mono">4.1 to 4.5</td><td class="tot">5</td><td>Monthly</td></tr>
+        <tr><td>Week 5 &middot; Report &amp; Decide</td><td class="mono">5.1 to 5.3</td><td class="tot">3</td><td>Monthly</td></tr>
+        <tr><td>Quarterly Block</td><td class="mono">Q1 to Q7</td><td class="tot">7</td><td>Every 3rd month</td></tr>
+      </tbody>
+      <tfoot><tr><td class="tot">6 containers</td><td></td><td class="tot">32</td><td class="tot">25 monthly, 7 quarterly</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>Not reviewed</b>
+    The milestone wrapper itself, which sits one level above the five week containers and is what gets created in <span class="id">5.3</span> and closed at month end. And the standing <strong>MASTER &ndash; Repeated Tasks</strong> parent, which is built once per client rather than monthly and was never supplied. That second one matters for exactly one open question, covered at the end.
+  </div>
+</section>
+
+<section>
+  <h2>The verdict</h2>
+  <div class="col">
+    <h3>The template works. One thing is wrong with it, and it repeats.</h3>
+
+    <p>Every task states what it depends on in <strong>two separate places</strong>. There's the written <strong>Feeds</strong> line in the description, and there's the actual dependency setting in ClickUp that stops the task starting. The first is a sign on a door. The second is a lock.</p>
+
+    <p><strong>In seven places there's a sign and no lock.</strong> The task can be ticked off before the work it depends on has happened, and nothing catches it.</p>
+
+    <p>Worst case is <span class="id">1.8 Lock Monthly Plan</span>. Its instructions say to review all seven Week 1 tasks. Four of them gate it. Every page task in Weeks 2 and 3 gets its target URL from this one.</p>
+
+    <p>Two other patterns worth naming, same root cause. Schema gets checked three times and page deletion gets checked zero times, because QA's scope is written as "2.1 to 3.2" and the pruning round is a quarterly task. And the rule for retiring dead tasks would delete your safety checks, because to that rule "found nothing" and "did nothing" look identical.</p>
+
+    <p>Most of the fix is clicking, not rework.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The month as a dependency graph</h2>
+  <p class="fig-lead">Read left to right. Solid lines are dependencies the tool enforces. Bold dashed lines are the ones a task's own description requires and nothing checks. Only the flow-defining edges are drawn, so the picture stays traceable.</p>
+
+  <figure>
+    <svg viewBox="0 0 1290 700" role="img" aria-label="Dependency graph of the 25 monthly tasks in five week columns. Solid lines show enforced dependencies. Seven bold dashed lines show dependencies required by a task's own text but not wired: the health sweep, site audit and crawler check into the plan lock; the crawler check into the AI visibility run; title rewrites into the cannibalization check; the conversion path check into QA; and the GBP check into the activity log. Task 3.3, the schema and entity check, is drawn with a dashed border because it has no dependencies in either direction.">
+      <defs>
+        <marker id="a-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 1 L10 5 L0 9 z" fill="#6C7484"/>
+        </marker>
+        <marker id="a-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0 1 L10 5 L0 9 z" fill="#A63D40"/>
+        </marker>
+      </defs>
+
+      <text class="wk-t" x="140" y="28">WEEK 1</text><text class="wk-s" x="140" y="44">Diagnose &amp; plan</text>
+      <text class="wk-t" x="400" y="28">WEEK 2</text><text class="wk-s" x="400" y="44">Fixes &amp; refreshes</text>
+      <text class="wk-t" x="660" y="28">WEEK 3</text><text class="wk-s" x="660" y="44">Links &amp; entity</text>
+      <text class="wk-t" x="920" y="28">WEEK 4</text><text class="wk-s" x="920" y="44">Ship &amp; verify</text>
+      <text class="wk-t" x="1180" y="28">WEEK 5</text><text class="wk-s" x="1180" y="44">Report &amp; decide</text>
+      <line x1="20" y1="54" x2="1270" y2="54" stroke="currentColor" stroke-width="1" opacity=".18"/>
+
+      <g stroke="#6C7484" fill="none" stroke-width="1.5" opacity=".72" marker-end="url(#a-s)">
+        <path d="M64,92 C20,92 20,554 58,554"/>
+        <path d="M64,356 C34,356 34,554 58,554"/>
+        <path d="M64,422 C44,422 44,554 58,554"/>
+        <path d="M64,488 C52,488 52,554 58,554"/>
+        <path d="M216,158 C264,158 276,92 318,92"/>
+        <path d="M216,290 C268,290 272,98 318,96"/>
+        <path d="M216,224 C264,224 276,158 318,158"/>
+        <path d="M216,554 C258,554 276,230 318,226"/>
+        <path d="M216,554 C258,554 276,296 318,292"/>
+        <path d="M216,554 C258,554 276,362 318,358"/>
+        <path d="M216,554 C330,554 470,100 578,94"/>
+        <path d="M216,422 C360,478 470,320 578,296"/>
+        <path d="M216,92 C470,18 720,116 838,152"/>
+        <path d="M844,92 C800,92 800,356 838,356"/>
+        <path d="M996,356 C1064,356 1070,100 1098,94"/>
+        <path d="M1104,92 C1074,92 1074,158 1098,158"/>
+        <path d="M1104,158 C1076,158 1076,224 1098,224"/>
+      </g>
+
+      <g stroke="#A63D40" fill="none" stroke-width="2.2" stroke-dasharray="7 4" marker-end="url(#a-d)">
+        <path d="M216,158 C306,158 306,554 222,554"/>
+        <path d="M216,224 C286,224 286,554 222,554"/>
+        <path d="M216,290 C266,290 266,554 222,554"/>
+        <path d="M216,290 C244,290 244,422 222,422"/>
+        <path d="M476,356 C610,436 730,318 836,232"/>
+        <path d="M844,158 C812,158 812,92 838,92"/>
+        <path d="M844,290 C826,290 826,356 838,356"/>
+      </g>
+
+      <g>
+        <rect class="node-box" x="64" y="70" width="152" height="44" rx="6"/><text class="n-id" x="140" y="89">1.1</text><text class="n-nm" x="140" y="104">Data snapshot</text>
+        <rect class="node-box" x="64" y="136" width="152" height="44" rx="6"/><text class="n-id" x="140" y="155">1.2</text><text class="n-nm" x="140" y="170">GSC health sweep</text>
+        <rect class="node-box" x="64" y="202" width="152" height="44" rx="6"/><text class="n-id" x="140" y="221">1.3</text><text class="n-nm" x="140" y="236">SEMrush audit</text>
+        <rect class="node-box" x="64" y="268" width="152" height="44" rx="6"/><text class="n-id" x="140" y="287">1.4</text><text class="n-nm" x="140" y="302">Crawler access</text>
+        <rect class="node-box" x="64" y="334" width="152" height="44" rx="6"/><text class="n-id" x="140" y="353">1.5</text><text class="n-nm" x="140" y="368">Candidate list</text>
+        <rect class="node-box" x="64" y="400" width="152" height="44" rx="6"/><text class="n-id" x="140" y="419">1.6</text><text class="n-nm" x="140" y="434">AI visibility</text>
+        <rect class="node-box" x="64" y="466" width="152" height="44" rx="6"/><text class="n-id" x="140" y="485">1.7</text><text class="n-nm" x="140" y="500">Competitor gaps</text>
+        <rect class="node-key" x="64" y="532" width="152" height="44" rx="6"/><text class="n-id" x="140" y="551">1.8</text><text class="n-nm" x="140" y="566">Lock the plan</text>
+
+        <rect class="node-box" x="324" y="70" width="152" height="44" rx="6"/><text class="n-id" x="400" y="89">2.1</text><text class="n-nm" x="400" y="104">Technical fixes</text>
+        <rect class="node-box" x="324" y="136" width="152" height="44" rx="6"/><text class="n-id" x="400" y="155">2.2</text><text class="n-nm" x="400" y="170">Fix sheet</text>
+        <rect class="node-box" x="324" y="202" width="152" height="44" rx="6"/><text class="n-id" x="400" y="221">2.3</text><text class="n-nm" x="400" y="236">Refresh page 1</text>
+        <rect class="node-box" x="324" y="268" width="152" height="44" rx="6"/><text class="n-id" x="400" y="287">2.4</text><text class="n-nm" x="400" y="302">Refresh page 2</text>
+        <rect class="node-box" x="324" y="334" width="152" height="44" rx="6"/><text class="n-id" x="400" y="353">2.5</text><text class="n-nm" x="400" y="368">Title rewrites</text>
+
+        <rect class="node-box" x="584" y="70" width="152" height="44" rx="6"/><text class="n-id" x="660" y="89">3.1</text><text class="n-nm" x="660" y="104">Refresh pages 3-5</text>
+        <rect class="node-box" x="584" y="136" width="152" height="44" rx="6"/><text class="n-id" x="660" y="155">3.2</text><text class="n-nm" x="660" y="170">Internal links</text>
+        <rect class="node-bad" x="584" y="202" width="152" height="44" rx="6"/><text class="n-id" x="660" y="221">3.3</text><text class="n-nm" x="660" y="236">Schema &amp; entity</text>
+        <rect class="node-box" x="584" y="268" width="152" height="44" rx="6"/><text class="n-id" x="660" y="287">3.4</text><text class="n-nm" x="660" y="302">Mention outreach</text>
+
+        <rect class="node-key" x="844" y="70" width="152" height="44" rx="6"/><text class="n-id" x="920" y="89">4.1</text><text class="n-nm" x="920" y="104">QA &amp; indexing</text>
+        <rect class="node-box" x="844" y="136" width="152" height="44" rx="6"/><text class="n-id" x="920" y="155">4.2</text><text class="n-nm" x="920" y="170">Conversion paths</text>
+        <rect class="node-box" x="844" y="202" width="152" height="44" rx="6"/><text class="n-id" x="920" y="221">4.3</text><text class="n-nm" x="920" y="236">Cannibalization</text>
+        <rect class="node-box" x="844" y="268" width="152" height="44" rx="6"/><text class="n-id" x="920" y="287">4.4</text><text class="n-nm" x="920" y="302">GBP check</text>
+        <rect class="node-box" x="844" y="334" width="152" height="44" rx="6"/><text class="n-id" x="920" y="353">4.5</text><text class="n-nm" x="920" y="368">Activity log</text>
+
+        <rect class="node-box" x="1104" y="70" width="152" height="44" rx="6"/><text class="n-id" x="1180" y="89">5.1</text><text class="n-nm" x="1180" y="104">Monthly report</text>
+        <rect class="node-box" x="1104" y="136" width="152" height="44" rx="6"/><text class="n-id" x="1180" y="155">5.2</text><text class="n-nm" x="1180" y="170">Client call</text>
+        <rect class="node-box" x="1104" y="202" width="152" height="44" rx="6"/><text class="n-id" x="1180" y="221">5.3</text><text class="n-nm" x="1180" y="236">Close &amp; spawn</text>
+      </g>
+
+      <text class="flag-t" x="324" y="606">Three Week 1 diagnostics feed the plan lock. None of them gates it.</text>
+      <text class="flag-t" x="584" y="640">The one task with no dependencies at all, despite being scoped to</text>
+      <text class="flag-t" x="584" y="656">&ldquo;every page changed this month&rdquo;</text>
+
+      <line x1="20" y1="672" x2="1270" y2="672" stroke="currentColor" stroke-width="1" opacity=".18"/>
+      <g>
+        <line x1="24" y1="692" x2="70" y2="692" stroke="#6C7484" stroke-width="1.5" opacity=".72" marker-end="url(#a-s)"/>
+        <text class="legend-t" x="80" y="696">Enforced by the tool</text>
+        <line x1="270" y1="692" x2="316" y2="692" stroke="#A63D40" stroke-width="2.2" stroke-dasharray="7 4" marker-end="url(#a-d)"/>
+        <text class="legend-t" x="326" y="696">Required by the task's own text. Not wired.</text>
+        <rect x="700" y="683" width="26" height="17" rx="4" class="node-bad"/>
+        <text class="legend-t" x="736" y="696">No dependencies either way</text>
+        <rect x="964" y="683" width="26" height="17" rx="4" class="node-key"/>
+        <text class="legend-t" x="1000" y="696">Keystone: everything downstream inherits it</text>
+      </g>
+    </svg>
+    <figcaption>Supporting edges are omitted so the flow stays readable. Two of the fan-ins not drawn are worth knowing: <span class="id">4.1</span> is the best-wired task in the template, gated on all seven execution tasks, and <span class="id">3.2</span> and <span class="id">4.3</span> are both correctly gated on the three page refreshes. The quarterly block is not shown, and it adds one more gap of its own, since the pruning round deletes pages entirely outside the QA scope drawn here.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Fix before the next deploy</h2>
+  <div class="col">
+    <p>Seven findings where leaving it costs either a wrong decision that propagates through the month, or an irreversible action taken with nobody checking. Everything else can wait for the quarterly review.</p>
+  </div>
+
+  <div class="findings" style="margin-top:28px">
+
+    <div class="find">
+      <div class="find-top"><span class="chip">01</span><span class="chip loc">1.8 Lock the plan</span></div>
+      <h4>The keystone is wired to four of the seven tasks it says it reads</h4>
+      <p class="plain">1.8 can be marked done while 1.2, 1.3 and 1.4 are still open.</p>
+      <p>Its first step is <em>"review the deliverables of 1.1&ndash;1.7."</em> Its second-to-last step is <em>"confirm the 1.2 / 1.4 fix items are captured in 2.1, and that the 1.3 fix sheet is approved so 2.2 can start."</em> So the written instructions require all seven. The dependency settings require only four: <span class="id">1.1</span>, <span class="id">1.5</span>, <span class="id">1.6</span> and <span class="id">1.7</span>.</p>
+      <p>Lock the plan on Thursday, have the health sweep land Friday, and that confirm step was checking against nothing. Every page task in Weeks 2 and 3 gets its URL and refresh angle from this one, so a plan locked early carries into all of them.</p>
+      <div class="fix"><b>Fix</b>Wire <span class="id">1.2</span>, <span class="id">1.3</span> and <span class="id">1.4</span> as blockers on <span class="id">1.8</span>. Three clicks.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">02</span><span class="chip loc">Q2 Pruning round</span></div>
+      <h4>The riskiest task in the system has the weakest safety rails</h4>
+      <p class="plain">Pages get deleted with no named approver and no independent check.</p>
+      <p>It says "execute approved consolidations" and never says who approves. And <span class="id">4.1</span>'s QA scope reads "every page changed this month, 2.1 to 3.2", which excludes quarterly tasks. So a title tag rewrite gets an independent check and a permanent 301 gets none.</p>
+      <p>The delete criteria are organic-only too. A page with no organic clicks can still take paid or email traffic and convert on it, which is why your own audit rules already exclude PPC landing pages from SEO metrics.</p>
+      <div class="fix"><b>Fix</b>Name the approver before the execute step, add client sign-off where content is deleted rather than merged, extend <span class="id">4.1</span>'s QA scope to cover quarterly tasks, and check GA4 for non-organic sessions and conversions on every deletion candidate.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">03</span><span class="chip loc">5.3 &middot; Q6</span></div>
+      <h4>The rule that keeps the template honest will delete the safety nets first</h4>
+      <p class="plain">A check that finds nothing looks identical to a check that does nothing.</p>
+      <p><span class="id">5.3</span> flags anything that "produced no value for the second straight month". <span class="id">Q6</span> restates it as "produced measurable deltas". Neither a clean health sweep, an unblocked crawler check, nor a QA pass where everything passes produces a delta, and all three are doing their job. <span class="id">1.2</span> even says a stated "no issues" is a valid outcome, and <span class="id">Q6</span>'s wording would kill it anyway.</p>
+      <p>Run for a year, this keeps the tasks that always find something and removes the ones whose value is that they usually don't.</p>
+      <div class="fix"><b>Fix</b>Define value as output produced and consumed, never as problems found. Then copy the sentence the backlink defence check already uses, "log no action warranted with the export attached, the expected outcome most quarters", into <span class="id">1.2</span>, <span class="id">1.4</span>, <span class="id">4.1</span> and <span class="id">4.3</span>. That protects them regardless of how the rule ends up worded.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">04</span><span class="chip loc">5.2 &rarr; 5.3</span></div>
+      <h4>Next month's entire cycle waits on a client attending a call</h4>
+      <p class="plain">If the call slips two weeks, next month starts two weeks late.</p>
+      <p>The client call blocks month close, and month close both ends the month and creates next month's milestone. Monthly client calls get rescheduled constantly, for reasons nobody on your team controls. When one slips, the milestone isn't deployed, Week 1 doesn't start on time, and the following cycle runs late. This is the single biggest operational fragility in the template and it will show up within the first few months of live use.</p>
+      <div class="fix"><b>Fix</b>Give <span class="id">5.3</span> a timeout path. If the call hasn't happened by the last business day, deploy using the proposed direction from the report and adjust targets afterwards. Gate the confirmation of direction on the client, never the work itself.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">05</span><span class="chip loc">Q5 Entity review</span></div>
+      <h4>The Wikidata instruction is wrong, and acting on it has a real downside</h4>
+      <p class="plain">"Any real business qualifies, no notability bar" is not true.</p>
+      <p>Wikidata's notability policy requires serious, publicly available references. Plenty of businesses clear it, but an item sourced only to the client's own site and directory listings routinely gets nominated for deletion.</p>
+      <p>The cost isn't just wasted quarterly work. An account that keeps creating promotional items for paying clients attracts scrutiny, and a flagged account taints every client it has touched.</p>
+      <div class="fix"><b>Fix</b>Replace with "verify serious, independent, publicly available references exist before creating an item; where they don't, log it as an entity gap". Name who holds the account and note the requirement to disclose the paid relationship.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">06</span><span class="chip loc">3.3 Schema &amp; entity</span></div>
+      <h4>A task scoped to "every page changed this month" has no dependencies at all</h4>
+      <p class="plain">It can run before the pages are changed, and nothing tells it otherwise.</p>
+      <p>The only fully disconnected node in the monthly graph, zero edges either direction. Its first step validates schema on every page changed this month, which is work owned by six other tasks. Nothing stops it running Monday and missing everything shipped Thursday.</p>
+      <p>It's also the third place schema gets validated, and the only one of the three not correctly sequenced. The template already knows the right shape here: keyword tracking is done in the refresh tasks and verified exactly once in QA. Schema didn't get the same treatment.</p>
+      <div class="fix"><b>Fix</b>Cut the schema step from <span class="id">3.3</span> and let QA own schema verification, since it's already gated on all seven execution tasks. No coverage is lost. Keep the rest of the task, which is genuinely independent entity work.</div>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="chip">07</span><span class="chip loc">1.4 &rarr; 1.6</span></div>
+      <h4>The AI visibility reading can happen before anyone checks the crawlers can get in</h4>
+      <p class="plain">A zero-visibility result isn't a null result if the CDN was blocking every AI bot.</p>
+      <p>The AI visibility run carries no blockers at all, so nothing stops it running before the crawler access check. The crawler check explicitly names it as a consumer, on the grounds that it "explains zero-visibility results if access is blocked". Run in the wrong order, you don't get a null reading, you get a wrong diagnosis, and it doesn't stay contained: it flows into target selection and becomes the mention outreach target list for the month.</p>
+      <div class="fix"><b>Fix</b>Wire <span class="id">1.4</span> as a blocker on <span class="id">1.6</span>, or fold the robots and CDN check into the visibility run's first step.</div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>Protect these</h2>
+  <div class="col">
+    <p>Nine things here are better than standard agency practice, and a few are the reason everything else works. Any edit should route around them.</p>
+  </div>
+
+  <div class="keep" style="margin-top:26px">
+    <div class="keep-item">
+      <h4>Compile from task comments, not memory</h4>
+      <p>The activity log. An explicit anti-fabrication control on the artifact most likely to get padded, and what makes "a task with no logged output is not done" enforceable.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Log "no action warranted", the expected outcome</h4>
+      <p>The backlink defence check. Declares its own null result as success, which is the fix for finding 03 sitting in the template already.</p>
+    </div>
+    <div class="keep-item">
+      <h4>The Never Include list</h4>
+      <p>The monthly report. Naming what must not appear is rarer and more useful than naming what must, and three separate tasks defend the same line independently.</p>
+    </div>
+    <div class="keep-item">
+      <h4>One team touches a page per month</h4>
+      <p>The plan lock. Collision avoidance written as a rule rather than left to goodwill, with a clean boundary between optimisation scope and a real rewrite.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Never auto-roll incomplete work</h4>
+      <p>Month close. Forces a decision on every unfinished item. Auto-rolling is how a backlog becomes a graveyard.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Roger approves every disavow entry</h4>
+      <p>The backlink defence check. The right control on a high-stakes action, and the model the pruning round should copy.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Light monthly, deep quarterly</h4>
+      <p>Crawler access with the quarterly crawl, and the entity spot-check with the citations audit. Cheap enough to actually happen, thorough enough to catch what the spot-check misses.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Every page passes or gets a fix task</h4>
+      <p>QA. One of the few tasks that says what happens when the check fails instead of assuming it passes.</p>
+    </div>
+    <div class="keep-item">
+      <h4>Refusing toxicity-score disavows</h4>
+      <p>The backlink defence check. Correct, reasoned, and the opposite of what most agency templates do and bill for quarterly.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Five broken handoffs</h2>
+  <div class="col">
+    <p>Separate from the missing wires. In these five, one task promises another something it never actually produces, or produces something nothing collects. Each is one line to fix, and each currently costs somebody unbudgeted work every month, or silently loses a quarter's output.</p>
+  </div>
+
+  <div class="tw" style="margin-top:26px">
+    <table>
+      <thead><tr><th>Handoff</th><th>What is promised</th><th>What actually happens</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="mono">1.1 &rarr; 4.2</td>
+          <td>A top landing pages list</td>
+          <td>Every step in the data snapshot is a site-level total. No page-level export exists, so whoever runs the conversion check pulls it themselves.</td>
+          <td>Add top landing pages by organic clicks, with period-over-period delta, to the snapshot.</td>
+        </tr>
+        <tr>
+          <td class="mono">Q3 &rarr; 1.5</td>
+          <td>A refresh queue of expansion candidates</td>
+          <td>The candidate list builds from four Search Console pulls and never opens that queue. A quarter of topic-gap work lands where nothing reads it.</td>
+          <td>Add "pull open items from the topic gap refresh queue" as a fifth source in the candidate list.</td>
+        </tr>
+        <tr>
+          <td class="mono">nothing &rarr; Q2</td>
+          <td>Pages with zero clicks over 6+ months</td>
+          <td>No task produces this. The candidate list finds declining pages, which is a different population, since a page that never had clicks never declined.</td>
+          <td>Add an explicit Search Console pull to the pruning round, trailing 6 months, filtered to zero clicks.</td>
+        </tr>
+        <tr>
+          <td class="mono">nothing &rarr; 5.1</td>
+          <td>"Annotate any Google update this month"</td>
+          <td>Nothing in Weeks 1 to 4 monitors algorithm updates or volatility, so the annotation depends on whoever writes the report remembering.</td>
+          <td>Assign update monitoring to the health sweep, where someone is already in Search Console.</td>
+        </tr>
+        <tr>
+          <td class="mono">4.4 &rarr; 4.5</td>
+          <td>GBP actions for the activity log</td>
+          <td>The GBP check is same-week, has zero dependencies and doesn't block the log, so the log can be compiled before the GBP work is done.</td>
+          <td>Wire <span class="id">4.4</span> as a blocker on <span class="id">4.5</span>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Cadence: move these</h2>
+  <div class="col">
+    <p>This is where the quiet cost sits. A quarterly check run monthly comes back "no change" eleven times a year, which is exactly how a checklist trains its owner to skim it. A monthly check run quarterly leaves a detection gap. Both are happening.</p>
+  </div>
+
+  <div class="tw" style="margin-top:26px">
+    <table>
+      <thead><tr><th>Item</th><th>Now</th><th>Should be</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">4.4 steps 1-2</td><td>Monthly</td><td>Quarterly</td>
+          <td>GBP categories and predefined services move on a timescale of quarters. Competitors rarely change primary categories and Google adds services occasionally, so these return "no change" almost every month.</td></tr>
+        <tr><td class="mono">Q7 step 1</td><td>Quarterly</td><td>Monthly</td>
+          <td>The task itself calls it a ten-second check. A manual action is the highest-severity event in search, and quarterly means up to 90 days of lag for 20 extra seconds a year of effort.</td></tr>
+        <tr><td class="mono">3.2 steps 2-3</td><td>Monthly</td><td>Cut, already in Q1</td>
+          <td>Orphan detection and click-depth both need a full spider crawl. The quarterly crawl has one. The health sweep's list-mode crawl cannot find orphans or compute depth, so these two steps have no data two months in three.</td></tr>
+        <tr><td class="mono">4.3, second half</td><td>Same month</td><td>Next month</td>
+          <td>New cannibalization from a Week 2 refresh cannot appear in Search Console by Week 4, because Google has to recrawl and rerank first. The check returns clean by construction, which reads as a pass.</td></tr>
+        <tr><td class="mono">3.3 step 1</td><td>Monthly</td><td>Cut, already in 4.1</td>
+          <td>Schema is validated three times and only QA's pass is correctly sequenced.</td></tr>
+        <tr><td class="mono">1.1 step 6 or 1.5 step 4</td><td>Both monthly</td><td>Pick one</td>
+          <td>Identical Position Tracking pull filtered to last month's tag, done twice in tasks where one blocks the other. Let the snapshot capture it and the candidate list interpret it.</td></tr>
+        <tr><td class="mono">Q5 step 4</td><td>Quarterly</td><td>Scope against Q4</td>
+          <td>The citations audit and entity review both scan brand consistency in the same month, both covering GBP, name and category. Same cadence is redundancy, not a light-and-deep split.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>Worth adding</b>
+    Reviews are the one genuine hole in local coverage. The GBP check handles categories, services and hours monthly, the citations audit handles listing integrity quarterly, and review velocity, review response rate and the Q&amp;A section appear in neither. For a local client those move rankings and conversion at least as much as a category check. Either another service line owns it, in which case say so in the template so nobody assumes it's covered here, or it belongs in the GBP check. Second addition, nearly free: the conversion path check already has someone test-submitting forms, so confirming the submission registered as a conversion event in GA4 costs one extra look and catches the highest-cost silent failure in the stack.
+  </div>
+</section>
+
+<section>
+  <h2>The rest</h2>
+  <div class="col">
+    <p>Real, but none of it should hold up a deploy. Batch these into the first quarterly template review.</p>
+  </div>
+
+  <div class="tw" style="margin-top:26px">
+    <table>
+      <thead><tr><th>Where</th><th>Finding</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">2.5 &rarr; 4.3</td><td>Title rewrites retarget up to five pages by front-loading query language, which is the intervention most likely to create query overlap, and it's the one page task excluded from the cannibalization check. All five come from the same candidate pool as the refresh targets, so they're topically adjacent by construction.</td></tr>
+        <tr><td class="mono">2.3 &middot; 2.5</td><td>The title spec says 60 characters and says nothing about the brand suffix. Your house standard is a 65-character budget for the page-specific portion with the suffix excluded, plus a no-repeated-token check. Two or more refreshes a month per client is enough volume for the two standards to visibly diverge.</td></tr>
+        <tr><td class="mono">4.4 &middot; Q1 &middot; Q4 &middot; Q7</td><td>Four tasks are never named by any other task. Their output gets consumed by pull rather than declared, which works, but it means the quarterly block is nearly invisible from inside the monthly cycle. Someone onboarded by reading Weeks 1 to 5 would finish not knowing the full crawl, citations audit and backlink defence check exist.</td></tr>
+        <tr><td class="mono">2.1 &middot; 2.2</td><td>The fix-list boundary is drawn by source tool, not by issue. Broken links appear in both a Search Console sweep and a SEMrush audit, so the same URL can be worked twice in one week by two different people.</td></tr>
+        <tr><td class="mono">Q3 &rarr; 1.6</td><td>Revising the AI prompt set changes the denominator of share of voice, and neither the visibility run nor the report knows the basis moved. A quarterly step change gets read as a performance change. Handle it the way the Search Console impressions bug is already handled: stamp the version and caveat the revision month.</td></tr>
+        <tr><td class="mono">1.7</td><td>Ownership conflict. The master rules assign it to Rahman directly, the task assigns it to Roger with Rahman conditional. Every other named task is consistent, so this one is the outlier.</td></tr>
+        <tr><td class="mono">Q1</td><td>No severity tiers and no same-month escalation. A full quarterly crawl is the most likely task in the template to surface something urgent, and everything routes to next month regardless. Borrow the health sweep's Blocker / Fix this month / Watch vocabulary.</td></tr>
+        <tr><td class="mono">Q6</td><td>Has a route to the master template but no step that goes looking for drift. Live example: <span class="id">3.1</span> already carries a richer escape hatch for an unviable page than <span class="id">2.3</span>, the SOP it inherits from, and nothing prompts anyone to notice.</td></tr>
+        <tr><td class="mono">Q6</td><td>The add and kill mechanisms sit in the same task but aren't linked, so the task count only grows. Killing means admitting something didn't work; adding doesn't. Fund each trial slot with a kill.</td></tr>
+        <tr><td class="mono">1.1</td><td>Anomaly flagging has no thresholds, so it varies month to month and more once delegated. Give it numbers, and include a zero-fire check on conversion events, which is the failure that stays hidden longest.</td></tr>
+        <tr><td class="mono">1.1</td><td>Rolling 30-day windows won't match a report the client reads as calendar months, and Search Console lags two to three days. Lock to complete calendar months and fix the pull date.</td></tr>
+        <tr><td class="mono">1.1 &middot; 5.1</td><td>Year-on-year impressions are unusable until the April 2027 report, because the prior-year period always falls inside the May 2025 to April 2026 logging-bug window. State that as a rule with an expiry date rather than leaving it to be re-derived monthly.</td></tr>
+        <tr><td class="mono">3.4</td><td>"Top 1 to 2" has no selection criterion, and this is the only task converting AI visibility findings into action. At two per month, the ranking rule is the strategy. Carry-forwards also have no stale-out rule, so real capacity shrinks every month.</td></tr>
+        <tr><td class="mono">1.7 &middot; 1.8 &middot; Q3</td><td>Three handoffs leave the template with no return path, and nothing ever asks whether a routed item shipped. Contrast the candidate list, which explicitly measures last month's keyword work before proposing new work.</td></tr>
+        <tr><td class="mono">Several</td><td>Four load-bearing statistics carry no source. They justify their tasks existing and they travel to clients through the report. Record source and date beside each.</td></tr>
+        <tr><td class="mono">Several</td><td>Cross-month references are labelled inconsistently in five places, sometimes "next month's 1.8" and sometimes a bare "1.8". A bare backward reference reads as circular, which is worth avoiding in a document people audit.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>The order to do it in</h2>
+
+  <div class="phase">
+    <div class="phase-h"><span class="tag">P0</span><span class="ttl">Before September deploys</span><span class="when">about an hour</span></div>
+    <ol class="steps">
+      <li>Wire <span class="id">1.2</span>, <span class="id">1.3</span> and <span class="id">1.4</span> as blockers on <span class="id">1.8</span>.</li>
+      <li>Wire <span class="id">1.4</span> as a blocker on <span class="id">1.6</span>.</li>
+      <li>Wire <span class="id">2.5</span> onto <span class="id">4.3</span>, and <span class="id">4.4</span> onto <span class="id">4.5</span>.</li>
+      <li>Name the approver on <span class="id">Q2</span>, and extend <span class="id">4.1</span>'s QA scope to cover quarterly tasks.</li>
+      <li>Add the timeout path to <span class="id">5.3</span> so next month never waits on a client call.</li>
+      <li>Rewrite the Wikidata step in <span class="id">Q5</span>.</li>
+      <li>Cut the schema step from <span class="id">3.3</span> and gate what remains behind the execution tasks.</li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-h"><span class="tag">P1</span><span class="ttl">Next template revision</span><span class="when">half a day</span></div>
+    <ol class="steps">
+      <li>Redefine value in <span class="id">5.3</span> and <span class="id">Q6</span> as output produced and consumed, then add the expected-null sentence to <span class="id">1.2</span>, <span class="id">1.4</span>, <span class="id">4.1</span> and <span class="id">4.3</span>.</li>
+      <li>Close the five broken handoffs, one line each.</li>
+      <li>Split <span class="id">4.3</span> by data latency and move the new-cannibalization half into next month's candidate list.</li>
+      <li>Move <span class="id">4.4</span> steps 1 and 2 to quarterly, and the manual-action check to monthly.</li>
+      <li>Strip the orphan and depth checks from <span class="id">3.2</span>, and deduplicate the Position Tracking pull.</li>
+      <li>Align the title spec in <span class="id">2.3</span> and <span class="id">2.5</span> with the house standard.</li>
+      <li>Lock <span class="id">1.1</span> to calendar months and add anomaly thresholds, including the zero-fire conversion check.</li>
+    </ol>
+  </div>
+
+  <div class="phase">
+    <div class="phase-h"><span class="tag">P2</span><span class="ttl">First quarterly review</span><span class="when">batch it</span></div>
+    <ol class="steps">
+      <li>Draw the boundary between <span class="id">Q4</span> and <span class="id">Q5</span> on brand scanning, and between <span class="id">2.1</span> and <span class="id">2.2</span> on fix lists.</li>
+      <li>Version the prompt set and caveat share of voice in revision months.</li>
+      <li>Add severity tiers and a same-month escalation route to <span class="id">Q1</span>.</li>
+      <li>Add a drift check to <span class="id">Q6</span>, and tie each trial slot to a kill.</li>
+      <li>Resolve the <span class="id">1.7</span> ownership conflict, cite the four statistics, standardise cross-month notation.</li>
+      <li>Name <span class="id">Q1</span>, <span class="id">Q4</span> and <span class="id">Q7</span> from inside the monthly tasks so the quarterly block is discoverable.</li>
+      <li>Decide whether reviews belong in <span class="id">4.4</span> or another service line, and write down which.</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2>One decision to make first</h2>
+  <div class="col">
+    <p><strong>Are the Feeds lines documentation, or a specification?</strong> Right now they're treated as both, which is what produced most of these findings.</p>
+
+    <p>If they're authoritative, every Feeds edge should have a matching lock, and auditing the template becomes mechanical. A VA could run it in twenty minutes a quarter. If they're just prose for the reader, that's fine too, but then the wiring needs its own review and nobody should trust a Feeds line to say what gates what.</p>
+
+    <p>Second question, smaller, and it needs the one document I never saw. The monthly cycle assumes nine standing per-client artifacts exist and are current: the dashboard, the Site Health tracker, the share of voice tracker, the prompt set, the mentions tracker, Position Tracking with its month tags, last quarter's crawl archive, the topic gap refresh queue, and the vertical directory list. None of them names a location or an owner. That may be exactly what the standing Repeated Tasks parent covers. If it isn't, that's what breaks on client number four when the person who knew where everything lived is on holiday.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Monthly SEO Task Template &middot; structural review</span>
+  <span>32 subtasks across 6 containers</span>
+  <span>Excludes the milestone wrapper and the standing Repeated Tasks parent</span>
+</footer>
+
+</div>

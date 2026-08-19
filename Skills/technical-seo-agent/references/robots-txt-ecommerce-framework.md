@@ -6,6 +6,35 @@
 
 ---
 
+## Pipeline stage assignment
+
+> **Stage 1 — Crawlability, primarily.** robots.txt is a *crawl* directive. See
+> [stage-1-crawlability.md](stage-1-crawlability.md). But this file also carries stage-3
+> decisions, and mixing them is the single most common error in this area.
+
+| Section | Stage |
+|---|---|
+| 1. The Three Tools (robots.txt vs `noindex` vs canonical) | **1 + 3** — the whole point of the section is keeping them apart |
+| 2–3. Why it matters, baseline rules | **1** |
+| 4. Wildcard pattern trap | **1** |
+| 5. Googlebot separate-block mistake | **1** |
+| 6. Platform-specific implementation | **1** |
+| 7. Variant URL decision framework (block **or noindex**) | **1** for blocking, **3** for `noindex` and canonical-child segmentation |
+| 8. Decision matrix by store size | **1**, and scale-gated (see below) |
+| 9. AI bot policy | **1** |
+| 10. Template | **1** |
+
+**The trap this ordering prevents:** `Disallow` + `noindex` on the same URL is
+self-defeating, because Google cannot see the `noindex` if crawling is blocked. Blocking is
+stage 1; excluding from the index is stage 3. Decide which outcome you actually want before
+choosing the tool.
+
+**Scale gate on the crawl-budget rationale in this file.** Crawl budget is a real constraint
+at large scale or heavy churn and effectively a non-issue on small or new sites. Where a
+recommendation here is justified only by crawl-budget efficiency, it is Infrastructure
+Hygiene, and on a small site it may not be worth doing at all. Never state crawl-budget
+savings as the expected benefit on a small or new build.
+
 ## 1. The Three Tools — Never Confuse Them
 
 | Tool | Controls | Google Treats As | Blocks Crawling? | Blocks Indexing? |
@@ -30,7 +59,13 @@ Ecommerce sites are the most common crawl budget disaster zones. Google's own Ga
 Scale example: 200 products × 5 colors × 8 sizes = **8,000 variant URLs** before filters, sorts, or pagination. Enterprise catalogs can hit millions of crawlable-but-useless URLs.
 
 Empirical benchmarks (from audits):
-- Product-variant cannibalization typically consumes **18–32% of crawl budget**
+- Product-variant cannibalization can consume a **substantial share of crawl activity** on
+  large faceted catalogs. ⚠️ **An earlier version of this line stated "18–32% of crawl
+  budget" with no source. That figure is unverified and must not be repeated to a client or
+  in a deliverable.** Measure the actual share per site from GSC Crawl Stats (crawl requests
+  by response and by URL pattern) or server logs, and cite that instead. Per
+  `~/.claude/rules/anthropic-patterns/no-unverified-claims.md`, an unsourced percentage in a
+  client deliverable is a defect regardless of how plausible it sounds.
 - Causes **12–28% impression leakage** on head commercial terms
 - Canonical tags alone resolve only **55–70% of duplicate clustering** at enterprise scale — the rest requires explicit URL governance
 

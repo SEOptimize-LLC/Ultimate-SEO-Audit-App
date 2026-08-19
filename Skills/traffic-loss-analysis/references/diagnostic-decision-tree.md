@@ -8,6 +8,88 @@ After completing Phases 2-10 of the Traffic Loss Analysis, use this decision tre
 
 ---
 
+## Stage Overlay — read before Step 1
+
+Every root cause below is either a **failure at one of the four pipeline stages** or a
+**non-pipeline cause**. Establishing which, and which stage, narrows the search before any
+evidence is gathered.
+
+```
+CRAWLABILITY → RENDERING → INDEXABILITY → RANKING
+```
+
+Stage mechanics: [stage-1-crawlability.md](../../technical-seo-agent/references/stage-1-crawlability.md),
+[stage-2-rendering.md](../../technical-seo-agent/references/stage-2-rendering.md),
+[stage-3-indexability.md](../../technical-seo-agent/references/stage-3-indexability.md),
+[stage-4-ranking.md](../../technical-seo-agent/references/stage-4-ranking.md).
+
+### The pattern predicts the stage
+
+Stages 1 to 3 fail **binary**: a URL is reachable or it is not, renders or it does not, is
+indexed or it is not. Stage 4 degrades **continuously**, as relative position against
+competitors. That asymmetry means the shape of the loss curve constrains the cause before
+you look at anything else.
+
+| Loss shape | Almost certainly | Almost certainly NOT |
+|---|---|---|
+| **Cliff** (>20% in 1–2 weeks) | Stage 1, 2 or 3 binary failure, a measurement artifact, or a manual action | Gradual quality erosion. Quality does not fall off a cliff |
+| **Slow bleed** (<10% MoM over 3+ months) | Stage 4 erosion, competitor gains, demand decline | A robots.txt block or a deployed `noindex`. Those produce cliffs |
+| **Step then plateau** | An algorithm update (Stage 4) **or** a partial technical failure that hit one template (Stages 1–3) | |
+| **Accelerating decline** | Stage 4 compounding: quality, authority, or expanding cannibalisation | A single technical event |
+
+**Use this as a prior, not a verdict.** It tells you which evidence to gather first, and it
+rules out branches cheaply. A client reporting a slow six-month bleed does not need an
+emergency robots.txt check.
+
+### Clear the non-pipeline causes first
+
+If the loss is not real, or not caused by organic search mechanics, pipeline work is wasted.
+Phase 0 in the master skill covers the data integrity checks; these are the causes that
+survive Phase 0 and still are not pipeline failures:
+
+| Non-pipeline cause | Signature | Verify by |
+|---|---|---|
+| **Measurement artifact** | GA4 collapses while GSC clicks stay flat | Consent/tag gating (an Odoo-style cookie bar hard-blocking GTM until "Allow all" will do this), property config, filters. Test before/after consent |
+| **Migration credit split** | Post-migration, GSC credits the OLD ranked URL while GA4 credits the NEW landed-on URL | Cross-check both before calling a rebuilt page dead |
+| **Conversion tracking break** | Events go to zero at a release boundary | Confirm the event still fires; understated conversions are not lost conversions |
+| **Demand decline / seasonality** | Impressions down in step with clicks; category-wide | Query-volume trend and a seasonality control window |
+| **SERP feature displacement** | **Impressions flat or up, clicks down, position stable** | AI Overview or SERP-feature presence on the losing queries. Nothing on the site broke |
+| **Channel cannibalisation** | Organic down, paid up, same queries | Branch F below |
+
+**The displacement signature is the one most often misdiagnosed as a site problem.**
+Impressions holding with clicks falling and position unchanged means the site still ranks
+and the SERP changed around it. No pipeline stage failed, and on-page work will not recover
+it.
+
+### Branch → stage map
+
+| Branch | Stage | Note |
+|---|---|---|
+| **A** Sudden drop | **1, 2 or 3** | Binary failure. Check in pipeline order: reachable → renders → indexed |
+| **B** Gradual decline | **4** | Erosion. Verify demand held before diagnosing quality |
+| **C** Stepped decline | **4** if update-correlated; **1–3** if one template broke | Segment by template before choosing |
+| **D** Progressive acceleration | **4** | Compounding cause |
+| **E** Keyword cannibalisation | **3** | Index selection between competing URLs, same mechanism as canonicalisation |
+| **F** PPC cannibalisation | **Non-pipeline** | Channel shift |
+| **G** Content-intent mismatch | **4** | |
+| **H** Authority gap vs strategy misalignment | **4** | |
+| **I** Devaluation vs slippage | **4** | |
+
+**Note that E is a Stage 3 problem**, not a content problem. Two URLs competing for one query
+is Google selecting a representative, which is canonicalisation behaviour. That reframing
+changes the fix from "rewrite one page" to "consolidate or canonicalise."
+
+### Sequencing rule
+
+1. Confirm the loss is real (Phase 0) and not a non-pipeline cause from the table above.
+2. Use the loss shape to set your prior on the stage.
+3. Walk the pipeline **in order**. Do not diagnose Stage 4 with an open Stage 1–3 failure,
+   because ranking cannot be assessed on a page that is not reachable, rendered and indexed.
+4. Report the verdict per stage, including clean, per the stage-verdict contract in
+   [technical-seo-agent/SKILL.md](../../technical-seo-agent/SKILL.md).
+
+---
+
 ## Step 1: Classify the Loss Pattern
 
 | Pattern | Definition | Most Likely Causes |

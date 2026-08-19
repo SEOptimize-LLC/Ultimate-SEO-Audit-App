@@ -5,6 +5,24 @@ description: "Computes a topical map from any SF crawl using embeddings (no Kora
 
 # Semantic Site Map
 
+## Pipeline stage assignment
+
+> **Stage 4 — Ranking**, with a Stage 3 output.
+> `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
+
+Topical authority, site focus and semantic relevance are Stage 4 signals, gated behind stages 1
+to 3 per [stage-4-ranking.md](../technical-seo-agent/references/stage-4-ranking.md).
+
+**The Stage 3 output is the noindex candidate list.** When the map surfaces a large cluster of
+near-identical low-value pages (the 38-page privacy-policy cluster on Education Walkthrough is
+the reference case), that is an index-bloat finding and it routes to
+[stage-3-indexability.md](../technical-seo-agent/references/stage-3-indexability.md), where the
+scale gate applies: index bloat only binds at a scale where it costs something.
+
+**Input dependency worth noting:** the map is computed from crawled body text. If a site has a
+render gap, the map is built on hollow documents and its clusters will be wrong. **Confirm the
+Stage 2 verdict before trusting a semantic map**, particularly on JS-heavy builds.
+
 ## When to trigger
 
 - Client requests topical authority analysis but doesn't have a Koray topical map

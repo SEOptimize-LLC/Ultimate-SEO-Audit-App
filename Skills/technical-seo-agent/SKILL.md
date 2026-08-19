@@ -7,6 +7,91 @@ description: "Analyzes, prioritizes, and recommends fixes for technical SEO issu
 
 You are a Technical SEO Agent specialized in analyzing crawlability, indexability, performance, and technical health of websites. Use this knowledge to analyze data, identify issues, explain their impact, and recommend prioritized fixes.
 
+## The Four-Stage Pipeline (read before prioritizing anything)
+
+```
+CRAWLABILITY → RENDERING → INDEXABILITY → RANKING
+```
+
+**Stage position is the primary sort on every finding.** A failure at any stage makes
+every stage downstream of it unreachable, so no amount of ranking work rescues a page
+that cannot be indexed, and no indexability work rescues a page whose content only
+exists after a render that never happened. Impact and effort only break ties *within*
+a stage. Full pipeline mechanics, including the render-eligibility gate that sits at the
+crawl-to-render boundary, are in [seo-fundamentals-2026.md](references/seo-fundamentals-2026.md).
+
+Per-stage references:
+
+- **Stage 1 — [Crawlability](references/stage-1-crawlability.md)** — discovery vs
+  retrieval as independently-failing sub-phases, the five crawl sub-stages, discovery
+  mechanics (internal links, sitemap's actual guarantee, orphans, depth), retrieval
+  mechanics (response codes, server response time as a crawl constraint), crawl budget
+  correctly scale-qualified, the consensus-weighted issue catalog, AI crawlers as a
+  crawl-stage concern with no re-index mechanism, a stage firewall listing what belongs
+  to Stage 3 instead, a diagnostic decision tree, severity mapping, and a register of
+  single-source claims that must be attributed or dropped.
+- **Stage 2 — [Rendering](references/stage-2-rendering.md)** — the diagnostic principle
+  that render failures present as indexability symptoms (usually "Crawled, currently not
+  indexed"), the render-eligibility gate, render budget corrected (no 5-second wall-clock
+  limit; virtual clock paused during network waits; ~52s real-time ceiling; live test more
+  patient than indexing), the rendering-strategy hierarchy with Google's own stated
+  preference for SSR or static over full rehydration, dynamic rendering as a deprecated
+  workaround plus the vendor-bias warning, AI crawlers not rendering, the detection ladder,
+  severity mapping, and an attribution register. Deep mechanics and the nine failure
+  patterns remain in [javascript-seo-framework.md](references/javascript-seo-framework.md).
+- **Stage 3 — [Indexability](references/stage-3-indexability.md)** — the canonicalization
+  vs index-decision sub-phase split, the mandatory four-check directive verdict (with corpus
+  coverage showing three of the four checks are absent from mainstream literature), the
+  **GSC symptom decoder** routing each status to the stage that actually caused it, Index
+  Efficiency Ratio, acceptable vs problematic `noindex`, the stage firewall, and severity
+  mapping. Detailed canonical failure tables remain in the Indexability Issues section
+  below; per-status detail in [gsc-indexation-states.md](references/gsc-indexation-states.md).
+- **Stage 4 — [Ranking](references/stage-4-ranking.md)** — the **stage contract** rather than
+  a variable list. Covers the gate (no stage 4 work while a stage 1–3 blocker is open), why
+  this stage is comparative rather than binary (stages 1–3 findings can be *closed*, stage 4
+  findings can only be *improved*), the five structural properties that change weighting
+  (re-rankers, click signals as feedback not input, query-independent compounding,
+  QDF-conditional freshness, intent mismatch over keyword optimisation), severity mapping
+  capped below earlier stages, and the stage firewall. Variables themselves stay in
+  [ranking-factors-checklist-2026.md](references/ranking-factors-checklist-2026.md) clusters
+  5–20, [click-signals-abc-framework.md](references/click-signals-abc-framework.md) and
+  [seo-fundamentals-2026.md](references/seo-fundamentals-2026.md).
+
+## REQUIRED — Stage Verdict Contract (every audit, full-site AND single-URL)
+
+**Every audit must return four verdicts, one per stage, in pipeline order. A missing stage
+verdict is an audit defect**, on the same non-negotiable footing as the indexability-directive
+verdict below. This is what makes stage sequencing enforceable instead of advisory: an audit
+that never states a rendering verdict cannot silently have skipped rendering.
+
+| Stage | Verdict values | Minimum evidence required |
+|---|---|---|
+| **1 Crawlability** | PASS / FAIL / PARTIAL | `robots.txt` read; response codes across the crawl; internal-link path to money pages confirmed; sitemap cross-checked |
+| **2 Rendering** | PASS / FAIL / PARTIAL | Raw-vs-rendered comparison on at least each indexable **template**; `title`, `canonical`, `meta robots`, `H1` and primary nav confirmed present in **raw** HTML |
+| **3 Indexability** | PASS / FAIL / PARTIAL | The four directive checks (head `noindex`, `X-Robots-Tag`, body placement, declared-vs-Google-selected canonical); index status for money pages |
+| **4 Ranking** | No pass/fail. Report relative position | Named competitors on named queries, with a diagnosed cause per finding |
+
+**Rules:**
+
+1. **State "clean" explicitly.** When a stage passes, say so. Silence is not a verdict, and
+   a reader cannot distinguish "checked and fine" from "never looked."
+2. **SKIPPED-AND-FLAGGED is a legitimate verdict, guessing is not.** When a required input
+   is missing (no GSC access, no `gsc_crawled_not_indexed.csv`, no rendered crawl), record
+   the stage as skipped, name the missing input, and state which findings are therefore
+   unavailable. Never infer a stage verdict from a proxy.
+3. **A FAIL at stage N gates stages N+1 onward.** Downstream findings may still be reported,
+   but each must be marked as gated behind the upstream blocker, so nobody schedules stage 4
+   work that cannot pay out.
+4. **Nothing downstream is Critical while an upstream stage is FAIL.** If a money page is
+   `noindex`, its title tag is not a Critical finding.
+5. **Order the deliverable by stage**, not by category. A reader should be able to stop
+   after stage 1 and know what to fix first.
+
+Stage mechanics, diagnostics and severity mapping are in the four stage references above.
+The cross-finding resolution procedure (stage gate → binding test → page value → outcome
+type → effort) is in
+[seo-audit-methodology/SKILL.md](../seo-audit-methodology/SKILL.md).
+
 ## Core Framework References
 
 Load these references when the audit scope touches the corresponding area:
@@ -23,29 +108,63 @@ Load these references when the audit scope touches the corresponding area:
 
 ## Issue Severity Framework
 
-### Critical (Immediate Action Required)
-Issues that prevent crawling, indexing, or cause major ranking damage:
-- Blocks Googlebot from accessing content
-- Prevents pages from being indexed
-- Causes site-wide ranking suppression
-- Server errors affecting large portions of site
+**Severity is derived from stage position plus the binding test, not assigned by feel.**
+Two inputs decide it:
 
-### High Severity (Priority Fix)
-Issues that significantly degrade ranking potential or user experience:
-- Reduces crawl efficiency
-- Creates indexation confusion
-- Degrades Core Web Vitals
-- Affects important page templates
+1. **Which stage does the finding sit at?** Earlier stage means higher severity, because
+   everything downstream inherits the failure.
+2. **Is it binding?** Can you name the specific loss it causes on this site? An absence
+   with no nameable loss is not Critical no matter how many URLs it touches.
 
-### Medium Severity (Should Address)
-Issues that reduce optimization potential but don't block functionality:
-- Suboptimal configurations
-- Minor signal dilution
-- Missed best practices
-- Affects subset of pages
+### Critical
+A **binding** failure at Crawlability, Rendering, or Indexability that affects money pages
+or a whole template:
 
-### Low Severity (Nice to Have)
-Minor issues or informational findings.
+- Googlebot cannot reach the content (robots.txt block, template-wide 5xx)
+- Primary content or navigation absent from the **raw** HTML
+- `canonical`, `meta robots` or `title` injected by JavaScript, so the render-eligibility
+  gate never sees them
+- Money pages carrying `noindex` from any of the three sources (head, header, or believed-
+  excluded-but-actually-indexable body placement)
+- Canonical on money pages pointing at a wrong, noindexed, 4xx or redirecting URL
+- Revenue pages absent from the index with no directive explaining it
+
+### High
+A binding stage 1–3 failure on non-money pages or a subset, **or** a binding stage 4
+failure on money pages:
+
+- Broken links inside primary navigation, sitemap missing published money pages
+- Content gated behind click, hover or scroll so it never enters the rendered DOM
+- Duplicate clusters with no canonical declared, where a money page is in the cluster
+- Slow server response measurably constraining crawl **on a site large enough for it to
+  bind**
+- Thin content on pages that could realistically compete
+
+### Medium
+Binding stage 4 issues on non-critical pages, or stage 1–3 issues that are real but not
+costing anything today:
+
+- Redirect chains of 3+ hops, sitemaps containing redirects or 404s
+- Parameter and faceted variants indexed alongside canonicals
+- Core Web Vitals below threshold on non-revenue templates
+- Index bloat from archive and tag URLs, **at a scale where it binds**
+
+### Low
+Non-binding absences, cosmetic inconsistencies, and hygiene with no nameable loss:
+
+- Missing self-referencing canonicals where no duplication exists
+- Missing H1s on pages already ranking for their target terms
+- Cosmetic redirects that already resolve correctly
+
+### Not a finding
+Deliberate `noindex` on utility pages, CSR on authenticated app routes, ad-tracking 302s,
+shared template blocks flagged as duplication, and 429s that were crawl-rate artifacts.
+Reporting these inflates the deliverable and costs credibility.
+
+> **Deleted from this framework, deliberately:** "reduces crawl efficiency" was previously
+> listed as **High**. It is not, on the overwhelming majority of sites. Crawl efficiency is
+> Infrastructure Hygiene and it only binds at large scale or heavy churn. Rendering was
+> previously absent from every tier, which is how render failures went unranked entirely.
 
 ---
 
@@ -260,23 +379,46 @@ Render-blocking → Slow FCP → High bounce rate → Negative user signals
 
 ## Prioritization Decision Tree
 
-1. **Is it blocking indexation of important pages?**
-   - YES → Critical priority
-   - NO → Continue
+> **Previously this tree opened at "is it blocking indexation?"**, which made indexation the
+> first gate and skipped crawlability and rendering entirely. That is the same stage-order
+> error the pipeline section above exists to prevent. Crawl and render come first.
 
-2. **Does it affect site-wide or template-level?**
-   - SITE-WIDE → High priority
-   - TEMPLATE → Medium-High priority
-   - FEW PAGES → Medium priority
+Walk in order. The first question that separates two findings decides which ships first.
 
-3. **Is it causing user experience issues?**
-   - YES + measurable impact → High priority
-   - YES + minor impact → Medium priority
-   - NO → Lower priority
+1. **Can the crawler reach it?** (Stage 1)
+   - Blocked, 5xx, or no crawl path to a money page → **Critical**, stop here
+   - Clean, or affects only non-money pages → continue
 
-4. **Is there a clear ROI case?**
-   - YES → Prioritize accordingly
-   - NO → Batch with similar fixes
+2. **Does the content survive rendering?** (Stage 2)
+   - Primary content, nav, or a directive absent from **raw** HTML on a money page →
+     **Critical**, stop here
+   - Continue
+
+3. **Can and will Google index it?** (Stage 3)
+   - `noindex` from any source, or canonical failure, on a money page → **Critical**
+   - Continue
+
+4. **Is the finding binding?** Name the specific loss it causes on this site.
+   - Cannot name one → **Low / not a finding.** Do not promote it on volume
+   - Can name one → continue
+
+5. **Does the affected set contain money pages?**
+   - Yes → severity holds
+   - No, and they are utility or non-SEO URLs → drop them from the count first
+     (audit-workflow Rule 7), then re-ask
+
+6. **Scope:** site-wide or template-level, or a handful of pages?
+   - Template-level binds harder than an equal count of scattered pages, because it will
+     recur on every new page built from that template
+
+7. **Outcome type**, within the same stage: Ranking Lever → Risk Mitigation → UX →
+   Infrastructure Hygiene
+
+8. **Effort** breaks any remaining tie. Batch same-stage, same-outcome fixes into one line
+   item rather than listing them individually.
+
+Full procedure with a worked example (50 missing H1s vs 20 missing canonicals) is in
+[seo-audit-methodology/SKILL.md § The resolution procedure](../seo-audit-methodology/SKILL.md).
 
 ---
 

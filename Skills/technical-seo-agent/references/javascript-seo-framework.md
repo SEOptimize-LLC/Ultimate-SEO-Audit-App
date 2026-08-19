@@ -16,23 +16,99 @@ Three forces make raw HTML matter more than ever:
 
 2. **AI crawlers do not render JavaScript.** ChatGPT, Claude, Perplexity, and Bing AI Overviews scrape raw HTML. Anything JS-injected is invisible to them — and AI search visibility is a fast-growing distribution channel.
 
-3. **Google's render budget is real.** The Web Rendering Service operates within an approximate 5-second snapshot window. Long JS tasks push critical content past that window.
+3. **Google's render budget is real, but it is NOT a 5-second wall-clock window.** See "The render budget, correctly stated" below. The constraint is CPU-time on a virtual clock plus a real-time ceiling, and getting this wrong sends clients to fix the wrong thing.
+
+## The render budget, correctly stated
+
+> **Correction, 2026-08-01.** An earlier version of this file asserted "the Web Rendering
+> Service operates within an approximate 5-second snapshot window." That is the industry's
+> mistranslation of a Google statement and it was wrong in a way that misdirects fixes.
+> John Mueller publicly recommends the two sources that debunk it (Dave Smart / Tame the
+> Bots, Tony McCreath / Web Site Advantage), so this is well-supported, not contrarian.
+
+**Where the 5-second figure actually came from.** Martin Splitt, roughly 18 minutes into a
+presentation: *"In median, a page's rendering queued for five seconds."* That is the
+**median time a page waits in the render queue**, not a limit on how long rendering runs.
+The industry converted a queue-wait median into a render timeout.
+
+**The WRS runs on a virtual clock it controls.** It can speed up, slow down, or pause time
+for the headless Chrome instance. Critically, **it freezes the clock while network requests
+are in flight.** Dave Smart's test page ran a `setInterval` counter and two POST requests
+with real delays of 5s and 4s; both returned, their content was rendered, and the page's own
+reported elapsed time was **0.02 seconds**. Network waiting does not spend render budget.
+
+**What the clock actually measures: CPU work.** Tony McCreath measured 162ms of Googlebot
+time against roughly 10 seconds of real time under sustained CPU load. The virtual clock
+advances slowly during execution, but it does advance. JavaScript parse and execution cost
+is what consumes the budget.
+
+**The observed sequence near the threshold** (McCreath, measured):
+
+| Googlebot clock | What happens |
+|---|---|
+| ~5.0s | "Prepares for the end." First resize event: scale 0.42 → 1.0, outer dimensions to 1×1px |
+| ~5.3s | Second resize: viewport height expands enormously (>1,000,000px in testing) to simulate deep scroll and trigger lazy-loaded content |
+| ~5.25s target | Rendered HTML captured |
+
+**The real-time ceiling is about 52 seconds.** If rendering has not completed within ~52s of
+actual time, Googlebot cancels all outstanding network requests so it can reach its virtual
+target and finish. Googlebot also proactively cancels requests it judges unimportant
+(fonts) or that are disallowed or failing.
+
+**Live test is more patient than real indexing.** Smart's infinite-loop test cut off at
+16–18 iterations (~48–54s) under live testing, but only 10 iterations (~30s) during actual
+indexing. **A page that renders correctly in URL Inspection's live test can still fail in
+the indexing pipeline.** Never accept a passing live test as proof that indexing rendered
+the page; check the indexed result.
+
+**What this changes in recommendations:**
+
+- ❌ Do NOT tell a client "speed up your **server** so Googlebot can finish rendering in
+  time." Network latency and TTFB pause the virtual clock. Server response speed is a
+  Stage 1 crawl-rate concern and a Stage 4 Core Web Vitals concern, not a render-budget
+  concern.
+- ✅ DO tell them to reduce **page weight**, and keep the distinction sharp, because these
+  two get collapsed constantly. DOM size, resource count, total payload and JS execution
+  cost all consume render budget or trip the renderer outright. *Latency is free; work is
+  not.* Barry Hunter's Search Central Community guide puts it plainly: heavy and slow pages
+  are "exponentially more likely to suffer from rendering failures during the high-volume,
+  resource-constrained real Googlebot crawl", and names excessive DOM size, heavy JS, and
+  stalling on a large external resource (unoptimised images, video) as the causes of a hard
+  render failure.
+- ✅ DO target JavaScript execution and parse cost, long tasks, and main-thread work. That
+  is what actually spends the budget.
+- ✅ DO flag pathological resource chains that could approach the ~52s real-time ceiling.
+- ✅ DO expect lazy-loaded content below the second-resize viewport to be missed, and treat
+  the two resize events as the mechanism that makes most lazy loading work at all.
+- ⚠️ Googlebot caches JS/CSS resources aggressively (30-day TTL per Google, cited by
+  McCreath), so a repeat crawl may render against stale assets rather than your new build.
+
+**Attribution:** Dave Smart, `tamethebots.com/blog-n-bits/the-5-second-google-render-limit-myth`;
+Tony McCreath, "Tony's Theory of Googlebot Relativity", `bigcommerce.websiteadvantage.com.au`.
+Both recommended by John Mueller. Secondary coverage: Search Engine Journal, 2026-07-28.
+The specific millisecond and viewport figures are McCreath's measurements from his own test
+pages, not Google-published specifications. Treat the mechanism as well-evidenced and the
+exact numbers as one researcher's observations.
 
 ## Google's Rendering Pipeline
+
+The four-stage order is **Crawlability → Rendering → Indexability → Ranking** (see `seo-fundamentals-2026.md`). Always state it that way. What follows zooms into the crawl-to-render transition and must never be presented as a substitute for the stage order.
 
 ```
 Crawl Queue
     ↓
 Initial HTML fetch (raw response)
     ↓
-Indexability decision  ←  Made on RAW HTML only
-    ↓ (if indexable)         (status, robots meta, canonical)
+Render-eligibility gate  ←  Judged on RAW HTML only
+    ↓ (if eligible)            (status, robots meta, canonical)
 Render Queue (delayed, budgeted)
     ↓
 Web Rendering Service (~5s window, headless Chromium)
     ↓
 Index
 ```
+
+**Do not call this gate an "indexability decision."** That name collides with the Indexability stage and has already produced output that stated the pipeline order wrongly, placing indexability ahead of rendering. The gate decides whether a URL proceeds to the renderer. Indexability is the later stage deciding whether the rendered document enters the index.
 
 Critical insight from Sitebulb: **if the raw HTML signals non-indexability, the page never reaches the renderer**, even if JS would later "fix" it.
 
