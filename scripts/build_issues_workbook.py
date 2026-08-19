@@ -133,6 +133,13 @@ def main() -> None:
     for slug, name in NAMES.items():
         ws = wb.create_sheet(name[:31])
         ja = ROOT / reg[slug]["folder"] / "Monthly SEO Workbook" / MONTH / "index_audit.json"
+        # Live verification (owner rule 2026-08-19: every URL fetched TODAY,
+        # never Google's crawl memory alone). Produced by verify_issue_urls.py.
+        live = {}
+        lv = ROOT / reg[slug]["folder"] / "monthly_plan" / f"{MONTH}-live-verification.json"
+        if lv.exists():
+            for r in json.loads(lv.read_text(encoding="utf-8")):
+                live[r["url"].rstrip("/")] = r
         rows_out = []
         if ja.exists():
             data = json.loads(ja.read_text(encoding="utf-8"))
@@ -147,26 +154,53 @@ def main() -> None:
                 lane = lane_for(state, slug)
                 if not lane:
                     continue
+                # The raw GSC state misled a manual check (owner, 2026-08-19:
+                # five random "noindex" URLs all carried index,follow live).
+                # The Issue cell must state the DIAGNOSIS, not Google's label:
+                # these are stale index records, not live tags.
+                if slug == "sameday" and "noindex" in state.lower():
+                    state = ("Google's index record says noindex (last crawl "
+                             "June) - the LIVE page has index,follow; stale "
+                             "verdict, needs recrawl, no page edit")
                 rows_out.append([r.get("url"), state, lane,
-                                 r.get("lastCrawl") or "never", "Yes"])
+                                 r.get("lastCrawl") or "never"])
         for url, issue, lane in EXTRA.get(slug, []):
-            rows_out.append([url, issue, lane, "-", "Yes"])
+            rows_out.append([url, issue, lane, "-"])
         rows_out.sort(key=lambda x: (x[2], x[1], x[0]))
 
+        def live_cell(url: str) -> str:
+            r = live.get(str(url).rstrip("/"))
+            if not r:
+                return "(not fetchable - see row text)" if not str(url).startswith("http") else "(not checked)"
+            bits = [f"HTTP {r['status']}"]
+            if r.get("redirected_to"):
+                bits.append(f"redirects to {r['redirected_to']}")
+            if r.get("robots"):
+                bits.append(f"robots: {r['robots']}")
+            if r.get("note"):
+                bits.append(r["note"])
+            return " | ".join(bits)
+
+        rows_out = [[u, s, live_cell(u), lane, lc]
+                    for u, s, lane, lc in rows_out]
+
         ws.append([f"{name} - audit issues by URL, {MONTH}"])
-        ws.append([f"{len(rows_out)} affected URL(s). Fix details live on the "
-                   f"2.1 Technical Fixes tab; quality-review items on the 1.8 "
-                   f"Monthly Plan tab (section C)."])
+        ws.append([f"{len(rows_out)} affected URL(s). Every URL fetched live on "
+                   f"the date in the header - the live column is today's "
+                   f"reality; Google's record is what Search Console remembers. "
+                   f"Fix details on the 2.1 tab; quality-review items in 1.8 "
+                   f"section C."])
         ws.append([])
-        ws.append(["URL", "Issue", "Fix lane", "Last crawled", "In scope?"])
+        ws.append(["URL", "Google's record (issue)", "LIVE check 2026-08-19",
+                   "Fix lane", "Google last crawled"])
         for row in rows_out:
             ws.append(row)
         ws.freeze_panes = "A5"
-        ws.column_dimensions["A"].width = 80
-        ws.column_dimensions["B"].width = 38
-        ws.column_dimensions["C"].width = 52
-        ws.column_dimensions["D"].width = 13
-        ws.column_dimensions["E"].width = 10
+        ws.column_dimensions["A"].width = 78
+        ws.column_dimensions["B"].width = 40
+        ws.column_dimensions["C"].width = 48
+        ws.column_dimensions["D"].width = 46
+        ws.column_dimensions["E"].width = 15
         for c in ws[4]:
             c.font = Font(bold=True)
         ws["A1"].font = Font(bold=True, size=13)
