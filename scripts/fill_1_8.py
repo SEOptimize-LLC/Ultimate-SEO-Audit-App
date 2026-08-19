@@ -97,6 +97,7 @@ def main(slug: str) -> None:
 
     sid = cfg["sheet_id"]
     tab = next(t for t in sheets_io.tab_names(sid) if t.strip().startswith("1.8"))
+    sheets_io.snapshot_tab(sid, tab, Path(cfg["folder"]) / "monthly_plan")
     rows = sheets_io.find_rows(sid, tab, {
         "a": "A. Selected targets", "b": "B. Content-calendar",
         "c": "C. Deep-work routing", "d": "D. Plan summary"})
@@ -129,7 +130,10 @@ def main(slug: str) -> None:
     rc = None
     if deep:
         if len(deep) > cap_c:
-            raise SystemExit(f"{slug}: {len(deep)} deep-work rows > cap {cap_c}")
+            sheets_io.insert_rows(sid, tab, rows["d"] - 1, len(deep) - cap_c)
+            rows = sheets_io.find_rows(sid, tab, {
+                "a": "A. Selected targets", "b": "B. Content-calendar",
+                "c": "C. Deep-work routing", "d": "D. Plan summary"})
         block_c = [[d["need"], d["source"], d.get("task", "")] for d in deep]
         rc = sheets_io.write(sid, f"'{tab}'!A{rows['c'] + 2}:C{rows['c'] + 1 + len(block_c)}",
                              block_c)

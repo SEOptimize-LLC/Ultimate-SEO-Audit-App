@@ -389,6 +389,27 @@ def _index_to_col(idx: int) -> str:
     return out
 
 
+def snapshot_tab(sheet_id: str, tab: str, folder, rng: str = "A1:J60") -> str:
+    """Save a tab's current values to a timestamped JSON before overwriting.
+
+    Exists because a 1.8 refill overwrote the owner's manual tab edits with
+    no way back (2026-08-19). Every fill script calls this before its first
+    write, so any overwrite is recoverable from
+    <folder>/tab-backups/<tab>-<stamp>.json.
+    """
+    import datetime as _dt
+    import json as _json
+    import pathlib as _pl
+    d = _pl.Path(folder) / "tab-backups"
+    d.mkdir(parents=True, exist_ok=True)
+    stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    safe = re.sub(r"[^A-Za-z0-9.-]+", "_", tab)
+    p = d / f"{safe}-{stamp}.json"
+    p.write_text(_json.dumps(read(sheet_id, f"'{tab}'!{rng}"),
+                             ensure_ascii=False, indent=1), encoding="utf-8")
+    return str(p)
+
+
 def insert_rows(sheet_id: str, tab: str, at_row: int, count: int) -> int:
     """Insert `count` blank rows above `at_row`, shifting everything below down.
 
