@@ -1,0 +1,258 @@
+# Monthly SEO Workbook — client registry
+#
+# The lookup every task recipe uses, so no recipe hardcodes a client. Adding a
+# ninth client is an entry here, not a code change.
+#
+# gsc_property  exact string GSC expects; confirmed by the account owner 2026-08-14
+# ga4_property  numeric property id, confirmed live by session data 2026-08-14
+# sheet_id      Google Sheet, verified readable via the Sheets API
+# semrush_project  Position Tracking project id; a project may hold SEVERAL
+#               campaigns (city/state/country) and 1.1 reports ALL of them
+# brand_token   substring for the GSC 'query contains' branded-impressions filter
+# is_local      does 4.4 GBP Fundamentals apply
+# ecommerce     does the 1.1 "GA4 Organic Revenue (e-comm only)" row apply
+# crawl.posts   patterns picking POST urls: child-sitemap filename or url path
+# crawl.money   same, for SERVICE/PRODUCT pages. Utility + PPC pages are
+#               excluded globally in crawl_targets.UTILITY
+# crawl.money_pages  explicit URL allowlist. When present it WINS over
+#               crawl.money entirely - no heuristic, no guessing.
+
+superior:
+  name: Superior Water & Air
+  domain: superiorwaterandair.com
+  folder: Clients/Superior
+  gsc_property: https://superiorwaterandair.com/
+  ga4_property: "314969736"
+  sheet_id: 1uVDqUbPRpdFCgfn4IlsDDnwIdRpjwjdcBoh2LRH4jA0
+  clickup_milestone: 86ak0e259
+  semrush_project: "26537085"
+  brand_token: "superior"
+  is_local: true
+  ecommerce: false
+  crawl:            # subfolder rules, supplied by owner 2026-08-17
+    posts: ["post-sitemap"]
+    money: ["/service-areas/", "/air-quality-services/", "/plumbing-services/",
+            "/hvac/", "/emergency-services/", "/water/"]
+
+sameday:
+  name: SameDay Utah
+  domain: samedayutah.com
+  folder: Clients/SameDay
+  gsc_property: https://samedayutah.com/
+  ga4_property: "319451315"
+  sheet_id: 1tB_4H4-l759PLpNmcuOFpyUWcL6MzJvnMYenkFj4lKE
+  clickup_milestone: 86ak0e2nt
+  semrush_project: "25650229"
+  brand_token: "sameday"  # misses 'same day' written with a space - confirm
+  is_local: true
+  ecommerce: false
+  crawl:            # subfolder rules, supplied by owner 2026-08-17
+    posts: ["post-sitemap"]
+    money: ["/service-areas/", "/heating/", "/plumbing/", "/electrical/",
+            "/cooling/", "/emergency-services/"]
+
+beehive:
+  name: Beehive Plumbing
+  domain: beehiveplumbing.com
+  folder: Clients/Beehive
+  gsc_property: https://www.beehiveplumbing.com/
+  ga4_property: "314808497"
+  sheet_id: 1ScxOuGNoPMqr7OWTSQqqt9Vt4gQf-PRLd8PghxssmcE
+  clickup_milestone: 86ak0e1ac
+  semrush_project: "25650226"
+  brand_token: "beehive"
+  is_local: true
+  ecommerce: false
+  crawl:            # owner spec 2026-08-17: page-sitemap minus the list below.
+    posts: ["post-sitemap"]        # matches post-sitemap1/2/3
+    money: ["page-sitemap"]        # NOTE: plumbing-location-sitemap is NOT
+                                   # included, because the owner named only
+                                   # page-sitemap. Add it if city pages count.
+    money_exclude:
+      - https://www.beehiveplumbing.com/blog/
+      - https://www.beehiveplumbing.com/ppc-plumbing-sewer-line-repair/
+      - https://www.beehiveplumbing.com/ppc-plumbing-commercial/
+      - https://www.beehiveplumbing.com/financing-plumbing-utah/
+      - https://www.beehiveplumbing.com/plumbing-coupons-specials/
+      - https://www.beehiveplumbing.com/ppc-plumbing-repairs/
+      - https://www.beehiveplumbing.com/ppc-plumbing-water-main-replacement/
+      - https://www.beehiveplumbing.com/ppc-emergency-plumber/
+      - https://www.beehiveplumbing.com/ppc-plumbing-pipe-lining/
+      - https://www.beehiveplumbing.com/ppc-plumbing-water-heaters/
+      - https://www.beehiveplumbing.com/ppc-plumbing-drain-cleaning/
+      - https://www.beehiveplumbing.com/beehive-new-elements/
+      - https://www.beehiveplumbing.com/about-us/
+      - https://www.beehiveplumbing.com/job-application/
+      - https://www.beehiveplumbing.com/terms-and-privacy-policy/
+      - https://www.beehiveplumbing.com/premier-plans/
+      - https://www.beehiveplumbing.com/master-plumbers/
+      - https://www.beehiveplumbing.com/get-in-touch/
+      - https://www.beehiveplumbing.com/thank-you/
+      - https://www.beehiveplumbing.com/frequently-asked-questions-answers-water-softeners/
+      - https://www.beehiveplumbing.com/testimonials/
+      - https://www.beehiveplumbing.com/view-our-reviews/
+      - https://www.beehiveplumbing.com/privacy-policy/
+      - https://www.beehiveplumbing.com/review-us/
+      - https://www.beehiveplumbing.com/our-work-gallery/
+      - https://www.beehiveplumbing.com/get-a-quote/
+      - https://www.beehiveplumbing.com/review-form/
+      - https://www.beehiveplumbing.com/beehive-preferred/
+  # Beehive Heating & Air (GA4 343116493) is a separate property and is
+  # deliberately out of scope for this workbook.
+
+comfort:
+  name: Comfort Solutions
+  domain: comfortsolutionsutah.com
+  folder: Clients/Comfort
+  gsc_property: https://www.comfortsolutionsutah.com/
+  ga4_property: "371327071"
+  sheet_id: 1gzCtBffq3jpgj0c-tN2Km02PAINwU5f8Nh6qDI8DRGw
+  clickup_milestone: 86ak0e1rf
+  semrush_project: "26537093"
+  brand_token: "comfort solutions"
+  is_local: true
+  ecommerce: false
+  crawl:            # subfolder rules, supplied by owner 2026-08-17
+    posts: ["post-sitemap"]
+    money: ["/service-areas/", "/heating/", "/plumbing/", "/electrical/",
+            "/cooling/", "/emergency-services/"]
+  # Comfort Solutions Fireplace (GA4 400293742 / sc-domain:fireplacesutah.com)
+  # is a separate site and is deliberately out of scope for this workbook.
+
+arsenal:
+  name: Arsenal Health
+  domain: arsenalhealth.com
+  folder: Clients/Arsenal Health
+  gsc_property: https://www.arsenalhealth.com/
+  ga4_property: "359612721"
+  sheet_id: 1aHB2WEm551sf9AT_hBWe5Xp_Y0qrPuMmLDBdKuN1mfU
+  clickup_milestone: null   # not found in ClickUp search 2026-08-14
+  semrush_project: "28428944"   # separate SEMrush account (fid 10507450);
+                                # not returned by list_projects - see 1.1 calibration
+  brand_token: "arsenal health"  # 'arsenal' alone would catch the football club
+  is_local: true
+  ecommerce: false
+  crawl:            # flat sitemap: patterns match the URL path
+    posts: ["/blog/"]
+    money_pages:      # explicit allowlist, supplied by owner 2026-08-17
+      - https://www.arsenalhealth.com/
+      - https://www.arsenalhealth.com/clinic
+      - https://www.arsenalhealth.com/health
+      - https://www.arsenalhealth.com/peptide-therapy
+      - https://www.arsenalhealth.com/peptide-therapy-2
+      - https://www.arsenalhealth.com/hormone-therapy
+      - https://www.arsenalhealth.com/regenerative-medicine
+      - https://www.arsenalhealth.com/iv-therapy
+      - https://www.arsenalhealth.com/iv-drip-menu
+      - https://www.arsenalhealth.com/nad
+      - https://www.arsenalhealth.com/lab-panel
+      - https://www.arsenalhealth.com/nutrition
+      - https://www.arsenalhealth.com/gym
+      - https://www.arsenalhealth.com/personal-training
+      - https://www.arsenalhealth.com/hyrox-training
+      - https://www.arsenalhealth.com/hyrox
+      - https://www.arsenalhealth.com/class-schedule
+      - https://www.arsenalhealth.com/recovery
+      - https://www.arsenalhealth.com/cold-plunge
+      - https://www.arsenalhealth.com/red-light-therapy
+      - https://www.arsenalhealth.com/sauna
+      - https://www.arsenalhealth.com/contrast-therapy
+      - https://www.arsenalhealth.com/sports-massage-therapy
+      - https://www.arsenalhealth.com/chiropractic-therapy
+      - https://www.arsenalhealth.com/locations
+      - https://www.arsenalhealth.com/locations/arvada
+      - https://www.arsenalhealth.com/locations/dtc
+      - https://www.arsenalhealth.com/locations/louisville
+      - https://www.arsenalhealth.com/memberships
+      - https://www.arsenalhealth.com/female-personal-trainer-in-denver
+      - https://www.arsenalhealth.com/personal-training/weight-loss
+      - https://www.arsenalhealth.com/locations/dtc/personal-trainer
+      - https://www.arsenalhealth.com/group-personal-training
+      - https://www.arsenalhealth.com/personal-training-in-arvada
+      - https://www.arsenalhealth.com/personal-training/injury-recovery
+      - https://www.arsenalhealth.com/personal-training/strength-training
+      - https://www.arsenalhealth.com/gym/one-on-one-personal-training-denver
+      - https://www.arsenalhealth.com/gym/personal-training-for-back-pain-denver
+      - https://www.arsenalhealth.com/gym/personal-training-for-shoulder-pain
+      - https://www.arsenalhealth.com/ghk-cu-denver
+  # GSC access is siteFullUser rather than siteOwner. Verified working.
+  # /blog/ is a sub-property of the main one, ~87% of its impressions.
+
+cudio:
+  name: Cudio
+  domain: cudio.com
+  folder: Clients/Cudio
+  gsc_property: https://www.cudio.com/
+  ga4_property: "404082865"
+  sheet_id: 1_Ufm-_2cajXeR7C_4XKjEBjPEf7L3RBPzawuKbTp79U
+  clickup_milestone: 86ak0dnjz
+  semrush_project: "25429387"
+  brand_token: "cudio"
+  is_local: false
+  ecommerce: false
+  crawl:            # owner spec 2026-08-17: /blog/ posts, /services/ money.
+    posts: ["/blog/"]
+    money: ["/services/"]   # NOTE: /industries/ dropped, the owner named only
+                            # /services/. Add it back if those pages count.
+
+snow:
+  name: Snow Teeth Whitening
+  domain: trysnow.com
+  folder: Clients/Snow
+  gsc_property: https://www.trysnow.com/
+  ga4_property: "402493455"
+  sheet_id: 1TDkNup04beT4HbLg3NJTmNoEHTXgRAYPqxxwySfswcA
+  clickup_milestone: 86ak0jb5p
+  semrush_project: "24584014"
+  brand_token: "snow"  # generic word; may catch non-brand queries - confirm
+  is_local: false
+  ecommerce: true
+  crawl:            # Shopify. Same shape for any Shopify client:
+                    # money = /products/ + /collections/ + homepage
+                    # posts = /blogs/<blog>/ ; /pages/ is excluded
+    posts: ["/blogs/news/"]
+    money: ["/products/", "/collections/"]
+    shopify_blog: news
+  # Eight other GA4 properties exist on this account, all dead or test
+  # (260523147 = 1 organic session/30d, 314899254 = 0). Do not use them.
+
+educationwalkthrough:
+  name: Education Walkthrough
+  domain: educationwalkthrough.com
+  folder: Clients/Education Walkthrough
+  gsc_property: https://educationwalkthrough.com/
+  ga4_property: "304261130"
+  sheet_id: 1vxLJKWWCd9HI0cynXmSG6Yooy5E1VtEgpnDO3vVcipA
+  clickup_milestone: 86ak0e0rg
+  semrush_project: "20947643"
+  brand_token: "education walkthrough"
+  is_local: false
+  ecommerce: false
+  crawl:            # subfolder rules, supplied by owner 2026-08-17
+    posts: ["post-sitemap"]
+    # No `money:` patterns. This block previously carried SameDay's home-services
+    # subfolders (/heating/, /plumbing/, /electrical/, /cooling/), copied in and
+    # never cleaned. They matched nothing here, so nothing broke, but they would
+    # have started matching the day anyone removed money_pages below. EW uses the
+    # explicit allowlist instead.
+    exclude: ["/es/", "/ar/"]   # no-op today: no non-English URLs in the sitemap
+    access_exclude:   # 1.4 section B sampling only - owner rule 2026-08-19:
+      # the AI-access render check samples pages with SEO value (content we
+      # are trying to rank), not legal/utility/sales-collateral templates.
+      # These stay in money_pages for the tasks that legitimately use them
+      # (conversion paths etc.) - this list narrows 1.4's sample alone.
+      - /case-studies/
+      - /instructional-look-fors/
+      - /pricing
+      - /terms/
+    money_pages:      # explicit allowlist, supplied by the owner 2026-08-17.
+      # Beats any sitemap heuristic: a blocklist cannot anticipate every
+      # client's junk pages, an allowlist cannot be wrong.
+      - https://educationwalkthrough.com/
+      - https://educationwalkthrough.com/features/
+      - https://educationwalkthrough.com/whos-it-for/directors-and-regional-leaders/
+      - https://educationwalkthrough.com/whos-it-for/principals-and-school-leaders/
+      - https://educationwalkthrough.com/whos-it-for/superintendents-and-district-leaders/
+      - https://educationwalkthrough.com/whos-it-for/it-and-security/
+      - https://educationwalkthrough.com/pricing/
+      - https://educationwalkthrough.com/case-studies/
