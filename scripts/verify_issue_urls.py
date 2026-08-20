@@ -52,11 +52,20 @@ def fetch(url: str) -> dict:
             final = r.geturl()
             if final.rstrip("/") != url.rstrip("/"):
                 out["redirected_to"] = final
-            html = r.read(400_000).decode("utf-8", "replace")
+            # FULL document, never a truncated read. A 400KB cap once cut a
+            # Beehive page (822KB) before its canonical at byte 466,450 and
+            # the empty parse shipped as "no canonical" - absence claims from
+            # partial reads are the exact failure this script exists to stop.
+            # 8MB guard only against pathological responses.
+            html = r.read(8_000_000).decode("utf-8", "replace")
+        out["bytes_read"] = len(html)
         m = ROBOTS_RE.search(html) or ROBOTS_RE2.search(html)
-        out["robots"] = m.group(1).strip() if m else "(no robots meta)"
+        out["robots"] = (m.group(1).strip() if m else
+                         f"(no robots meta in full document, "
+                         f"{len(html):,} bytes)")
         m = CANON_RE.search(html) or CANON_RE2.search(html)
-        out["canonical"] = m.group(1).strip() if m else ""
+        out["canonical"] = (m.group(1).strip() if m else
+                            "(none in full document)")
     except urllib.error.HTTPError as e:
         out["status"] = e.code
     except Exception as e:
