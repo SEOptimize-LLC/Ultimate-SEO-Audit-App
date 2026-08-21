@@ -26,6 +26,7 @@ superior:
   sheet_id: 1uVDqUbPRpdFCgfn4IlsDDnwIdRpjwjdcBoh2LRH4jA0
   clickup_milestone: 86ak0e259
   semrush_project: "26537085"
+  semrush_campaign: "26537085_4904292"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "superior"
   is_local: true
   ecommerce: false
@@ -43,6 +44,7 @@ sameday:
   sheet_id: 1tB_4H4-l759PLpNmcuOFpyUWcL6MzJvnMYenkFj4lKE
   clickup_milestone: 86ak0e2nt
   semrush_project: "25650229"
+  semrush_campaign: "25650229_4903357"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "sameday"  # misses 'same day' written with a space - confirm
   is_local: true
   ecommerce: false
@@ -60,6 +62,7 @@ beehive:
   sheet_id: 1ScxOuGNoPMqr7OWTSQqqt9Vt4gQf-PRLd8PghxssmcE
   clickup_milestone: 86ak0e1ac
   semrush_project: "25650226"
+  semrush_campaign: "25650226_4367846"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "beehive"
   is_local: true
   ecommerce: false
@@ -109,6 +112,7 @@ comfort:
   sheet_id: 1gzCtBffq3jpgj0c-tN2Km02PAINwU5f8Nh6qDI8DRGw
   clickup_milestone: 86ak0e1rf
   semrush_project: "26537093"
+  semrush_campaign: "26537093_4373621"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "comfort solutions"
   is_local: true
   ecommerce: false
@@ -127,7 +131,8 @@ arsenal:
   ga4_property: "359612721"
   sheet_id: 1aHB2WEm551sf9AT_hBWe5Xp_Y0qrPuMmLDBdKuN1mfU
   clickup_milestone: null   # not found in ClickUp search 2026-08-14
-  semrush_project: "28428944"   # separate SEMrush account (fid 10507450);
+  semrush_project: "28428944"
+  semrush_campaign: "28428944_4584598"   # Position Tracking campaign for the aug-2026 tag flow   # separate SEMrush account (fid 10507450);
                                 # not returned by list_projects - see 1.1 calibration
   brand_token: "arsenal health"  # 'arsenal' alone would catch the football club
   is_local: true
@@ -187,6 +192,7 @@ cudio:
   sheet_id: 1_Ufm-_2cajXeR7C_4XKjEBjPEf7L3RBPzawuKbTp79U
   clickup_milestone: 86ak0dnjz
   semrush_project: "25429387"
+  semrush_campaign: "25429387_3251023"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "cudio"
   is_local: false
   ecommerce: false
@@ -204,6 +210,7 @@ snow:
   sheet_id: 1TDkNup04beT4HbLg3NJTmNoEHTXgRAYPqxxwySfswcA
   clickup_milestone: 86ak0jb5p
   semrush_project: "24584014"
+  semrush_campaign: "24584014_2987931"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "snow"  # generic word; may catch non-brand queries - confirm
   is_local: false
   ecommerce: true
@@ -225,6 +232,7 @@ educationwalkthrough:
   sheet_id: 1vxLJKWWCd9HI0cynXmSG6Yooy5E1VtEgpnDO3vVcipA
   clickup_milestone: 86ak0e0rg
   semrush_project: "20947643"
+  semrush_campaign: "20947643_2330707"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "education walkthrough"
   is_local: false
   ecommerce: false
