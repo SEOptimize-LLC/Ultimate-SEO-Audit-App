@@ -1,5 +1,20 @@
 # Report Formatting Rules
 
+## No References to Previous Runs, Drafts, or Corrections — On Any Surface
+
+Every team- or client-facing surface reads as if the current content is the
+only content that has ever existed. This covers reports, PDFs, .xlsx files,
+AND individual Google Sheet / workbook cells (owner instruction 2026-08-21).
+
+- When something we wrote turns out to be wrong, REPLACE it with the correct
+  statement. Never "corrected after...", "(row rewritten...)", "an earlier
+  version claimed...", "(owner-corrected)", "updated from the previous run".
+- Corrections are discussed in conversation and recorded in internal files
+  (task recipes, memory, session saves) — never in the deliverable text.
+- Companion rule: every claim is verified against data BEFORE it ships
+  (see audit-workflow.md and the global no-unverified-claims rule). Verify
+  first; when a fix is still needed, write it as if it were always so.
+
 ## URLs Must Never Be Truncated
 
 Never truncate URLs in reports. Always display the full URL path — no ellipsis (...), no cutting off at a character limit. If a URL is long, display it in full. The client and boss need to be able to copy/paste URLs directly from the report.
