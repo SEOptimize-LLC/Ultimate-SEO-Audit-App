@@ -77,6 +77,8 @@ def main(sitemap_url: str, title: str, target: str) -> None:
     print(f"service tokens in the proposed title: {mods or '(none)'}")
     if not mods:
         print("nothing to check")
+        print()
+        print("VERDICT: no sibling conflicts found")
         return
     target_slug = tgt.split("//")[-1]
     tgt_section = tgt.split("//")[-1].split("/")[1] if tgt.count("/") > 3 else ""
@@ -93,7 +95,11 @@ def main(sitemap_url: str, title: str, target: str) -> None:
     # lets a domain like beehiveplumbing.com register "plumbing" as this
     # page's core service, which matches every page on the site.
     tgt_path = "/" + tgt.split("//")[-1].split("/", 1)[-1] if "/" in tgt.split("//")[-1] else ""
-    core = [c for c in CORE if c in tgt_path]
+    # Prefer the core noun in the page's OWN slug over one in a parent
+    # folder. On /plumbing/toilets/ the service is toilets; matching on
+    # "plumbing" would make every page under /plumbing/ a competitor.
+    tgt_slug = tgt_path.rstrip("/").rsplit("/", 1)[-1]
+    core = [c for c in CORE if c in tgt_slug] or [c for c in CORE if c in tgt_path]
     problems = 0
     for tok in mods:
         owners = []
