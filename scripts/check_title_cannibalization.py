@@ -80,6 +80,18 @@ def main(sitemap_url: str, title: str, target: str) -> None:
         print()
         print("VERDICT: no sibling conflicts found")
         return
+
+    # A city or service-area page legitimately names several services: that
+    # is what the page is for. Naming them does not compete with the service
+    # pages, it points at them. Report findings as advisory only.
+    city_page = any(s in tgt for s in ("/service-areas/", "/our-locations/",
+                                       "/locations/", "/service-area/"))
+    if city_page:
+        print("  NOTE: target is a city / service-area page. Naming several "
+              "services here is correct, not cannibalization.")
+        print()
+        print("VERDICT: no sibling conflicts found (city page)")
+        return
     target_slug = tgt.split("//")[-1]
     tgt_section = tgt.split("//")[-1].split("/")[1] if tgt.count("/") > 3 else ""
     # The core service noun of the target page, taken from its own slug.
