@@ -1,6 +1,6 @@
 ---
 name: "On-Page SEO Agent"
-description: "Analyzes content optimization, heading structure, meta elements, internal linking, and content quality for on-page SEO improvements"
+description: "Ultimate SEO Agent audit skill: Analyzes content optimization, heading structure, meta elements, internal linking, and content quality for on-page SEO improvements"
 ---
 
 # On-Page SEO Agent
@@ -80,7 +80,7 @@ Primary Keyword - Secondary Keyword | Brand Name
 
 ### Title–Query Alignment (`titlematchScore`)
 
-Length and structure are not the whole title check. Run an explicit **title-to-query match check**: does the title lexically and semantically match the queries the page actually ranks for (from GSC) or is trying to win? The May 2024 Content Warehouse leak documents a `titlematchScore` attribute — a per-document measure of how well the title matches the query. Treat it as leak-derived and directional, not a confirmed weighting: Google has not confirmed how, or how heavily, it is used. The direction is consistent with the rest of the leak's click-signal picture, though — a title that doesn't overlap the query earns fewer clicks, which feeds NavBoost against the page.
+Length and structure are not the whole title check. Run an explicit **title-to-query match check**: does the title lexically and semantically match the queries the page actually ranks for (from GSC) or is trying to win? The May 2024 Content Warehouse leak documents a `titlematchScore` attribute — and it sits in the site-level quality module (NSR), described as a site-level score of how well the site's titles match user queries. That placement matters: the *pattern* of title–query matching across the site is what gets scored, so a systemic misalignment (every service page titled with internal jargon, say) is a site-level finding, and title fixes compound — fixing one page helps that page, fixing the pattern moves the sitewide signal. Treat it as leak-derived and directional, not a confirmed weighting: Google has not confirmed how, or how heavily, it is used. The direction is consistent with the rest of the leak's click-signal picture, though — a title that doesn't overlap the query earns fewer clicks, which feeds NavBoost against the page.
 
 How to check:
 1. Pull the page's top queries by impressions from GSC (`get_search_by_page_query`).

@@ -16,13 +16,18 @@ def get_backlink_prompt() -> str:
 
 ### Link Quality Assessment
 
-**Positive Link Signals:**
-- High Domain Authority (DA/DR): Authority passes through links
+**The three checks that decide a link's value (in priority order — leak-grounded):**
+1. **Real people land on the linking page.** The leak's tiered-index reading (scaledSelectionTierRank) scales a link's value by the serving tier of the page carrying it, and pages nobody visits sit in the bottom tiers. Traffic-as-activation is an operational hypothesis, not a documented weight — but a link on a page nobody reads is an asset that was never switched on.
+2. **The linking page itself is indexed and retrievable.** A link from a page Google does not serve passes nothing, whatever the domain looks like in a tool.
+3. **The anchor matches what the target page is about.** anchorMismatchDemotion is a documented demotion for anchors that do not describe their destination.
+
+**Supporting positive signals:**
 - Topical relevance: Relevant links carry more weight
 - Editorial placement: Natural, earned links
 - Contextual link (in content): More valuable than sidebar/footer
-- Traffic to linking page: Real site, real audience
 - Unique referring domain: Diversity matters
+
+**On DA/DR:** third-party authority scores (Moz DA, Ahrefs DR, Semrush AS) model Google's link graph from the outside. They are fine as filtering and prospect-comparison conveniences, but treating them as a proxy for how Google scores authority is a category error — Google's own siteAuthority is not the third-party number. Never justify a link on DA/DR alone: a page with a big DR and no visitors clears none of the three checks above.
 
 **Negative Link Signals:**
 - Spammy anchor text: Manipulation indicator
@@ -75,13 +80,13 @@ def get_backlink_prompt() -> str:
 - Hacked sites
 - Spam farms
 
-### Seed Trust & Homepage-Trust Weighting (per Google API leak May 2024)
+### Trusted Anchors and Homepage PageRank (what the May 2024 Google API leak actually documents)
 
-Beyond raw authority tiers, the leak documents that trust propagates from a set of trusted seed sources, and that a linking site's trust is anchored to its homepage. Both are leak-derived, not confirmed levers — use them to explain *why* some links are worth chasing, not as scores to reverse-engineer.
+The leak does not document seed-set trust propagation. Two narrower facts are documented, and neither is a confirmed lever. Use them to explain what Google stores about links, not as scores to reverse-engineer.
 
-- **`trustedAnchors` (seed trust):** the AnchorsAnchor module documents a trusted-anchor concept — links carrying anchor text from trusted seed sources are weighted differently from ordinary links. This is the TrustRank-style idea that trust flows outward from a vetted seed set, and links closer (in link-graph distance) to those seeds carry more of it. Audit implication: a handful of links from genuinely trusted, established sources close to the seed set are worth more than a large volume of ordinary links. When prioritizing link acquisition, weight "how trusted and how close to the trusted core is the source" above sheer count.
+- **Trusted anchors (spam handling only):** there is no `trustedAnchors` attribute. The nearest documented fields are the `trusted*` counters in `IndexingDocjoinerAnchorSpamInfo`, described as counts of trusted anchors used when computing anchor spam probability, and `trustedScore` in `IndexingDocjoinerAnchorTrustedInfo` (fraction of pages with newsy anchors on the site). Neither documents TrustRank-style weighting of links by distance from a seed set. Present the idea that links closer to trusted sources count more as INFERRED, and ground any recommendation to prioritize established, trusted sources in audit evidence.
 
-- **Linking-site homepage-trust weighting:** the leak indicates a site's trust/PageRank is computed at the homepage and distributed inward to its pages, so a link's value depends partly on the trust of the *linking site's homepage*, not just the specific linking URL in isolation. Audit implication: a link from a deep, weakly-linked page on a site whose homepage is highly trusted still benefits from that homepage trust flowing down; conversely, a link from a site whose own homepage has little trust passes little, regardless of the individual page's on-page metrics. When evaluating a prospect or an existing referring domain, look at the trust and link strength of the linking *site as a whole* (anchored at its homepage), not only the single page hosting the link.
+- **Homepage PageRank is stored per page:** `PerDocData.homepagePagerankNs` is documented as the PageRank of the homepage of the site, copied onto each document record. The docs do not say how it is used, and the idea that homepage trust flows down to deep pages is an inference, not a documented mechanism. When evaluating a prospect or an existing referring domain, looking at the linking site as a whole, not only the single page hosting the link, is sound audit practice, but it rests on judgment, not on a documented signal.
 
 ### Domain Diversity Metrics
 

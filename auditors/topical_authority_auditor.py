@@ -107,7 +107,7 @@ class TopicalAuthorityAuditor(BaseAuditor):
             description=(
                 f"{len(urls)} pages sit outside the site's topical center per the "
                 "topical map analysis. Per the May 2024 Google API leak, the "
-                "QualityAuthorityTopicEmbeddings module computes siteRadius — pages "
+                "QualityAuthorityTopicEmbeddingsVersionedItem module computes siteRadius — pages "
                 "far from the site's topical center (`siteEmbedding`) underperform "
                 "regardless of standalone content quality. They also dilute the "
                 "site's topical focus score, weakening every other page's ranking "
@@ -285,7 +285,7 @@ class TopicalAuthorityAuditor(BaseAuditor):
                 f"Combined: {total_clicks} clicks across "
                 f"{total_pages} pages.\n\n"
                 "Per the May 2024 Google API leak, the "
-                "QualityAuthorityTopicEmbeddings module computes "
+                "QualityAuthorityTopicEmbeddingsVersionedItem module computes "
                 "siteFocusScore from the aggregate of every indexed "
                 "page on the domain. High-click clusters that sit at "
                 "high siteRadius are the worst case: they look like "

@@ -1,6 +1,6 @@
 ---
 name: "SEO Audit Methodology"
-description: "Provides the overarching framework for conducting SEO audits, prioritizing recommendations, E-E-A-T assessment, and communicating findings effectively"
+description: "Ultimate SEO Agent audit skill: Provides the overarching framework for conducting SEO audits, prioritizing recommendations, E-E-A-T assessment, and communicating findings effectively"
 ---
 
 # SEO Audit Methodology
@@ -72,7 +72,7 @@ The master list lives in the leak-grounded ranking-factors checklist at `Skills/
 1. **Every audit walks the clusters relevant to its scope and returns a verdict on each in-scope cluster in the deliverable — even "no issue found."** A technical-only audit walks the crawl/rendering/indexation/crawl-budget/schema/page-experience clusters; an on-page audit walks the on-page/content-quality/relevance/internal-linking/schema/entity clusters; a keyword audit walks relevance/query-matching/click-signal/SERP-context clusters; a full-site audit walks all 19. Scope determines which clusters are in-scope, not whether the walk happens.
 2. **A missing verdict on an in-scope cluster is an audit defect** — the same standard as a missing verdict on a Step 0 Non-Negotiable Check. The Pass 2 self-review (see `.claude/rules/audit-workflow.md`) must confirm every in-scope cluster carries a verdict before the deliverable ships.
 3. **Clusters whose required input file is absent are skipped-and-flagged, not silently dropped.** This follows the Expanded Input Stack graceful-degradation contract: when the input that unlocks a cluster (e.g. `anchors_internal.csv` for anchor/demotion analysis, `backlinks_semrush.csv` for off-page NSR proxies, the Koray topical map for `siteFocusScore`/`siteRadius`, the GSC Page-indexing exports for Crawled/Discovered-not-indexed) is not present, record the cluster's verdict as "not assessed — missing input [file], flagged" rather than omitting it. A skipped-and-flagged cluster satisfies the contract; a missing cluster does not.
-4. **Leaked attributes cited by the checklist are LEAK-DERIVED.** Clusters 10–12 (click signals, NSR/domain quality, demotions/spam) lean on attributes documented in the May 2024 Content Warehouse leak — `goodClicks`/`badClicks`/`lastLongestClicks`, `siteAuthority`, `clutterScore`, `hostAge`, the various demotion signals. State these as leak-derived, not as confirmed Google ranking weights, using the same hedged framing the rest of this framework applies to leaked signals (see the Evidence Hierarchy section below).
+4. **Leaked attributes cited by the checklist are LEAK-DERIVED.** Clusters 10–12 (click signals, NSR/domain quality, demotions/spam) lean on attributes documented in the May 2024 Content Warehouse leak — `goodClicks`/`badClicks`/`lastLongestClicks`, `siteAuthority`, `clutterScore`, `hostAge`, the various demotion signals. State these as leak-derived, not as confirmed Google ranking weights, using the four-grade vocabulary from the Evidence Hierarchy section (court-confirmed / leak-documented / inferred / operational hypothesis). Most cluster 10–12 rows are leak-documented, so state the signal's existence plainly and hedge its weight and direction.
 
 ## Search Intent Classification (shared definition)
 
@@ -344,7 +344,7 @@ When recommendations touch user-engagement signals (CTR improvements, snippet re
 
 **The mechanics:**
 
-- **NavBoost** memorizes ~13 months of click data per query (per the Google API leak and DOJ antitrust testimony). Changes need enough new clicks to overcome the historical baseline.
+- **NavBoost** memorizes ~13 months of click data per query (per DOJ antitrust testimony). Changes need enough new clicks to overcome the historical baseline.
 - **RankEmbedBERT and FastSearch** train on ~70 days of search log data.
 - Click signals are **squashed and contextually weighted** — Google filters noise before signals affect rankings, which means small changes need a meaningful sample to register.
 
@@ -573,7 +573,7 @@ When recommendations require citing evidence (especially for ranking-signal clai
 
 These are first-hand evidence from inside Google or the legal record:
 
-- **Google API Content Warehouse Leak (May 2024)** — Leaked internal documentation that exposed many of Google's actual ranking-signal data structures, including NavBoost click attributes (goodClicks, badClicks, lastLongestClicks), squashed signal handling, and slicing by query/position/device. When the leak documents a signal, treat it as confirmed-real — even if Google publicly downplays it.
+- **Google API Content Warehouse Leak (May 2024)** — Leaked internal documentation that exposed many of Google's actual ranking-signal data structures, including NavBoost click attributes (goodClicks, badClicks, lastLongestClicks), squashed signal handling, and slicing by query/position/device. When the leak documents a signal, treat its **existence** as confirmed-real — even if Google publicly downplays it. Existence is also all it confirms: the files carry no weights, thresholds, or combining formulas, so a documented field proves Google *can store or compute* something, not how much it matters, in which direction it acts, or whether it is currently deployed. Apply the evidence grades below when turning a leak field into a claim.
 
 - **US v. Google Antitrust Trial Testimony (2024-2025)** — DOJ trial record includes sworn testimony from Google engineers confirming click signals as fundamental ranking inputs, the role of user click data as Google's competitive moat, and specific systems (NavBoost, Glue) by name. Public record.
 
@@ -607,11 +607,24 @@ Published studies from established SEO companies (Backlinko, SEMrush, Ahrefs, Mo
 
 Reddit threads, blog posts, Twitter screenshots showing specific behavior on specific sites. Useful as leads for further investigation; not as evidence.
 
+### Evidence Grades (the hedging vocabulary for deliverables)
+
+Tiers rank *sources*; grades rank *individual claims*. Every ranking-mechanics claim in a deliverable — and every cluster 10–12 finding under the ranking-factors coverage contract — carries one of four grades, and the deliverable's hedging must match the grade:
+
+| Grade | What it means | Deliverable framing |
+|---|---|---|
+| Court-confirmed | Sworn DOJ testimony or trial exhibit (NavBoost and its click basis; RankEmbed; the Quality bucket being largely static and site-level) | State as fact |
+| Leak-documented | The field/module exists in the leaked files; weight, direction, and deployment unknown | "Google's systems store/compute X" — never "X is a ranking factor that will move rankings" |
+| Inferred | The most plausible reading of documented evidence (index-tier link scaling, titlematchScore acting at eligibility) | Present as a reading: "the strongest available interpretation is..." |
+| Operational hypothesis | A bet worth acting on before it is settled (traffic as a link's activation switch) | Strategy discussion only, explicitly flagged as a hypothesis; never as an audit finding |
+
+Downgrading is free; upgrading requires new evidence. When in doubt between two grades, use the weaker one.
+
 ### What This Means for Audit Recommendations
 
 When making a claim in a recommendation:
 
-1. **If a Tier 1 source confirms it**, you can state it as fact without hedging.
+1. **If a Tier 1 source confirms it**, you can state it as fact without hedging — but for the leak specifically, only the *existence* claim gets that treatment. Court-confirmed mechanics are fact; leak-documented fields are "Google stores/computes X," with effect size and direction hedged per the grade table above.
 2. **If only Tier 2-3 sources confirm it**, frame as "documented by multiple practitioners" or "Google has stated."
 3. **If only Tier 4 sources show it**, frame as "industry studies suggest" — and don't promise causal outcomes.
 4. **If only Tier 5 sources show it**, don't include it in a client deliverable.
@@ -623,9 +636,9 @@ When a Tier 3 statement conflicts with a Tier 1 source, the Tier 1 source wins. 
 | Claim | Strongest source |
 |---|---|
 | NavBoost / Glue use click signals for ranking | Tier 1 (API leak + DOJ testimony) |
-| 13-month NavBoost memory window | Tier 1 (API leak) |
+| 13-month NavBoost memory window | Tier 1 (DOJ testimony; not stated in the leaked attribute docs) |
 | RankEmbedBERT trains on 70 days of search logs | Tier 1 (court documents) |
-| `goodClicks`, `badClicks`, `lastLongestClicks` exist as ranking attributes | Tier 1 (API leak schema) |
+| `goodClicks`, `badClicks`, `lastLongestClicks` exist as attributes in the leaked schema (descriptions empty, meanings inferred) | Tier 1 (API leak schema) |
 | Pages with backlinks from Tier-1 publications outperform | Tier 4 (correlation studies) |
 | Specific dwell-time thresholds correlate with rankings | Tier 4 (Backlinko et al.) — directional only, not causal |
 | Long titles get truncated in SERPs at ~60 chars | Tier 1 (Google docs + observation) |

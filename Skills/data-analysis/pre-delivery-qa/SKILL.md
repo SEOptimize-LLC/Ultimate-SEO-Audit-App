@@ -180,6 +180,22 @@ Read the narrative sections and check each of these:
 
 **Source:** the SameDay Utah 30-day post-relaunch report, July 31 2026. Data, findings and structure were all accepted; the report was rejected on writing quality alone, with the user noting this had come up multiple times before.
 
+### CHECK 14: Leaked-document citations (required if the deliverable names a leaked Google attribute or module, or cites "the leak")
+
+**Rule:** Every leaked attribute or module name must exist in the leaked docs, and every claim about one carries a tag: documented (the doc text says it), inferred (the description is empty or the claim goes past the text), or DOJ-derived (the source is testimony, not the docs).
+
+**How to run it:**
+
+```bash
+python Skills/google-leak-reference/scripts/check_leak_citations.py "Clients/<name>/Full SEO Audit/<file>.md"
+```
+
+Exit 0 is a pass, or "no leak identifiers found" (mark N/A). Exit 1 means a name is absent from the docs: delivery is blocked until the name is corrected or the claim removed. Exit 2 means the check could not run (index missing, file unreadable): delivery stays blocked, since a check that did not run is not a pass. Run `python Skills/google-leak-reference/scripts/build_index.py`, then re-run. The script reads `.xlsx` cell text too.
+
+The script proves a name exists, not that the claim made about it is right. Settle every WARN and NOTE line by hand with the `google-leak-reference` skill: quote the doc text or tag the claim inferred or DOJ-derived. The 13-month click window and the 70-day RankEmbedBERT window are testimony, never documented.
+
+**Source:** the October 2026 audit of the framework against the leaked docs, which found wrong module names, an invented `trustedAnchors` attribute and an unsupported `locationDemotion` signal that no reviewer had caught.
+
 ## How to run the QA pass
 
 Before saving the file, mentally walk through each check above. For checks that require subagent dispatch (1, 2, 3, 4), actually dispatch the subagent — don't shortcut by "I think it's probably fine."
@@ -202,6 +218,7 @@ CHECK 10 (audience): PASS — written for client Elementor admin
 CHECK 11 (rec prose): N/A — no rewrites proposed
 CHECK 13 (prose quality): PASS — read aloud, connected paragraphs, no stacked declaratives
 CHECK 12 (AI-tell scrub): PASS — scrub_ai_tells.py exit 0, zero dashes
+CHECK 14 (leak citations): PASS — check_leak_citations.py exit 0, 12 identifiers exact, claims tagged
 
 Deliverable approved for delivery: Clients/<name>/Full SEO Audit/<file>.xlsx
 ```

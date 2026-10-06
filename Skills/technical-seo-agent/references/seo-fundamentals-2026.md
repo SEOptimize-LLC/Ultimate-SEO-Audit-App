@@ -73,6 +73,8 @@ The re-rankers referenced in the pipeline ("Twiddlers") sit on top of the core r
 | Local pack | Applies proximity + GBP signals for local-intent queries | Is the query local-intent, and are GBP / proximity / citation signals in place? |
 | hostAge sandbox | Constrains fresh domains to filter launching spam | Is the domain new enough that host-age sandboxing is suppressing otherwise-rankable content? |
 
+**Evidence note:** the leaked docs name only three twiddlers (`SiteBoostTwiddler`, `FreshnessTwiddler`, `WebImageBoostTwiddler`) and document `hostAge` as feeding a twiddler that sandboxes fresh spam at serving time. The click boost, host-crowding, official-page and local-pack rows above are not twiddlers named in the leaked docs; treat them as INFERRED unless a primary source is cited.
+
 Because a Twiddler adjusts the score *after* base ranking, a page can carry strong base signals and still be re-ranked down — the audit job is to identify which layer is acting, not to assume the base score is wrong. For the itemized, signal-by-signal companion list, see `Skills/technical-seo-agent/references/ranking-factors-checklist-2026.md`.
 
 ### Host-Crowding and the Result-Diversity Cap (QDD)
@@ -165,6 +167,15 @@ When auditing orphans, exclude pages that have no SEO value to begin with: PPC l
 ### High-Authority Pages Should Link Out
 
 The homepage and other high-authority pages are not "special" — they accumulate link equity because external sites link to them. The way to use that authority is to link out to the pages that need ranking help. A homepage that doesn't link to category and service pages is leaving equity on the table.
+
+### Source Internal Links From Pages That Earn Search Clicks (`onsiteProminence`)
+
+The leak documents `onsiteProminence` — a measure of a page's importance within its own site, computed by propagating simulated traffic from the homepage and from pages with strong click signals. That gives internal linking a second axis: taxonomy ("what relates to what") is one axis, user flow is the other, and search clicks are the evidence for it. LEAK-DOCUMENTED: the attribute and its propagation description are in the files; the audit method below is the reading most consistent with them.
+
+- **Choose source pages from the GSC clicks report, not from the sitemap or taxonomy alone.** The pages that earn the most search clicks are the strongest internal linkers the site has. Most sites waste them by linking out of template shells and archive pages no visitor reads.
+- **Clicks, not sessions.** The documented signal propagates from click data, so build the source list from Search Console clicks. A page with heavy direct or social traffic but no search clicks is a different asset — on this reading it is not the one lending prominence.
+- **Run links from broad-reach pages into narrow, conversion-adjacent pages** you are trying to move, and keep each anchor aligned with the target's topic (on the strictest reading, `anchorMismatchDemotion` reaches internal anchors too — see the anchor section).
+- **On link-map deliverables, record the source page's GSC clicks next to each proposed link** so the map is sortable on the equity axis, and flag any proposed link whose source page earns zero search clicks — that row's equity case rests on taxonomy alone, and it should say so.
 
 ## Content Strategy
 
@@ -365,6 +376,8 @@ If a page is ranking #0 (snippet) but you'd prefer the standard #1 listing for h
 
 Featured snippet rankings are unstable and rotate frequently. Treat them as a bonus, not a permanent ranking.
 
+**A site-level quality score gates feature eligibility.** Independent empirical work (Mark Williams-Cook's team, via a Google endpoint discovery reported through Google's Vulnerability Reward Program, December 2024) surfaced a per-site `site_quality_score` on a 0–1 scale: sites below roughly 0.4 did not receive People Also Ask or featured-snippet eligibility, and the observed inputs relate to branded anchor counts and branded search demand. This is not from the leak files — grade it as independent empirical from a single research team. Diagnostic use: a site with zero snippet/PAA presence across its whole query set despite competitive positions may sit under the quality gate, and the lever consistent with the observed inputs is brand demand and site quality, not snippet formatting.
+
 ## What Google Doesn't Use as a Ranking Signal
 
 Stating these explicitly because they keep coming up in client conversations and consultant reports:
@@ -383,7 +396,7 @@ Several signals get incorrectly dismissed as "Google doesn't use that." This sec
 
 ### In-SERP click signals are real ranking inputs
 
-Per the Google API leak and confirmed in DOJ antitrust testimony, Google operates a system called **NavBoost** that memorizes ~13 months of user click data and uses it to re-rank results. Specific attributes documented in the leaked schema include:
+Per DOJ antitrust testimony, Google operates a system called **NavBoost** that memorizes ~13 months of user click data and uses it to re-rank results. The 13-month window comes from that testimony: no attribute in the leaked documentation states it. The leaked schema lists the click attributes below as fields, and `goodClicks`, `badClicks` and `lastLongestClicks` carry no description there, so the meanings given are inferred from the field names (INFERRED):
 
 - `goodClicks` — long clicks where the user stayed on the destination page rather than returning to the SERP
 - `badClicks` — short clicks where the user bounced back to the SERP quickly
@@ -520,7 +533,7 @@ All six should align. Sites that update content but only refresh some of these s
 
 **Practical implication:** Don't recommend "just update the date" as a freshness tactic. Google's freshness signal is driven by `lastSignificantUpdate`, not the publish date displayed to users. Genuine content updates trigger the signal; metadata-only updates don't. This is the underlying mechanism behind the long-standing observation that "republishing with a new date doesn't help unless you actually update the content."
 
-**Google keeps a page's version history.** The leaked `PerDocData` retains a rolling history of a document's prior states — commonly cited from the leak as on the order of ~20 stored versions per URL. This is LEAK-DERIVED. It is also how `lastSignificantUpdate` is even computable: the system diffs versions to tell a substantive rewrite from a cosmetic touch.
+**Google keeps a limited change history per URL.** The leaked `CompositeDocIndexingInfo.urlHistory` field is documented as the URL change history for a document, and "if a doc has more than 20 changes, we only keep the last 20 changes". That much is LEAK-DERIVED. The docs do not say whether full prior page versions are stored. `lastSignificantUpdate` is documented as computed by an `LSUSelector` from various signals, and as derived from a shingle-based `ContentAge` signal, which points to content comparison across crawls (INFERRED): the system appears able to tell a substantive rewrite from a cosmetic touch.
 
 **Practical implication:** You cannot fake a page's history by editing it once. A page that was thin for years and gets a single overhaul still carries that trajectory; sustained improvement reads differently from a one-time refresh. It also means an abrupt wholesale content swap on an established URL (repurposing a ranking page for an unrelated topic) is visible as a discontinuity, not a clean slate — prefer a new URL when the topic genuinely changes rather than overwriting a page's accumulated history.
 
@@ -604,9 +617,9 @@ Described as "Scam model score. Used as one of the web page quality qstar signal
 
 **Audit implication:** Especially relevant for YMYL content. Recommend visible author credentials, citations to primary sources, and explicit expertise indicators (qualifications, professional affiliations, original research).
 
-**10. Location / localness demotion** (`locationDemotion` / localness signals)
+**10. Location / localness** (`localityScore`; no `locationDemotion` attribute exists)
 
-The leak references location-based demotion — a generic or national page demoted for queries that are locally intended when the page lacks genuine local relevance. LEAK-DERIVED, and highly relevant to local-service clients: a broad "national" page competing on a query the user meant locally faces a demotion relative to pages carrying real local signals.
+The leaked `QualityNsrNsrData.localityScore` is documented as the "locality component of the LocalAuthority signal" at site level. No attribute documents a location demotion, so the idea that a generic or national page is demoted on locally-intended queries is INFERRED from that signal. It still matters to local-service clients: a broad "national" page competing on a query the user meant locally likely faces a headwind relative to pages carrying real local signals.
 
 **Audit implication:** For local-service businesses, a single generic service page trying to rank everywhere is fighting a localness headwind on locally-intended queries. This is the demotion-side counterpart to the Local SEO guidance above — recommend genuinely local pages (real service-area specifics, local proof, NAP-consistent signals) rather than one location-agnostic page, and don't expect a national page to hold locally-intended queries.
 
@@ -650,7 +663,7 @@ These are covered in depth in the traffic-loss workflow (`Skills/traffic-loss-an
 
 ### Topical authority is measured numerically
 
-The leaked `QualityAuthorityTopicEmbeddings` module documents two specific attributes that quantify topical focus and cohesion:
+The leaked `QualityAuthorityTopicEmbeddingsVersionedItem` module documents two specific attributes that quantify topical focus and cohesion:
 
 - **`siteFocusScore`** — "Number denoting how much a site is focused on one topic"
 - **`siteRadius`** — "The measure of how far page_embeddings deviate from the site_embedding"
@@ -698,7 +711,7 @@ Translation: not all backlinks are equal. A link from a high-quality source page
 
 When recommending link acquisition, prioritize earning links from pages that are themselves in the top index tier (frequently crawled, well-linked, on established sites) over volume-based link building.
 
-**Seed-trust anchors are special-cased.** The leak references `trustedAnchors` — a notion of anchors originating from a trusted seed set, echoing the trust-propagation model where distance from a curated set of known-good sites informs how much trust a link conveys. This is LEAK-DERIVED and not a public dial, but it reinforces that links closer to trusted seeds count for more than links from the open long tail.
+**Trusted anchors appear only in spam handling.** The leak has no `trustedAnchors` attribute. The nearest documented fields are the `trusted*` counters in `IndexingDocjoinerAnchorSpamInfo` (`trustedTotal`, `trustedMatching`, `trustedDemoted`, described as counts of trusted anchors used when computing anchor spam probability) and `IndexingDocjoinerAnchorTrustedInfo.trustedScore` ("fraction of pages with newsy anchors on the site, >0 for trusted sites"). Neither documents seed-set, TrustRank-style weighting of links by distance from trusted sites. That idea may well describe Google, but it is not leak-derived: present it as INFERRED.
 
 **Practical implication:** A small number of links from genuinely trusted, established sources outweigh a large volume from the undifferentiated middle. When advising link acquisition, "closer to the trusted seed set" — recognized institutions, established publications, authoritative industry bodies — is the target, not raw referring-domain count.
 
@@ -752,6 +765,17 @@ A subset of technical fixes ARE ranking levers — but only because they unblock
 Distinguish the two when communicating to clients. The audit methodology's Expected Outcome Classification (`Skills/seo-audit-methodology/SKILL.md`) is the framework for tagging every recommendation correctly.
 
 When estimating organic traffic value, the floor is set by PPC: if comparable terms cost $X per click via Ads, then organic traffic for those terms is worth at minimum $X × volume. If organic conversion value is below the PPC market rate, competitors will outbid the site indefinitely.
+
+### Additional Documented Fields (verified against the leaked docs, package 0.4.0)
+
+Each item is quoted or paraphrased from the attribute documentation. These are LEAK-DERIVED existence facts: none carries a documented weight, and none is a confirmed ranking lever.
+
+- **Local business data on every document.** `CompositeDoc` carries `LocalWWWInfo`, which stores `wrapptorItem` entries (business name, address fingerprint, phone fingerprint), `hours`, `isLargeChain` ("widely-distributed chain"), `siteSiblings` (documented as per-document signals independent of any particular address), `geotopicality` and `brickAndMortarStrength` (no description in the docs). The docs also state that addresses and phone numbers are populated only if the document has four or fewer of each, "primarily for space reasons". INFERRED audit use: business name, address and phone are parsed and fingerprinted per page, so inconsistent NAP formatting across a client's own pages is machine-readable, not only a citation-consistency problem. A page that lists more than four locations or phone numbers would have none stored, which supports keeping each location page to its own address and number.
+- **Mobile interstitials.** `SmartphonePerDocData.violatesMobileInterstitialPolicy` is documented as indicating that the page "is violating mobile interstitial policy and should be demoted".
+- **Spam scores.** `PerDocData.uacSpamScore` is 7 bits (0 to 127) with a documented threshold of 64, and a score of 64 or above is considered UAC spam. `spamtokensContentScore` is used in `SiteBoostTwiddler` to decide whether a page is UGC spam. `KeywordStuffingScore` is 0 to 127 with no documented threshold.
+- **Repeat links to one domain.** `AnchorsAnchor.parallelLinks` is "the number of additional links from the same source page to the same target domain" and is not populated for local links. The docs do not say how the count is used.
+
+Look up any module or attribute with the `google-leak-reference` skill before citing the leak in a deliverable.
 
 ## Source
 

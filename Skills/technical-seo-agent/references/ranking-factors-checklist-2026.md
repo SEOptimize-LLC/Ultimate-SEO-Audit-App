@@ -32,15 +32,15 @@ Impact × Effort only break ties **within** a stage. Stage mechanics live in
 
 ### Why this index exists
 
-This checklist holds **143 variables across 20 clusters**, distributed like this:
+This checklist holds **146 variables across 20 clusters**, distributed like this:
 
 | Coverage | Variables | Share |
 |---|---|---|
-| Clusters 1–4 (gating stages 1–3) | 27 | 18.9% |
-| Clusters 5–20 (predominantly stage 4) | 116 | 81.1% |
+| Clusters 1–4 (gating stages 1–3) | 28 | 19.2% |
+| Clusters 5–20 (predominantly stage 4) | 118 | 80.8% |
 
-Severity does not rescue you from that imbalance: only **4 of 143 rows are Critical** (all
-four fall in clusters 1–3), against 43 High, 65 Medium and 31 Low. Walking the clusters in
+Severity does not rescue you from that imbalance: only **4 of 146 rows are Critical** (all
+four fall in clusters 1–3), against 44 High, 67 Medium and 31 Low. Walking the clusters in
 numeric order therefore spends roughly four fifths of the audit effort on ranking variables
 that cannot pay out until the three gating stages pass. **Sort by stage first, then walk
 severity inside the stage.**
@@ -115,6 +115,7 @@ inherits the Stage 2 verdict. A render gap produces wrong clusters.
 | High-authority pages linking out to money pages | **4** |
 | **Dropped anchors: links present in raw HTML but lost in render** | **2** |
 | Click depth ≤3 for money pages | **1** |
+| Links to priority pages sourced from pages earning real search clicks (`onsiteProminence`) | **4** |
 
 The dropped-anchors row is worth noting because it is the **inverse** of the usual render
 failure. Normally links exist after JS and not in raw. Here they exist in raw and are
@@ -156,7 +157,7 @@ cannot pay out no matter how well the content is optimised, because the crawler 
 ### Execution rule
 
 1. **Gate on stages 1–3 first.** Run clusters 1, 2, 3, and the stage-1 rows of cluster 4.
-   That is 27 variables and it contains all four Critical rows.
+   That is 28 variables and it contains all four Critical rows.
 2. **Return an explicit verdict per stage, including "clean".** A missing stage verdict is
    an audit defect, on the same contract as the indexability-directive verdict.
 3. **Do not begin cluster 5 onward until stages 1–3 are clean or the failures are
@@ -206,6 +207,7 @@ Can Google and the AI crawlers reach, fetch, and follow the site at all? (Foley 
 | Is redirect-chain depth ≤1 hop (no chains bleeding equity per hop)? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
 | Does crawl frequency/demand match URL importance (money pages crawled often)? | `scaledSelectionTierRank` | GSC crawl stats / server logs | Medium | External tool | GAP — see `technical-seo-agent/SKILL.md` |
 | Is the server reliable under load (no 5xx / timeouts / hostload throttling)? | — | Live fetch / server logs | High | External tool | GAP — see `technical-seo-agent/SKILL.md` |
+| Are there silent fetch aborts (nginx 499s in logs) or slow time-to-first-byte for a *bot* fetch, not a browser? (499 is outside the HTTP spec so most log tools never surface it; an SPA that feels instant to a human can still time out the fetcher) | — | Server logs + live fetch (bot UA) | Medium | External tool | GAP — see `technical-seo-agent/SKILL.md` |
 | Is content served to GPTBot / ClaudeBot / PerplexityBot (not blocked or JS-gated)? | — | Live fetch (UA spoof) + `robots.txt` | High | External tool | `Skills/ai-search-optimization` |
 
 ## Cluster 2 — Rendering & JavaScript
@@ -311,6 +313,7 @@ The site's own link graph — weighting, placement, anchor relevance. (Foley Car
 | Are important internal links placed high (body/nav) not just footer? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
 | Are internal links pointing directly to 200s (not through redirects)? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
 | Are high-authority pages (homepage) linking out to money pages? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
+| Are internal links to priority pages sourced from pages that earn real search clicks (click-weighted source selection — GSC clicks, not GA4 sessions)? | `onsiteProminence` | `crawl_internal.csv` + `gsc_performance.csv` | High | Deterministic (SF/GSC column) | GAP — join SF inlink sources to GSC clicks; method in `seo-fundamentals-2026.md` (Internal Linking) |
 | Are there dropped anchors (links present in raw HTML but lost in render)? | — | `crawl_internal.csv` (raw vs rendered) | Medium | Deterministic (SF/GSC column) | `javascript_rendering_auditor.py` |
 | Is click depth ≤3 for money pages? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `crawl-depth-analysis` skill |
 
@@ -323,7 +326,7 @@ The external link graph — tier, trust, velocity, relevance. (Foley Carter cat.
 | What tier are the referring source pages in (high vs low quality)? | `sourceType` (`TYPE_HIGH_QUALITY`…) | `backlinks_semrush.csv` | High | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Is referring-domain strength / PageRank distribution healthy? | — | `backlinks_semrush.csv` | High | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Is there an anchor-text spam spike (velocity, not just volume)? | `phraseAnchorSpamRate`, `phraseAnchorSpamDemoted`, `phraseAnchorSpamPenalty` | `backlinks_semrush.csv` | High | Deterministic (SF/GSC column) | `backlink_auditor.py` |
-| Are inbound anchors seed-trusted (near trusted seed sites)? | `trustedAnchors` | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
+| Are inbound anchors seed-trusted (near trusted seed sites)? Not leak-derived: no such attribute exists | — | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Is link value weighted by the linking site's homepage trust? | — | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Are source pages fresh vs disk-tier (velocity/spam-spike check)? | `TYPE_FRESHDOCS`, `sourceType` | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Do inbound anchors match this site's topic (external relevance)? | `anchorMismatchDemotion` | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
@@ -376,7 +379,7 @@ The named penalties — diagnostic when a site underperforms. (Foley Carter cat.
 | Are scam/unauthoritative signals present (fake urgency, hidden costs, no credentials)? | `scamness`, `unauthoritativeScore` | Live fetch | High | LLM-judgment | `seo-audit-methodology/SKILL.md` |
 | Is a low-quality / VLQ flag likely (NSR-derived)? | `lowQuality` | `crawl_internal.csv` | Medium | LLM-judgment | `content_pruning_auditor.py` |
 | For review content, is a product-review demotion likely (templated "best of" pages)? | `productReviewPDemotePage`, `productReviewPDemoteSite` | Live fetch | Medium | LLM-judgment | GAP — see `onpage-seo-agent/SKILL.md` |
-| Is a location/localness demotion at play? | `localityScore` | Live fetch + DFS local | Low | External tool | `local_seo_auditor.py` |
+| Does the site carry a strong locality signal (a location demotion is INFERRED, not documented)? | `localityScore` | Live fetch + DFS local | Low | External tool | `local_seo_auditor.py` |
 | Are inbound-link-spam patterns present (SpamBrain neutralisation candidates)? | `spambrainTotalDocSpamScore`, `spamrank` | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Are there scaled-content / site-reputation / expired-domain abuse patterns? | `racterScores` | `crawl_internal.csv` + live fetch | High | LLM-judgment | GAP — see `seo-fundamentals-2026.md` |
 | Are there suspicious behaviour-over-time spikes (content production, sudden URL inflows, quality shifts, domain consolidations)? | — | `crawl_internal.csv` + GSC | Medium | Deterministic (SF/GSC column) | `Skills/traffic-loss-analysis` |
@@ -390,6 +393,7 @@ Post-scoring re-rankers and SERP-shape effects. (Foley Carter cat. 12 TWIDDLERS.
 | Are post-scoring re-rankers in play (freshness / click / official-page boost)? | — | DFS SERP | Low | External tool | GAP — see `technical-seo-agent/SKILL.md` |
 | Is host-crowding / result-diversity capping the site's SERP footprint? | — | DFS SERP | Low | External tool | `cannibalization_auditor.py` |
 | Is the page eligible for SERP features (snippets / PAA / AIO)? | — | DFS SERP + live fetch | Medium | External tool | `Skills/ai-search-optimization` |
+| Is the site above the site-quality threshold that gates feature eligibility? (site_quality_score < ~0.4 excludes PAA/featured snippets — independent empirical, Williams-Cook endpoint discovery, Dec 2024; not a leak attribute) | — | DFS SERP + `gsc_performance.csv` | Medium | External tool | `Skills/ai-search-optimization` |
 | Is the query in a sensitive vertical with whitelist/quality gates (YMYL)? | `ymylHealthScore`, `ymylNewsScore` | Live fetch + DFS | Medium | LLM-judgment | `seo-audit-methodology/SKILL.md` |
 | Are personalisation/locale re-ranking effects distorting the observed SERP? | — | DFS SERP (localised) | Low | External tool | `local_seo_auditor.py` |
 | Is a gold-standard / golden-document flag applied to a competitor result? | — | DFS SERP | Low | External tool | GAP — see `technical-seo-agent/SKILL.md` |
@@ -501,4 +505,4 @@ Operating rules:
 
 ## Source
 
-Daniel Foley Carter, "SEO Ranking Factors for 2026" (15 source categories, ~100 checks), grounded on the May 2024 Google Content Warehouse leak. Cross-referenced against this project's `seo-fundamentals-2026.md` and `click-signals-abc-framework.md` for exact leak-attribute spellings and existing coverage. Mapped to the Ultimate SEO Auditor's auditor stack and domain skills. Cluster 20 (Discover Visibility) and the `gsc-indexation-states.md` diagnostic playbook were added from Foley Carter's "GSC Lessons" series and validated against live client indexation checks (Comfort Solutions, Superior Water & Air, Beehive). Last updated: 2026-07-21.
+Daniel Foley Carter, "SEO Ranking Factors for 2026" (15 source categories, ~100 checks), grounded on the May 2024 Google Content Warehouse leak. Cross-referenced against this project's `seo-fundamentals-2026.md` and `click-signals-abc-framework.md` for exact leak-attribute spellings and existing coverage. Mapped to the Ultimate SEO Auditor's auditor stack and domain skills. Cluster 20 (Discover Visibility) and the `gsc-indexation-states.md` diagnostic playbook were added from Foley Carter's "GSC Lessons" series and validated against live client indexation checks (Comfort Solutions, Superior Water & Air, Beehive). 2026-08-21: added the `onsiteProminence` click-weighted internal-link-sourcing row (Cluster 8), the site-quality feature-eligibility gate row (Cluster 13, Williams-Cook endpoint discovery Dec 2024), and the 499/bot-TTFB fetch-cost row (Cluster 1), from the cross-check against Szymon Słowik's leak synthesis (szymonslowik.com/google-leak-ranking-signals). Last updated: 2026-08-21.

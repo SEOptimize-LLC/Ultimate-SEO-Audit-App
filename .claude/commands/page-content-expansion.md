@@ -1,5 +1,5 @@
 ---
-description: Single-URL content expansion analysis. Pulls a page's GSC query data, classifies queries by intent and position, runs the cannibalization gate, and produces a ranked deliverable of intra-page additions, new-page candidates, internal-link suggestions, and semantic entities to add. Use when a client asks "what should I add to this page?" or when an audit surfaces a single URL with strong impression volume and weak CTR.
+description: Ultimate SEO Agent command for the Clients/ folder. Single-URL content expansion analysis. Pulls a page's GSC query data, classifies queries by intent and position, runs the cannibalization gate, and produces a ranked deliverable of intra-page additions, new-page candidates, internal-link suggestions, and semantic entities to add. Use when a client asks "what should I add to this page?" or when an audit surfaces a single URL with strong impression volume and weak CTR.
 ---
 
 # /page-content-expansion

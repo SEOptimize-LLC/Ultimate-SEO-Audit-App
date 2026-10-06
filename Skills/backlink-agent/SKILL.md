@@ -310,7 +310,7 @@ When a disavow is genuinely warranted, do not submit the whole toxic list in one
 
 ### Specialist vs Generalist Calibration
 
-There is a live split in the industry: many practitioners (Foley Carter among them) argue that **"toxic links don't exist" and Google simply ignores spam** via SpamBrain neutralisation, so disavow is almost never needed. This aligns with our modern stance — the leak-derived read (`spambrainTotalDocSpamScore`, `spamrank`, `trustedAnchors` in `Skills/technical-seo-agent/references/ranking-factors-checklist-2026.md`) is that Google **discounts** manipulative links rather than penalising the target for receiving them. Use this as calibration, not doctrine:
+There is a live split in the industry: many practitioners (Foley Carter among them) argue that **"toxic links don't exist" and Google simply ignores spam** via SpamBrain neutralisation, so disavow is almost never needed. This aligns with our modern stance — the leak-derived read (`spambrainTotalDocSpamScore`, `spamrank` in `Skills/technical-seo-agent/references/ranking-factors-checklist-2026.md`) is that Google **discounts** manipulative links rather than penalising the target for receiving them. Use this as calibration, not doctrine:
 
 - **Default to no disavow.** Most low-DA, foreign, or directory links are already ignored — they are noise, not toxicity. Disavowing them wastes effort and risks removing links that pass small value.
 - **Reserve disavow for the clear-hack / manual-action / documented-negative-SEO case** — the same bar as the staged-disavow method above.

@@ -1,5 +1,5 @@
 ---
-description: Run the semantic-site-map skill against a client. Auto-discovers the SF crawl and GSC export from the client's folder; falls back to GSC MCP if no GSC CSV is present. Outputs 4 files to `Clients/<name>/Full SEO Audit/semantic_map/`. Use when you want a topical map without manually invoking the CLI.
+description: Ultimate SEO Agent command for the Clients/ folder. Run the semantic-site-map skill against a client. Auto-discovers the SF crawl and GSC export from the client's folder; falls back to GSC MCP if no GSC CSV is present. Outputs 4 files to `Clients/<name>/Full SEO Audit/semantic_map/`. Use when you want a topical map without manually invoking the CLI.
 ---
 
 # /semantic-map

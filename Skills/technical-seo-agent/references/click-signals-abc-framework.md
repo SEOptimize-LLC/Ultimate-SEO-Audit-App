@@ -17,16 +17,16 @@ The right framing: **click signals reflect genuine relevance, usefulness, and sa
 
 ### NavBoost
 
-Documented in the Google API leak (May 2024) and confirmed in DOJ antitrust testimony. NavBoost is a ranking algorithm that:
+NavBoost is described in DOJ antitrust testimony (including the ~13-month click window), and its click fields appear in the May 2024 Google API leak. NavBoost is a ranking algorithm that:
 
-- **Memorizes ~13 months of user click data** per query
+- **Memorizes ~13 months of user click data** per query (DOJ testimony; the leaked docs do not state the window)
 - **Re-ranks results** based on how users have historically engaged with them
 - **Weights signals by query, position, device, location, language, user type** (this "slicing" is what prevents simple manipulation)
 - Functions as one of Google's "most important" ranking systems per leaked internal docs
 
-**CRAPS — where NavBoost's click data lives.** In the leaked API the click attributes below are not stored under a module literally named "NavBoost." They live in a sub-module the leak calls `QualityNavboostCraps*` (e.g. `QualityNavboostCrapsCrapsData`, `QualityNavboostCrapsCrapsUrlSignals`). "CRAPS" is the leak's own internal name for the NavBoost click-and-impression signal container; the SEO community commonly back-formats it as "Click And Results Prediction System," but that expansion is *not* itself in the leak. Practically: when you meet "CRAPS" in a leak write-up or a conference talk, it is NavBoost's click data by another name — everything in this section (goodClicks, badClicks, lastLongestClicks, squashing, the 13-month window) is CRAPS. This mapping is LEAK-DERIVED — the module names are documented in the May 2024 Content Warehouse leak, not confirmed by Google as a live ranking lever.
+**CRAPS — where NavBoost's click data lives.** In the leaked API the click attributes below are not stored under a module literally named "NavBoost." They live in a sub-module the leak calls `QualityNavboostCraps*` (e.g. `QualityNavboostCrapsCrapsData`, `QualityNavboostCrapsCrapsClickSignals`). "CRAPS" is the leak's own internal name for the NavBoost click-and-impression signal container; the SEO community commonly back-formats it as "Click And Results Prediction System," but that expansion is *not* itself in the leak. Practically: when you meet "CRAPS" in a leak write-up or a conference talk, it is NavBoost's click data by another name — everything in this section (goodClicks, badClicks, lastLongestClicks, squashing) is CRAPS. The 13-month window is from DOJ testimony, not from the CRAPS module docs. This mapping is LEAK-DERIVED — the module names are documented in the May 2024 Content Warehouse leak, not confirmed by Google as a live ranking lever.
 
-The 13-month window matters operationally: changes you make to a page take **weeks to months** to fully propagate through NavBoost. Don't promise a client "we'll see CTR-driven ranking lift in 30 days."
+The 13-month window (DOJ testimony) matters operationally: changes you make to a page take **weeks to months** to fully propagate through NavBoost. Don't promise a client "we'll see CTR-driven ranking lift in 30 days."
 
 ### Host- and Topic-Level Click Aggregation
 
@@ -74,6 +74,8 @@ From the Google API Content Warehouse leak, specific attributes Google records:
 | `goodClicks` | Long click — user stayed on the destination | Page was useful for the query |
 | `badClicks` | Short click — user bounced back to SERP quickly | Page mismatched the query intent |
 | `lastLongestClicks` | The click that ended the session for that query | Page fully resolved the user's question |
+
+**Confidence note:** the leaked docs give `goodClicks`, `badClicks` and `lastLongestClicks` no description. The "Meaning" column above is inferred from the field names (INFERRED), not documented. `unicornClicks` is the one click field with a documented meaning (clicks associated with an event from a Unicorn user).
 
 **Important:** Google explicitly notes click signals are noisy. Position, snippet appearance, brand recognition, and many other factors skew the raw data. The "squashing" in the leaked code refers to Google filtering out manipulated and noisy signals before they affect rankings.
 

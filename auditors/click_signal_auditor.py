@@ -3,7 +3,7 @@
 Grounded in the May 2024 Google API leak click attributes (NavBoost / Glue):
 
 - goodClicks, badClicks, lastLongestClicks, unicornClicks, unsquashedClicks
-- 13-month rolling memory window
+- 13-month rolling memory window (DOJ testimony, not stated in the leak)
 - ~70 days of search log data feed RankEmbedBERT/FastSearch (AI Overview source)
 
 The auditor uses GSC Search Analytics data to classify pages by whether their
@@ -193,7 +193,7 @@ class ClickSignalAuditor(BaseAuditor):
                 "match the user's actual query intent. The goal is intent matching, "
                 "not power-word manipulation. Look at the top query the page ranks "
                 "for and ensure the snippet promises exactly what that searcher wants. "
-                "NavBoost has a ~13-month memory window — improvements take 4-8 "
+                "Per DOJ testimony, NavBoost has a ~13-month memory window — improvements take 4-8 "
                 "weeks for initial signal accumulation, 8-16 weeks for full impact."
             ),
             impact=(

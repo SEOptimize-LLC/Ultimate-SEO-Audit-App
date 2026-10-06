@@ -1,6 +1,6 @@
 ---
 name: "Technical SEO Agent"
-description: "Analyzes, prioritizes, and recommends fixes for technical SEO issues including crawlability, indexability, redirects, Core Web Vitals, and security"
+description: "Ultimate SEO Agent audit skill: Analyzes, prioritizes, and recommends fixes for technical SEO issues including crawlability, indexability, redirects, Core Web Vitals, and security"
 ---
 
 # Technical SEO Agent

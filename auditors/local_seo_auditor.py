@@ -464,7 +464,7 @@ class LocalSEOAuditor(BaseAuditor):
     def _check_location_demotion_risk(self) -> None:
         """Flag location-targeted pages that lack on-page local signals.
 
-        Concept (location/localness demotion): a page whose URL was built
+        Concept (locality signal; a location demotion is inferred, not documented): a page whose URL was built
         to rank for one specific place — a city slug in the path, or a
         service-area / locations sub-page — but whose on-page content does
         NOT reinforce that locality is at risk of being demoted for the
@@ -555,7 +555,7 @@ class LocalSEOAuditor(BaseAuditor):
                 f"signals checked for ({signals_text}). A URL that looks "
                 "locally targeted but does not reinforce that locality in "
                 "its visible content sends Google a mixed relevance "
-                "signal. These pages are at risk of location demotion — "
+                "signal. These pages are likely to be "
                 "underperforming for the place-modified and 'near me' "
                 "queries they were built to rank for — because nothing on "
                 "the page confirms the location the URL implies."

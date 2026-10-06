@@ -1,0 +1,114 @@
+# Findings accepted as intentional. Matched on exact category + subject by workflow-graph.js.
+# Keep identical to .claude/.workflow-review/known-intentional.yaml (tests/test_wiring.py checks it).
+# Every entry is a verified false positive of the engine's layout assumptions, not a defect we chose to keep.
+suppressions:
+  - category: orphaned_asset
+    subject: "skill/AI Search Optimization"
+    reason: "Registered in .claude/skills and loaded by description match, and named in CLAUDE.md and /page-content-expansion. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Backlink Agent"
+    reason: "Registered in .claude/skills and loaded by description match, and named in /forum-reply. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Competitor Agent"
+    reason: "Registered in .claude/skills and loaded by description match, and named in /forum-reply. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/On-Page SEO Agent"
+    reason: "Registered in .claude/skills and loaded by description match, and named in /forum-reply and /page-content-expansion. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/SEO Audit Methodology"
+    reason: "Registered in .claude/skills and loaded by description match, and named in /forum-reply and .claude/rules/audit-workflow.md. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Technical SEO Agent"
+    reason: "Registered in .claude/skills and loaded by description match, and named in CLAUDE.md, /forum-reply and /verify-indexation. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Traffic Loss Analysis"
+    reason: "Registered in .claude/skills and loaded by description match, and named in /forum-reply. The engine counts only agents, commands and sibling skills as inbound edges and scans none of the first two at this root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/google-leak-reference"
+    reason: "Registered in .claude/skills and loaded by description match; named in pre-delivery-qa CHECK 14 and in the seo-fundamentals-2026.md pointer. Both sit outside the engine's scan root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Semantic Site Map"
+    reason: "Invoked by /semantic-map, which names Skills/semantic_site_map/SKILL.md. The engine scans no commands at the project root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/Single-Page Content Expansion (GSC-Driven)"
+    reason: "Invoked by /page-content-expansion and named in CLAUDE.md Specialized Skills. The engine scans no commands at the project root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "skill/llms.txt Builder"
+    reason: "Named in CLAUDE.md Specialized Skills with its path; the engine does not count CLAUDE.md as an inbound edge."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "agent/recommendation-sanity-checker"
+    reason: "Dispatched by pre-delivery-qa CHECK 11 (Skills/data-analysis/pre-delivery-qa/SKILL.md), which sits outside the .claude scan root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "agent/tech-stack-fingerprint"
+    reason: "Named in CLAUDE.md and dispatched by pre-delivery-qa CHECK 1; both sit outside the .claude scan root."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: broken_invocation_path
+    subject: "command/discover-audit"
+    reason: "Documented script paths resolve from the project root; the engine resolves them from .claude/. tests/test_wiring.py::test_documented_paths_exist checks every documented path."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: broken_invocation_path
+    subject: "command/forum-reply"
+    reason: "Documented script paths resolve from the project root; the engine resolves them from .claude/. tests/test_wiring.py::test_documented_paths_exist checks every documented path."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: broken_invocation_path
+    subject: "command/generate-redirect-map"
+    reason: "Documented script paths resolve from the project root; the engine resolves them from .claude/. tests/test_wiring.py::test_documented_paths_exist checks every documented path."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: broken_invocation_path
+    subject: "command/semantic-map"
+    reason: "Documented script paths resolve from the project root; the engine resolves them from .claude/. tests/test_wiring.py::test_documented_paths_exist checks every documented path."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: broken_invocation_path
+    subject: "command/validate-redirects"
+    reason: "Documented script paths resolve from the project root; the engine resolves them from .claude/. tests/test_wiring.py::test_documented_paths_exist checks every documented path."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: dangling_reference
+    subject: "hook:PreToolUse"
+    reason: "The engine does not expand $CLAUDE_PROJECT_DIR. scripts/qa_gate_hook.py exists, and tests/test_wiring.py::test_qa_gate_hooks_are_registered_and_the_script_exists asserts it."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: dangling_reference
+    subject: "hook:PostToolUse"
+    reason: "The engine does not expand $CLAUDE_PROJECT_DIR. scripts/qa_gate_hook.py exists, and tests/test_wiring.py::test_qa_gate_hooks_are_registered_and_the_script_exists asserts it."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: dangling_reference
+    subject: "skill/Semantic Site Map"
+    reason: "semantic_map_report.md is an output file, written by Skills/semantic_site_map/report.py and listed in the SKILL.md output table. It is not a reference to an existing file."
+    accepted_by: owner
+    accepted_on: 2026-10-05
+  - category: orphaned_asset
+    subject: "Semantic Site Map/./ (4 files)"
+    reason: "A Python package, not documentation. run_semantic_map.py imports text_loader and embedder, cluster.py imports _ngrams, and __init__.py is the package marker."
+    accepted_by: owner
+    accepted_on: 2026-10-05

@@ -57,7 +57,7 @@ Each leak-grounded analysis ties to specific Google API leak attributes (May 202
 | # | File (suggested name)        | Source                        | Required? | Unlocks                                                                  |
 |---|------------------------------|-------------------------------|-----------|--------------------------------------------------------------------------|
 | 1 | `crawl_internal.csv`         | SF HTML Internal export       | YES       | Core technical + on-page audit                                           |
-| 2 | `backlinks_semrush.csv`      | SEMrush backlink export       | No        | External anchor `sourceType` tiers, NSR `siteAuthority` proxy            |
+| 2 | `backlinks_semrush.csv`      | SEMrush backlink export       | No        | Backlink profile checks (DR bands, dofollow split, anchor patterns, velocity). `sourceType` tiers / `siteAuthority` proxy are LLM-prompt guidance only — the SEMrush export lacks those columns |
 | 3 | `anchors_internal.csv`       | SF Bulk Export → All Anchor   | No        | `anchorMismatchDemotion`, `phraseAnchorSpamRate/Penalty/Demoted`         |
 | 4 | `content_dates.csv`          | SF custom extraction          | No        | `semanticDate`, `lastSignificantUpdate`, `dateUnreliabilityInfo`         |
 | 5 | `gsc_performance.csv`        | GSC Search Analytics export   | No        | Position-adjusted CTR, NavBoost click-signal grounding                   |
@@ -66,6 +66,8 @@ Each leak-grounded analysis ties to specific Google API leak attributes (May 202
 | 8 | `gsc_discovered_not_indexed.csv` | GSC Page Indexing report → "Discovered - currently not indexed" (Export button on that status's detail view) | No | Crawl-budget / internal-linking diagnosis — cross-references internal link counts on the flagged URLs from the SF crawl |
 
 Inputs #7 and #8 come from GSC's **Page indexing** report (Indexing → Pages in the Search Console left nav). Google has no bulk Index Coverage API, so — like the Koray topical map (#6) — these must be exported manually from the GSC UI, one status category per file, via the Export button on that status's detail view. Without these two inputs, the auditor is structurally blind to Google's own "Crawled — currently not indexed" and "Discovered — currently not indexed" judgments, since pure Screaming Frog crawl data can never reveal them — those are Google's own crawl/index decisions, not something visible in page source or HTTP status codes.
+
+**Inputs #7/#8 are snapshots that lag URL Inspection — re-verify before diagnosing.** The Page indexing report routinely lists URLs that are already indexed by the time the export is read (report lag, not de-indexing). Before an audit consumes these files, run `python scripts/verify_gsc_exports.py <client>` — it fetches the current URL Inspection verdict for every export row and writes `Clients/<name>/data/gsc_export_verification.json`. The technical auditor picks that file up (via `load_audit_context`'s `gsc_export_verification_file` / the `gsc_export_verification` constructor param) and drops rows Google has since indexed; without it, the Crawled/Discovered-not-indexed findings carry an explicit unverified-snapshot caveat. Successive runs also build the report-accuracy trend (% of the bucket actually indexed): steady = lag noise, falling = genuine de-indexing. Full mechanics in `Skills/technical-seo-agent/references/gsc-indexation-states.md`. To monitor specific URLs under remediation month over month, use `python scripts/index_watchlist.py <client>` (watch set from a `watchlist:` key in `clients/registry.yaml` or `--urls-file`; state history accumulates next to the monthly `index_audit.json` caches).
 
 The Streamlit app surfaces all eight slots in the upload panel and shows which leak-grounded analyses each input combination unlocks. Each input is optional (except #1) — the audit degrades gracefully and flags which analyses cannot run.
 
@@ -94,6 +96,9 @@ When the user requests one of the following deliverables, invoke the matching sk
 
 - **Single-URL content expansion ("what should I add to this page?")** → use [Skills/content-expansion/SKILL.md](Skills/content-expansion/SKILL.md), typically via the `/page-content-expansion` slash command. Takes ONE URL, pulls its GSC query mix, classifies queries by intent + position, runs the expansion-vs-cannibalization gate, and produces a ranked deliverable (intra-page additions, new-page candidates, internal-link suggestions, semantic entities to surface). Use when a client asks "what should I add to this page?" or when an audit surfaces a single URL with strong impression volume and weak CTR (e.g., the Cudio `/services/odoo-migration` position-2.7 / 0.49% CTR case).
 
+- **Monthly SEO workbook** → read [Skills/monthly-seo-workbook/REASONING.md](Skills/monthly-seo-workbook/REASONING.md) first (it outranks every task recipe), then the recipe for the task in [Skills/monthly-seo-workbook/tasks/](Skills/monthly-seo-workbook/tasks/) (1.x, 2.x and 4.x). Credentials and auth fixes are in [SETUP.md](Skills/monthly-seo-workbook/SETUP.md). Per-client monthly tasks, run one task at a time on request; not part of the full-site audit.
+- **Competitor identification** → [Skills/competitor-identification/AGENT-PROMPT.md](Skills/competitor-identification/AGENT-PROMPT.md) is a self-contained agent prompt: fill in its parameters block and hand it to one agent per client.
+
 ## Data Analysis Infrastructure
 
 A second layer of skills + subagents wraps around the SEO domain skills above. They handle data quality, verification, and pre-delivery QA — domain-agnostic infrastructure that every audit benefits from. This layer prevents mistakes the SEO skills can't catch on their own (wrong tech-stack assumptions, stale audit data, unverified target URLs, fabricated counts).
@@ -114,7 +119,7 @@ alongside them in a prioritised deliverable.
 
 - **[Skills/data-analysis/data-quality-audit/SKILL.md](Skills/data-analysis/data-quality-audit/SKILL.md)** — Validates SEO input files (SF exports, GSC, GA4) at intake. Triggered when new data arrives in a client folder OR an audit is requested. Catches missing columns, stale data, row-count mismatches before analysis runs.
 - **[Skills/data-analysis/metric-reconciliation/SKILL.md](Skills/data-analysis/metric-reconciliation/SKILL.md)** — Forces explicit reconciliation when two sources disagree on the same number. Defines the source-of-truth hierarchy (live HTML > GSC > current SF > older SF > prior audit doc).
-- **[Skills/data-analysis/pre-delivery-qa/SKILL.md](Skills/data-analysis/pre-delivery-qa/SKILL.md)** — Mandatory 10-check QA pass before any client deliverable ships. Required dispatches: `tech-stack-fingerprint` (CHECK 1), `data-validator` (CHECK 2), `live-url-verifier` (CHECK 3). Triggered automatically when about to write any file under `Clients/<name>/Full SEO Audit/`.
+- **[Skills/data-analysis/pre-delivery-qa/SKILL.md](Skills/data-analysis/pre-delivery-qa/SKILL.md)** — Mandatory 14-check QA pass before any client deliverable ships. Required dispatches: `tech-stack-fingerprint` (CHECK 1), `data-validator` (CHECK 2), `live-url-verifier` (CHECK 3). Triggered automatically when about to write any file under `Clients/<name>/Full SEO Audit/`.
 - **[Skills/data-analysis/assumptions-log/SKILL.md](Skills/data-analysis/assumptions-log/SKILL.md)** — Tracks unverified assumptions per client in `Clients/<name>/assumptions_log.md`. Surfaces them in deliverables instead of hiding them.
 
 ### Subagents (dispatched for isolated heavy lifts)
@@ -156,7 +161,7 @@ USER REQUEST: "Run the technical audit for SameDay"
        ↓
 DRAFT DELIVERABLE
        ↓
-[pre-delivery-qa skill] runs 10-check pass
+[pre-delivery-qa skill] runs 14-check pass
        ├── dispatches data-validator (CHECK 2 — numbers traceable?)
        ├── dispatches live-url-verifier (CHECK 3 — proposed URLs work?)
        └── checks fingerprint match (CHECK 1 — instructions match real CMS?)
