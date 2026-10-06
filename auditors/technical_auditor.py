@@ -44,6 +44,14 @@ _HREFLANG_URL_COL_RE = re.compile(r"^hreflang_\d+_url$")
 _HREFLANG_LANG_COL_RE = re.compile(r"^hreflang_\d+_lang$")
 X_DEFAULT_LANG = "x-default"
 
+# URL Inspection coverage states that mean the page IS in Google's index.
+# Kept as an explicit set, never a substring test: both "not indexed" states
+# contain the word "indexed".
+_GSC_INDEXED_STATES = {
+    "Submitted and indexed",
+    "Indexed, not submitted in sitemap",
+}
+
 
 class TechnicalAuditor(BaseAuditor):
     """Auditor for technical SEO issues.
@@ -66,6 +74,7 @@ class TechnicalAuditor(BaseAuditor):
         crawled_not_indexed_df: Optional[pd.DataFrame] = None,
         discovered_not_indexed_df: Optional[pd.DataFrame] = None,
         gsc_indexed_count: Optional[int] = None,
+        gsc_export_verification: Optional[dict] = None,
     ):
         """Initialize the technical auditor.
 
@@ -84,12 +93,26 @@ class TechnicalAuditor(BaseAuditor):
                 index-coverage reconciliation check. When omitted, that check
                 still runs in baseline mode — it reports the crawl-side
                 should-be-indexed count and the manual reconciliation step.
+            gsc_export_verification: Optional mapping of URL -> fresh URL
+                Inspection coverageState, produced by
+                `scripts/verify_gsc_exports.py`. GSC's Page indexing report
+                lags its own URL Inspection verdicts, so export rows can list
+                pages that are in fact indexed. When provided, the
+                Crawled/Discovered-not-indexed checks drop rows whose fresh
+                verdict is indexed instead of diagnosing them; when absent,
+                those findings carry an explicit unverified-snapshot caveat.
         """
         super().__init__(df)
         self.gsc_df = gsc_df
         self.crawled_not_indexed_df = crawled_not_indexed_df
         self.discovered_not_indexed_df = discovered_not_indexed_df
         self.gsc_indexed_count = gsc_indexed_count
+        # Normalized on trailing slash so an export row and a verification key
+        # that differ only in the slash still match.
+        self._export_verification = {
+            str(u).rstrip("/"): s
+            for u, s in (gsc_export_verification or {}).items()
+        }
 
     def get_audit_type(self) -> str:
         return "technical"
@@ -711,6 +734,84 @@ class TechnicalAuditor(BaseAuditor):
     # GSC INDEX COVERAGE CHECKS
     # =========================================================================
 
+    _EXPORT_LAG_CAVEAT = (
+        " These counts come directly from the GSC export snapshot and have "
+        "not been re-verified per URL. GSC's Page indexing report can lag "
+        "its own URL Inspection verdicts, so a share of these pages may "
+        "already be indexed; re-check a sample in URL Inspection before "
+        "acting on individual URLs."
+    )
+
+    def _partition_export_urls(
+        self, flagged_urls: list[str]
+    ) -> Optional[tuple[list[str], list[str], int]]:
+        """Split GSC export rows by their fresh URL Inspection verdict.
+
+        Returns (now_indexed, remaining, unverified_count), or None when no
+        verification data was supplied. `remaining` keeps both confirmed
+        not-indexed URLs and URLs the verification run did not cover — a
+        missing verdict is not evidence the page is indexed.
+        """
+        if not self._export_verification:
+            return None
+        now_indexed: list[str] = []
+        remaining: list[str] = []
+        unverified = 0
+        for u in flagged_urls:
+            state = self._export_verification.get(u.rstrip("/"))
+            if state in _GSC_INDEXED_STATES:
+                now_indexed.append(u)
+            else:
+                remaining.append(u)
+                if state is None:
+                    unverified += 1
+        return now_indexed, remaining, unverified
+
+    def _verification_note(
+        self, reported: int, now_indexed: int, remaining: int, unverified: int
+    ) -> str:
+        """One-sentence audit trail for a verified export finding."""
+        confirmed = remaining - unverified
+        note = (
+            f" The export listed {reported} URLs. A fresh URL Inspection "
+            f"re-check verified {confirmed} still not indexed and found "
+            f"{now_indexed} already indexed; the stale rows are excluded "
+            "from this finding."
+        )
+        if unverified:
+            plural = "URLs were" if unverified != 1 else "URL was"
+            note += (
+                f" {unverified} {plural} not covered by the re-check and "
+                "are included unverified."
+            )
+        return note
+
+    def _create_stale_export_insight(
+        self, status_label: str, issue_type: str, flagged_urls: list[str]
+    ) -> None:
+        """Record that every row of a GSC export is now indexed — no action."""
+        count = len(flagged_urls)
+        self.create_issue(
+            severity=Severity.INSIGHT,
+            category=AuditCategory.INDEXABILITY,
+            issue_type=issue_type,
+            title=f"GSC's '{status_label}' export is stale: all {count} "
+                  "listed pages are now indexed",
+            description=f"The export listed {count} URLs, but a fresh URL "
+                       "Inspection re-check found every one already indexed. "
+                       "GSC's Page indexing report lags its own URL Inspection "
+                       "verdicts, so export rows can describe a state Google "
+                       "has since revised. No content or linking work is "
+                       "needed on these pages.",
+            affected_urls=flagged_urls,
+            count=count,
+            recommendation="No action needed on these pages. Re-export the "
+                          "Page indexing report before the next audit cycle "
+                          "so findings start from current data.",
+            impact="None. Recorded so the audit trail shows these pages were "
+                  "checked and found indexed.",
+        )
+
     def _check_crawled_not_indexed(self) -> None:
         """Surface pages GSC reports as 'Crawled - currently not indexed'.
 
@@ -734,6 +835,27 @@ class TechnicalAuditor(BaseAuditor):
         count = len(flagged_urls)
         if count == 0:
             return
+
+        # Fresh URL Inspection verdicts (when supplied) beat the export
+        # snapshot: rows Google has since indexed are stale report lag, not
+        # findings, and diagnosing them as thin content would be wrong twice.
+        split = self._partition_export_urls(flagged_urls)
+        if split is not None:
+            now_indexed, remaining, unverified = split
+            if not remaining:
+                self._create_stale_export_insight(
+                    "Crawled - currently not indexed",
+                    "gsc_crawled_not_indexed_stale",
+                    flagged_urls,
+                )
+                return
+            verification_note = self._verification_note(
+                count, len(now_indexed), len(remaining), unverified
+            )
+            flagged_urls = remaining
+            count = len(remaining)
+        else:
+            verification_note = self._EXPORT_LAG_CAVEAT
 
         thin_count = 0
         if self.has_columns(["url", "word_count"]):
@@ -759,7 +881,7 @@ class TechnicalAuditor(BaseAuditor):
                        "drivers: thin or low-value content lacking a clear reason to index, "
                        "near-duplication that doesn't fit a formal duplicate category, weak "
                        "internal linking combined with weak external signals, or rendering "
-                       "issues that leave the page looking empty to Google.",
+                       f"issues that leave the page looking empty to Google.{verification_note}",
             affected_urls=flagged_urls,
             count=count,
             recommendation="For each page, ask 'what reason does Google have to index this?' "
@@ -798,6 +920,26 @@ class TechnicalAuditor(BaseAuditor):
         if count == 0:
             return
 
+        # Same stale-row filter as the crawled-not-indexed check: a fresh
+        # URL Inspection verdict of indexed removes the row from the finding.
+        split = self._partition_export_urls(flagged_urls)
+        if split is not None:
+            now_indexed, remaining, unverified = split
+            if not remaining:
+                self._create_stale_export_insight(
+                    "Discovered - currently not indexed",
+                    "gsc_discovered_not_indexed_stale",
+                    flagged_urls,
+                )
+                return
+            verification_note = self._verification_note(
+                count, len(now_indexed), len(remaining), unverified
+            )
+            flagged_urls = remaining
+            count = len(remaining)
+        else:
+            verification_note = self._EXPORT_LAG_CAVEAT
+
         weakly_linked_count = 0
         if self.has_columns(["url", "internal_links_in"]):
             inlinks = self.df.set_index("url")["internal_links_in"].to_dict()
@@ -821,7 +963,8 @@ class TechnicalAuditor(BaseAuditor):
                        "drivers: crawl budget rationing on large sites, weak internal linking "
                        "burying the page many clicks from the homepage, mass URL generation "
                        "(faceted navigation, parameter explosion) diluting crawl budget, or "
-                       "perceived low value based on similar pages Google has already seen.",
+                       "perceived low value based on similar pages Google has already "
+                       f"seen.{verification_note}",
             affected_urls=flagged_urls,
             count=count,
             recommendation="Strengthen internal linking from high-authority, "

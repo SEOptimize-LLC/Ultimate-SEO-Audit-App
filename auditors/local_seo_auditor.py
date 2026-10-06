@@ -13,6 +13,7 @@ Checks include:
 - Service-area pages with thin content (template pages with just the
   city name swapped)
 - Indexable city pages without unique content per location
+- Location pages listing more addresses or phone numbers than Google stores
 
 This auditor is calibrated for the IHS portfolio (home services + local
 businesses) but the patterns generalize. The auditor does NOT replace
@@ -30,6 +31,8 @@ import pandas as pd
 
 from .base_auditor import BaseAuditor, is_empty_or_missing
 from models.audit_result import AuditCategory, AuditIssue, Severity
+from utils.local_text_extract import extract_addresses, extract_phone_numbers
+from utils.url_keys import url_key
 
 
 # Heuristic: at least this many city-mentioning URLs to consider the
@@ -43,6 +46,10 @@ CITY_STUFFING_THRESHOLD = 3
 # Service-area pages should have at least this much unique content
 # beyond the template
 THIN_SERVICE_AREA_WORDS = 250
+
+# Per the leaked LocalWWWInfoAddress documentation, a document's addresses and phone numbers are populated
+# only when it has this many or fewer of each ("primarily for space reasons").
+MAX_STORED_LOCAL_ITEMS = 4
 
 # Structured-data substrings that indicate genuine local-business /
 # location targeting in the JSON-LD (subtypes included since the IHS
@@ -78,10 +85,24 @@ UTAH_CITIES = [
 
 
 class LocalSEOAuditor(BaseAuditor):
-    """Auditor for local SEO patterns."""
+    """Auditor for local SEO patterns.
+
+    Args:
+        df: Screaming Frog crawl.
+        page_text: optional {url: visible text} for location pages, used to count the addresses and phone
+            numbers each lists. Without it that check reports the pages as not checked.
+    """
+
+    def __init__(self, df: pd.DataFrame, page_text: Optional[dict[str, str]] = None):
+        super().__init__(df)
+        self.page_text = page_text
 
     def get_audit_type(self) -> str:
         return "technical"
+
+    def is_local_site(self) -> bool:
+        """True when the crawl shows local-business indicators (the gate every local check sits behind)."""
+        return self._site_is_local()
 
     def run_audit(self) -> list[AuditIssue]:
         self.clear_issues()
@@ -96,6 +117,7 @@ class LocalSEOAuditor(BaseAuditor):
         self._check_city_stuffing_in_titles()
         self._check_service_area_template_duplication()
         self._check_location_demotion_risk()
+        self._check_stored_local_data_limit()
 
         return self.issues
 
@@ -584,23 +606,131 @@ class LocalSEOAuditor(BaseAuditor):
             ),
         )
 
-    def _url_is_location_targeted(self, url: object) -> bool:
-        """Return True if the URL targets one specific place.
+    def _location_pages(self) -> pd.DataFrame:
+        """Indexable HTML pages whose URL targets one specific place."""
+        if not self.has_column("url"):
+            return pd.DataFrame()
+        scope = self.get_html_pages()
+        if "indexability" in scope.columns:
+            scope = scope[scope["indexability"].str.lower() == "indexable"]
+        if scope.empty:
+            return scope
+        return scope[scope["url"].apply(url_is_location_targeted)]
 
-        Two structural signals of single-place intent: a specific city
-        slug anywhere in the URL, or a service-area/locations sub-page
-        (a non-empty slug after the hub segment — the bare hub index does
-        not count).
+    def _check_stored_local_data_limit(self) -> None:
+        """Flag location pages that list more addresses or phone numbers than Google stores.
+
+        Documented (leaked LocalWWWInfoAddress): "We populate addresses and phone numbers only if there are
+        <= 4 addresses and phone numbers on the document, respectively. This is primarily for space reasons."
+        Inferred: a page over the limit has none of its addresses or phone numbers stored, so it does not carry
+        its own business details into Google's local data.
+
+        Pages without text are reported as not checked, never as within the limit.
         """
-        if not isinstance(url, str):
-            return False
-        u = url.lower()
-        for city in UTAH_CITIES:
-            if re.search(r"(?<![a-z0-9])" + re.escape(city) + r"(?![a-z0-9])", u):
-                return True
-        if SERVICE_AREA_SUBPAGE_RE.search(u):
-            return True
+        pages = self._location_pages()
+        if pages.empty:
+            return
+        text_by_key = {url_key(u): t for u, t in (self.page_text or {}).items() if isinstance(t, str) and t.strip()}
+        unchecked: list[str] = []
+        over: list[tuple[str, int, int]] = []
+        checked = 0
+        for url in pages["url"].astype(str).tolist():
+            text = text_by_key.get(url_key(url))
+            if not text:
+                unchecked.append(url)
+                continue
+            checked += 1
+            addresses = len(extract_addresses(text))
+            phones = len(extract_phone_numbers(text))
+            if addresses > MAX_STORED_LOCAL_ITEMS or phones > MAX_STORED_LOCAL_ITEMS:
+                over.append((url, addresses, phones))
+
+        if unchecked:
+            self.create_issue(
+                severity=Severity.INSIGHT,
+                category=AuditCategory.LOCAL_SEO,
+                issue_type="location_page_text_unavailable",
+                title=f"{len(unchecked)} location pages not checked for address and phone limits",
+                description=(
+                    f"{len(unchecked)} location pages could not be checked for how many addresses and phone "
+                    "numbers they list, because their visible text was not available. They are neither "
+                    "flagged nor cleared."
+                ),
+                affected_urls=unchecked[:100],
+                recommendation=(
+                    "Add a body-text extraction column to the crawl, or re-run with the location pages "
+                    "fetched, to complete this check."
+                ),
+                impact="",
+            )
+        if over:
+            examples = "; ".join(f"{u} ({a} addresses, {p} phone numbers)" for u, a, p in over[:10])
+            self.create_issue(
+                severity=Severity.LOW,
+                category=AuditCategory.LOCAL_SEO,
+                issue_type="local_data_over_storage_limit",
+                title=f"{len(over)} location pages list more addresses or phone numbers than Google stores",
+                description=(
+                    f"{len(over)} of {checked} checked location pages list more than {MAX_STORED_LOCAL_ITEMS} "
+                    "distinct addresses or phone numbers. Documented: per the May 2024 Google API leak, Google "
+                    f"populates a document's addresses and phone numbers only if it has {MAX_STORED_LOCAL_ITEMS} "
+                    "or fewer of each, primarily for space reasons. Inferred: a page over the limit has none of "
+                    "them stored, so it does not carry its own business details into Google's local data. "
+                    f"Examples: {examples}."
+                ),
+                affected_urls=[u for u, _, _ in over][:100],
+                recommendation=(
+                    "Keep each location page to its own address and phone number, and move any multi-location "
+                    "listing to a single hub page. If most flagged pages show the same counts, the list is in "
+                    "the site template (usually the footer): shorten it, or link to a locations page instead "
+                    "of printing every office on every page."
+                ),
+                impact=(
+                    "An over-limit page may lose the address and phone details that tie it to one location, "
+                    "which weakens the local signal that page exists to send. The effect is inferred from the "
+                    "documented limit, not measured."
+                ),
+                additional_data={
+                    "limit": MAX_STORED_LOCAL_ITEMS,
+                    "pages": [{"url": u, "addresses": a, "phones": p} for u, a, p in over],
+                },
+            )
+        elif checked:
+            self.create_issue(
+                severity=Severity.INSIGHT,
+                category=AuditCategory.LOCAL_SEO,
+                issue_type="local_data_within_storage_limit",
+                title=f"{checked} location pages list four or fewer addresses and phone numbers",
+                description=(
+                    f"All {checked} checked location pages list {MAX_STORED_LOCAL_ITEMS} or fewer distinct "
+                    "addresses and phone numbers, within the limit Google documents for storing them."
+                ),
+                recommendation="No action.",
+                impact="",
+            )
+
+    def _url_is_location_targeted(self, url: object) -> bool:
+        """Return True if the URL targets one specific place (see url_is_location_targeted)."""
+        return url_is_location_targeted(url)
+
+
+def url_is_location_targeted(url: object) -> bool:
+    """Return True if the URL targets one specific place.
+
+    Two structural signals of single-place intent: a specific city
+    slug anywhere in the URL, or a service-area/locations sub-page
+    (a non-empty slug after the hub segment; the bare hub index does
+    not count).
+    """
+    if not isinstance(url, str):
         return False
+    u = url.lower()
+    for city in UTAH_CITIES:
+        if re.search(r"(?<![a-z0-9])" + re.escape(city) + r"(?![a-z0-9])", u):
+            return True
+    if SERVICE_AREA_SUBPAGE_RE.search(u):
+        return True
+    return False
 
 
 def _text_has_city(text: object) -> bool:

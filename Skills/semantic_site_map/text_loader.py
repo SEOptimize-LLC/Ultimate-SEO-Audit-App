@@ -286,3 +286,12 @@ async def _fetch_via_crawl4ai(urls: list[str], concurrency: int) -> pd.DataFrame
             "or supply an SF body-text column."
         )
     return fetched_df
+
+
+async def fetch_raw_page_text(urls: list[str], concurrency: int = 8) -> pd.DataFrame:
+    """Fetch each URL's markdown with no boilerplate stripping; returns DataFrame[url, text].
+
+    For callers that must see the whole document, footer and header included, such as counting the
+    addresses and phone numbers a page lists. Raises when more than 20% of the fetches fail.
+    """
+    return await _fetch_via_crawl4ai(list(urls), concurrency=concurrency)

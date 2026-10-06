@@ -56,11 +56,11 @@ Each leak-grounded analysis ties to specific Google API leak attributes (May 202
 
 | # | File (suggested name)        | Source                        | Required? | Unlocks                                                                  |
 |---|------------------------------|-------------------------------|-----------|--------------------------------------------------------------------------|
-| 1 | `crawl_internal.csv`         | SF HTML Internal export       | YES       | Core technical + on-page audit                                           |
+| 1 | `crawl_internal.csv`         | SF HTML Internal export       | YES       | Core technical + on-page audit; a body-text column also lets the local auditor count addresses and phone numbers per location page |
 | 2 | `backlinks_semrush.csv`      | SEMrush backlink export       | No        | Backlink profile checks (DR bands, dofollow split, anchor patterns, velocity). `sourceType` tiers / `siteAuthority` proxy are LLM-prompt guidance only — the SEMrush export lacks those columns |
-| 3 | `anchors_internal.csv`       | SF Bulk Export → All Anchor   | No        | `anchorMismatchDemotion`, `phraseAnchorSpamRate/Penalty/Demoted`         |
+| 3 | `anchors_internal.csv`       | SF Bulk Export → All Anchor   | No        | `anchorMismatchDemotion`, `phraseAnchorSpamRate/Penalty/Demoted`; with #5, `onsiteProminence` (priority pages linked from click-earning pages) |
 | 4 | `content_dates.csv`          | SF custom extraction          | No        | `semanticDate`, `lastSignificantUpdate`, `dateUnreliabilityInfo`         |
-| 5 | `gsc_performance.csv`        | GSC Search Analytics export   | No        | Position-adjusted CTR, NavBoost click-signal grounding                   |
+| 5 | `gsc_performance.csv`        | GSC Search Analytics export   | No        | Position-adjusted CTR, NavBoost click-signal grounding; with #3, `onsiteProminence` |
 | 6 | `topical_map_koray.md`       | Koray semantic SEO output     | No        | `siteFocusScore`, `siteRadius`, topical-outlier detection                |
 | 7 | `gsc_crawled_not_indexed.csv` | GSC Page Indexing report → "Crawled - currently not indexed" (Export button on that status's detail view) | No | Content-quality non-indexation diagnosis — cross-references word count on the flagged URLs from the SF crawl |
 | 8 | `gsc_discovered_not_indexed.csv` | GSC Page Indexing report → "Discovered - currently not indexed" (Export button on that status's detail view) | No | Crawl-budget / internal-linking diagnosis — cross-references internal link counts on the flagged URLs from the SF crawl |

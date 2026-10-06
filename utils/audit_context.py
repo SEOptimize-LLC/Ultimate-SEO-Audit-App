@@ -56,6 +56,11 @@ class AuditContext:
     topical_map: Optional[dict] = None
     crawled_not_indexed_df: Optional[pd.DataFrame] = None
     discovered_not_indexed_df: Optional[pd.DataFrame] = None
+    # url -> fresh URL Inspection coverageState, from
+    # scripts/verify_gsc_exports.py. Not an input slot of its own — it
+    # qualifies inputs #7/#8 by filtering stale export rows out of the
+    # Crawled/Discovered-not-indexed findings.
+    gsc_export_verification: Optional[dict] = None
 
     domain: Optional[str] = None
     integrations: dict = field(default_factory=dict)
@@ -105,6 +110,7 @@ class AuditContext:
             "freshness_unreliability": a["dates"],
             "position_adjusted_ctr": a["crawl"] and a["gsc"],
             "click_signal_grounding": a["gsc"],
+            "internal_prominence": a["crawl"] and a["anchors"] and a["gsc"],
             "topical_authority_outliers": a["crawl"] and a["topical_map"],
             "site_radius_analysis": a["topical_map"],
             "crawled_not_indexed_diagnosis": a["crawl"] and a["crawled_not_indexed"],
@@ -149,6 +155,7 @@ def load_audit_context(
     topical_map_file: Optional[FilePath] = None,
     crawled_not_indexed_file: Optional[FilePath] = None,
     discovered_not_indexed_file: Optional[FilePath] = None,
+    gsc_export_verification_file: Optional[FilePath] = None,
 ) -> AuditContext:
     """Load all available inputs into a unified AuditContext.
 
@@ -166,6 +173,11 @@ def load_audit_context(
             "Crawled - currently not indexed" status (CSV/Excel)
         discovered_not_indexed_file: GSC Page Indexing export for the
             "Discovered - currently not indexed" status (CSV/Excel)
+        gsc_export_verification_file: gsc_export_verification.json written
+            by scripts/verify_gsc_exports.py — fresh URL Inspection verdicts
+            for the rows in inputs #7/#8, so the auditor can drop export
+            rows Google has since indexed (report lag) instead of
+            diagnosing them.
 
     Returns:
         AuditContext with whichever inputs successfully parsed.
@@ -236,6 +248,27 @@ def load_audit_context(
         except Exception as e:
             errors.append(f"discovered_not_indexed: {e}")
             print(f"[ERROR] Failed to parse discovered-not-indexed file: {e}")
+
+    if gsc_export_verification_file is not None:
+        try:
+            import json
+
+            raw = gsc_export_verification_file
+            if isinstance(raw, BytesIO):
+                doc = json.loads(raw.read().decode("utf-8"))
+            else:
+                doc = json.loads(Path(raw).read_text(encoding="utf-8"))
+            # Flatten the per-export `current` block into one url -> state
+            # map — the shape TechnicalAuditor's gsc_export_verification
+            # parameter takes.
+            flat: dict = {}
+            for per_url in doc.get("current", {}).values():
+                for url, rec in per_url.items():
+                    flat[url] = rec["state"] if isinstance(rec, dict) else rec
+            ctx.gsc_export_verification = flat or None
+        except Exception as e:
+            errors.append(f"gsc_export_verification: {e}")
+            print(f"[ERROR] Failed to parse export-verification file: {e}")
 
     if errors:
         print(f"[WARN] {len(errors)} input(s) failed to load: {errors}")

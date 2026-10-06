@@ -243,6 +243,134 @@ def test_index_coverage_checks_noop_when_dfs_absent(crawl_with_inlinks_df):
 
 
 # =============================================================================
+# GSC EXPORT VERIFICATION — fresh URL Inspection re-check of export rows
+# =============================================================================
+
+
+def test_crawled_not_indexed_without_verification_carries_lag_caveat(
+    crawl_with_inlinks_df,
+):
+    crawled_df = pd.DataFrame({
+        "url": ["https://x.com/thin-page"],
+        "index_status": ["Crawled - currently not indexed"],
+    })
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df, crawled_not_indexed_df=crawled_df
+    )
+    auditor.run_audit()
+    issues = _issues_by_type(auditor.issues, "gsc_crawled_not_indexed")
+    assert len(issues) == 1
+    assert "not been re-verified per URL" in issues[0].description
+
+
+def test_crawled_not_indexed_verification_filters_stale_rows(crawl_with_inlinks_df):
+    crawled_df = pd.DataFrame({
+        "url": ["https://x.com/thin-page", "https://x.com/undiscovered-a"],
+        "index_status": ["Crawled - currently not indexed"] * 2,
+    })
+    verification = {
+        "https://x.com/thin-page": "Crawled - currently not indexed",
+        "https://x.com/undiscovered-a": "Submitted and indexed",
+    }
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df,
+        crawled_not_indexed_df=crawled_df,
+        gsc_export_verification=verification,
+    )
+    auditor.run_audit()
+    issues = _issues_by_type(auditor.issues, "gsc_crawled_not_indexed")
+    assert len(issues) == 1
+    assert issues[0].count == 1
+    assert issues[0].affected_urls == ["https://x.com/thin-page"]
+    assert "found 1 already indexed" in issues[0].description
+
+
+def test_crawled_not_indexed_all_stale_downgrades_to_insight(crawl_with_inlinks_df):
+    crawled_df = pd.DataFrame({
+        "url": ["https://x.com/thin-page"],
+        "index_status": ["Crawled - currently not indexed"],
+    })
+    verification = {"https://x.com/thin-page": "Submitted and indexed"}
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df,
+        crawled_not_indexed_df=crawled_df,
+        gsc_export_verification=verification,
+    )
+    auditor.run_audit()
+    assert _issues_by_type(auditor.issues, "gsc_crawled_not_indexed") == []
+    stale = _issues_by_type(auditor.issues, "gsc_crawled_not_indexed_stale")
+    assert len(stale) == 1
+    assert stale[0].severity == Severity.INSIGHT
+    assert stale[0].count == 1
+
+
+def test_verification_matches_urls_across_trailing_slash(crawl_with_inlinks_df):
+    crawled_df = pd.DataFrame({
+        "url": ["https://x.com/thin-page"],
+        "index_status": ["Crawled - currently not indexed"],
+    })
+    # Verification keyed with a trailing slash must still match the export row.
+    verification = {"https://x.com/thin-page/": "Submitted and indexed"}
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df,
+        crawled_not_indexed_df=crawled_df,
+        gsc_export_verification=verification,
+    )
+    auditor.run_audit()
+    assert _issues_by_type(auditor.issues, "gsc_crawled_not_indexed") == []
+    assert len(
+        _issues_by_type(auditor.issues, "gsc_crawled_not_indexed_stale")
+    ) == 1
+
+
+def test_crawled_not_indexed_uncovered_urls_stay_in_finding(crawl_with_inlinks_df):
+    crawled_df = pd.DataFrame({
+        "url": ["https://x.com/thin-page", "https://x.com/undiscovered-a"],
+        "index_status": ["Crawled - currently not indexed"] * 2,
+    })
+    # Verification only covers one of the two export rows.
+    verification = {"https://x.com/thin-page": "Crawled - currently not indexed"}
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df,
+        crawled_not_indexed_df=crawled_df,
+        gsc_export_verification=verification,
+    )
+    auditor.run_audit()
+    issues = _issues_by_type(auditor.issues, "gsc_crawled_not_indexed")
+    assert len(issues) == 1
+    assert issues[0].count == 2
+    assert set(issues[0].affected_urls) == {
+        "https://x.com/thin-page",
+        "https://x.com/undiscovered-a",
+    }
+    assert "1 URL was not covered by the re-check" in issues[0].description
+
+
+def test_discovered_not_indexed_verification_filters_stale_rows(
+    crawl_with_inlinks_df,
+):
+    discovered_df = pd.DataFrame({
+        "url": ["https://x.com/undiscovered-a", "https://x.com/undiscovered-b"],
+        "index_status": ["Discovered - currently not indexed"] * 2,
+    })
+    verification = {
+        "https://x.com/undiscovered-a": "Discovered - currently not indexed",
+        "https://x.com/undiscovered-b": "Indexed, not submitted in sitemap",
+    }
+    auditor = TechnicalAuditor(
+        crawl_with_inlinks_df,
+        discovered_not_indexed_df=discovered_df,
+        gsc_export_verification=verification,
+    )
+    auditor.run_audit()
+    issues = _issues_by_type(auditor.issues, "gsc_discovered_not_indexed")
+    assert len(issues) == 1
+    assert issues[0].count == 1
+    assert issues[0].affected_urls == ["https://x.com/undiscovered-a"]
+    assert "found 1 already indexed" in issues[0].description
+
+
+# =============================================================================
 # PAGE EXPERIENCE — third-party script density
 # =============================================================================
 

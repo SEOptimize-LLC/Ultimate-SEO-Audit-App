@@ -22,7 +22,7 @@ from auditors.javascript_rendering_auditor import JavaScriptRenderingAuditor
 from auditors.cannibalization_auditor import CannibalizationAuditor
 from auditors.url_structure_auditor import URLStructureAuditor
 from auditors.ecommerce_patterns_auditor import EcommercePatternsAuditor
-from auditors.local_seo_auditor import LocalSEOAuditor
+from auditors.local_seo_auditor import LocalSEOAuditor, url_is_location_targeted
 from auditors.mobile_first_auditor import MobileFirstAuditor
 from auditors.content_pruning_auditor import ContentPruningAuditor
 from auditors.onpage_auditor import OnPageAuditor
@@ -34,6 +34,8 @@ from auditors.date_freshness_auditor import DateFreshnessAuditor
 from auditors.topical_authority_auditor import TopicalAuthorityAuditor
 from auditors.click_signal_auditor import ClickSignalAuditor
 from auditors.query_count_auditor import QueryCountAuditor
+from auditors.internal_prominence_auditor import InternalProminenceAuditor
+from utils.location_page_text import load_location_page_text
 from auditors.backlink_profile_auditor import BacklinkProfileAuditor
 from services.dataforseo_client import DataForSEOClient, BacklinkData, CompetitorData
 from services.openrouter_client import OpenRouterClient
@@ -397,7 +399,8 @@ def _render_input_availability(ctx: AuditContext) -> None:
             "position_adjusted_ctr": "Position-adjusted CTR (NavBoost goodClicks)",
             "click_signal_grounding": "Click-signal grounding (NavBoost / Glue)",
             "topical_authority_outliers": "Topical outliers (siteRadius)",
-            "site_radius_analysis": "Site focus / radius (QualityAuthorityTopicEmbeddings)",
+            "site_radius_analysis": "Site focus / radius (QualityAuthorityTopicEmbeddingsVersionedItem)",
+            "internal_prominence": "Internal prominence of priority pages (PerDocData onsiteProminence)",
             "crawled_not_indexed_diagnosis": "GSC 'Crawled - not indexed' quality diagnosis",
             "discovered_not_indexed_diagnosis": "GSC 'Discovered - not indexed' crawl-budget diagnosis",
         }
@@ -491,6 +494,7 @@ def run_audit(options: dict) -> AuditResult:
         gsc_df=ctx.gsc_df if ctx else None,
         crawled_not_indexed_df=ctx.crawled_not_indexed_df if ctx else None,
         discovered_not_indexed_df=ctx.discovered_not_indexed_df if ctx else None,
+        gsc_export_verification=ctx.gsc_export_verification if ctx else None,
     )
     result.technical_issues = technical_auditor.run_audit()
     progress.progress(20)
@@ -528,6 +532,13 @@ def run_audit(options: dict) -> AuditResult:
     # Local SEO Audit (gates on site-type detection)
     status.text("Running local SEO audit...")
     local_auditor = LocalSEOAuditor(df)
+    if local_auditor.is_local_site():
+        # Visible text for the location pages, to count the addresses and phone numbers each lists.
+        # A failure leaves the pages reported as not checked, never as clean.
+        try:
+            local_auditor = LocalSEOAuditor(df, page_text=load_location_page_text(df, url_is_location_targeted))
+        except Exception as e:
+            st.warning(f"Location page text could not be loaded: {e}")
     result.technical_issues.extend(local_auditor.run_audit())
     progress.progress(45)
 
@@ -619,6 +630,15 @@ def run_audit(options: dict) -> AuditResult:
                 result.onpage_issues.extend(qc_auditor.run_audit())
             except Exception as e:
                 st.warning(f"Query count audit failed: {e}")
+
+        # Internal Prominence Audit (onsiteProminence). Needs the anchor export and GSC; when either is
+        # absent it says so in the report instead of passing.
+        status.text("Running internal prominence audit (onsiteProminence)...")
+        try:
+            ip_auditor = InternalProminenceAuditor(df, ctx.anchors_df, ctx.gsc_df)
+            result.onpage_issues.extend(ip_auditor.run_audit())
+        except Exception as e:
+            st.warning(f"Internal prominence audit failed: {e}")
         progress.progress(66)
     # ====================================================================
 

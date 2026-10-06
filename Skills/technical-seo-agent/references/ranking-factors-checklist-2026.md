@@ -313,7 +313,7 @@ The site's own link graph — weighting, placement, anchor relevance. (Foley Car
 | Are important internal links placed high (body/nav) not just footer? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
 | Are internal links pointing directly to 200s (not through redirects)? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
 | Are high-authority pages (homepage) linking out to money pages? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `technical_auditor.py` |
-| Are internal links to priority pages sourced from pages that earn real search clicks (click-weighted source selection — GSC clicks, not GA4 sessions)? | `onsiteProminence` | `crawl_internal.csv` + `gsc_performance.csv` | High | Deterministic (SF/GSC column) | GAP — join SF inlink sources to GSC clicks; method in `seo-fundamentals-2026.md` (Internal Linking) |
+| Are internal links to priority pages sourced from pages that earn real search clicks (click-weighted source selection — GSC clicks, not GA4 sessions)? | `onsiteProminence` | `crawl_internal.csv` + `anchors_internal.csv` + `gsc_performance.csv` | High | Deterministic (SF/GSC column) | `internal_prominence_auditor.py` |
 | Are there dropped anchors (links present in raw HTML but lost in render)? | — | `crawl_internal.csv` (raw vs rendered) | Medium | Deterministic (SF/GSC column) | `javascript_rendering_auditor.py` |
 | Is click depth ≤3 for money pages? | — | `crawl_internal.csv` | Medium | Deterministic (SF/GSC column) | `crawl-depth-analysis` skill |
 
@@ -380,6 +380,7 @@ The named penalties — diagnostic when a site underperforms. (Foley Carter cat.
 | Is a low-quality / VLQ flag likely (NSR-derived)? | `lowQuality` | `crawl_internal.csv` | Medium | LLM-judgment | `content_pruning_auditor.py` |
 | For review content, is a product-review demotion likely (templated "best of" pages)? | `productReviewPDemotePage`, `productReviewPDemoteSite` | Live fetch | Medium | LLM-judgment | GAP — see `onpage-seo-agent/SKILL.md` |
 | Does the site carry a strong locality signal (a location demotion is INFERRED, not documented)? | `localityScore` | Live fetch + DFS local | Low | External tool | `local_seo_auditor.py` |
+| Do location pages list four or fewer addresses and phone numbers (Google stores them only up to four)? | `LocalWWWInfoAddress` | `crawl_internal.csv` + page text | Medium | Deterministic (page text) | `local_seo_auditor.py` |
 | Are inbound-link-spam patterns present (SpamBrain neutralisation candidates)? | `spambrainTotalDocSpamScore`, `spamrank` | `backlinks_semrush.csv` | Medium | Deterministic (SF/GSC column) | `backlink_auditor.py` |
 | Are there scaled-content / site-reputation / expired-domain abuse patterns? | `racterScores` | `crawl_internal.csv` + live fetch | High | LLM-judgment | GAP — see `seo-fundamentals-2026.md` |
 | Are there suspicious behaviour-over-time spikes (content production, sudden URL inflows, quality shifts, domain consolidations)? | — | `crawl_internal.csv` + GSC | Medium | Deterministic (SF/GSC column) | `Skills/traffic-loss-analysis` |
