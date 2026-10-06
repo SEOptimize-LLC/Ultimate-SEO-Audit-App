@@ -97,7 +97,8 @@ import run_1_5 as R  # noqa: E402
 
 
 def _stub_pages(monkeypatch, table):
-    monkeypatch.setattr(R, "_onpage", lambda u: table[u])
+    monkeypatch.setattr(R, "_SECOND_PASS_WAIT", 0)
+    monkeypatch.setattr(R, "_resolve", lambda u: table[u])
 
 
 def test_worked_url_that_moved_is_blocked_at_its_new_address(monkeypatch):
@@ -144,7 +145,7 @@ def test_landing_follows_a_redirect_and_refuses_an_unreadable_url(monkeypatch):
     pages = {"https://x.com/old/": {"status": 200, "final": "https://x.com/new/?utm=1"},
              "https://x.com/gone/": {"status": 404, "final": "https://x.com/gone/"},
              "https://x.com/blocked/": {"status": 403, "final": "u"}}
-    monkeypatch.setattr(F.R, "_onpage", lambda u: pages[u])
+    monkeypatch.setattr(F.R, "_resolve", lambda u: pages[u])
     assert F.landing("https://x.com/old/") == "https://x.com/new/"
     assert F.landing("https://x.com/gone/") == "https://x.com/gone/"
     with pytest.raises(RuntimeError):
@@ -173,9 +174,32 @@ def test_repeat_checker_follows_a_moved_url_and_adds_the_scheme_canon_drops(monk
     def fake(u):
         seen.append(u)
         return {"status": 200, "final": "https://x.com/new/a/?q=1"}
-    monkeypatch.setattr(C.R, "_onpage", fake)
+    monkeypatch.setattr(C.R, "_resolve", fake)
     assert C.landing("x.com/old/a") == C.canon("https://x.com/new/a")
     assert seen == ["https://x.com/old/a"]
-    monkeypatch.setattr(C.R, "_onpage", lambda u: {"status": 403, "final": u})
+    monkeypatch.setattr(C.R, "_resolve", lambda u: {"status": 403, "final": u})
     with pytest.raises(C.ReadFailed):
         C.landing("x.com/old/a")
+
+
+def test_compose_makes_label_and_bullets_one_sentence_each_and_drops_empty_blocks():
+    import sheets_io as S
+    got = S.compose(("Action", ["Name one owner."]), ("Why", "Three URLs touch it (269 impressions, position 15.3). The title stays."),
+                    ("Empty", []))
+    assert got == "ACTION\n• Name one owner.\n\nWHY\n• Three URLs touch it (269 impressions, position 15.3).\n• The title stays."
+    assert S.is_formatted(got) and not S.is_formatted("word " * 60)
+    assert S.is_formatted("short note")
+
+
+def test_section_a_notes_never_carry_a_retired_task_number():
+    import inspect
+    src = inspect.getsource(F.build)
+    assert 'd["task"]' not in src and "quick win" not in src
+
+
+def test_only_cells_that_are_pages_count_as_worked_not_prose_that_mentions_one():
+    import worked_urls as W
+    assert W.is_url_cell("https://x.com/a/")
+    assert W.is_url_cell("• https://x.com/a/\n• https://x.com/b/")
+    assert not W.is_url_cell("178 URLs, 58% of the sitemap. Every instance points at https://x.com/service-areas/lehi-ut/ and")
+    assert W.urls_in([["https://x.com/a/", "points at https://x.com/b/ for every page in the template"]], "x.com") == {"x.com/a"}

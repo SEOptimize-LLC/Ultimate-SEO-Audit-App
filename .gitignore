@@ -76,3 +76,9 @@ scratch_integration.html
 *_snapshot.yml
 *_snapshot.md
 .playwright-mcp/
+
+# Client implementation sheets copied for review - client material, do not commit
+Documents/August 2026 - Refresh Implementation Sheets/
+
+# Landing-URL cache written by scripts/run_1_5.py
+.cache/

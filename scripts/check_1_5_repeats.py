@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_1_5 as R  # noqa: E402
 import sheets_io as S  # noqa: E402
 import url_cooldown  # noqa: E402
+import worked_urls as WU  # noqa: E402
 
 # (tab, section heading, next heading or None, URL column, label)
 SECTIONS = [("1.5 Candidate List", "B. Ranked candidates", None, "B",
@@ -75,7 +76,7 @@ def landing(url: str) -> str:
     (SameDay, October: /plumbing/drain-cleaning/ became /plumbing/sewer-and-drains/drain-cleaning/).
     Raises ReadFailed when the address cannot be read, never passes it."""
     url = url if url.startswith("http") else "https://" + url   # canon() drops the scheme
-    page = R._onpage(url)
+    page = R._resolve(url)
     status = (page or {}).get("status")
     if page is None or (status and status not in (200, 404, 410)):
         raise ReadFailed(f"{url} could not be resolved ({'no response' if page is None else 'HTTP ' + str(status)})")
@@ -121,6 +122,22 @@ def main() -> int:
                     continue
                 for u in now & found:
                     hits.append((slug, month, u, what))
+        # Every tab that names pages for a task (1.3, 1.5, 1.8, 2.1, 2.2, 2.3, 3.1, 4.1), in full.
+        try:
+            named = WU.prior_worked(cfg, url_cooldown.CANDIDATE_LOOKBACK_MONTHS)
+        except RuntimeError as e:
+            incomplete.append((slug, str(e)[:90]))
+            named = {}
+        now_keys = {WU.key("https://" + u) if not u.startswith("http") else WU.key(u): u for u in now}
+        for k, where in named.items():
+            try:
+                dest = WU.key(landing("https://" + k))
+            except ReadFailed as e:
+                incomplete.append((slug, str(e)[:90]))
+                dest = k
+            for probe in {k, dest}:
+                if probe in now_keys:
+                    hits.append((slug, where[0].split()[0], now_keys[probe], "named in " + "; ".join(where)[:80]))
         errs: list[str] = []
         blocked, carried = url_cooldown.family_state(
             cfg, pause=0.5, errors=errs,

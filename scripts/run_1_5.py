@@ -11,9 +11,11 @@ import re
 import sys
 
 import yaml
+from pathlib import Path
 
 sys.path.insert(0, "scripts")
 import prior_work as PW
+import worked_urls as WU
 import url_cooldown as UC
 import sheets_io as S
 from task_1_5 import sc, analyse, ctr_curve_text
@@ -347,7 +349,48 @@ def _worked_recently(cfg):
     # The most recent LOOKBACK_WORKBOOKS workbooks, newest first, in either tab layout.
     # prior_work anchors on headings; the fixed ranges this replaced read the
     # wrong column the day a merged-2.3 workbook became the prior one.
-    return _with_destinations(PW.recent_urls(cfg, LOOKBACK_WORKBOOKS))
+    urls = set(PW.recent_urls(cfg, LOOKBACK_WORKBOOKS))
+    # Every tab that names pages for a task, not only the three PW reads (owner, 2026-10-06): a page
+    # that only had a fix or new internal links was taken into account too.
+    urls |= {"https://" + k for k in WU.prior_worked(cfg, LOOKBACK_WORKBOOKS)}
+    resolved = _with_destinations(urls)
+    return resolved | {WU.key(u) for u in resolved}
+
+
+def _is_worked(url, worked):
+    return url.rstrip("/") in worked or WU.key(url) in worked
+
+
+_LANDING_FILE = Path(__file__).resolve().parent.parent / ".cache" / "landings.json"
+_LANDING_TTL = 12 * 3600
+_SECOND_PASS_WAIT = 45   # seconds before the slow second pass over throttled URLs
+
+
+def _resolve(url):
+    """{'status', 'final'} for a URL, cached on disk for twelve hours.
+
+    One 1.5 run resolves a few hundred recorded URLs, and the filler, the verifier and the repeat checker
+    each need the same answers. Fetching them four times, one at a time behind retry pauses, was most of the
+    run time. Only settled answers are stored: a 429, 5xx or no response is retried next time, never kept.
+    """
+    import json
+    import time as _t
+    try:
+        cache = json.loads(_LANDING_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cache = {}
+    hit = cache.get(url)
+    if hit and _t.time() - hit["at"] < _LANDING_TTL:
+        return {"status": hit["status"], "final": hit["final"]}
+    page = _onpage(url)
+    if page is not None and page.get("status") in (200, 404, 410):
+        cache[url] = {"status": page["status"], "final": page.get("final") or url, "at": _t.time()}
+        try:
+            _LANDING_FILE.parent.mkdir(exist_ok=True)
+            _LANDING_FILE.write_text(json.dumps(cache), encoding="utf-8")
+        except OSError:
+            pass
+    return page
 
 
 def _with_destinations(urls):
@@ -362,7 +405,17 @@ def _with_destinations(urls):
     raised, never skipped, because that is how the gate stops working unnoticed.
     """
     pages = list(urls)
-    results = [_onpage(u) for u in pages]   # one at a time: parallel fetches trip the sites' rate limits
+    results = [_resolve(u) for u in pages]   # one at a time: parallel fetches trip the sites' rate limits
+    # A site that is still throttling after the per-URL retries gets one slower second pass over just the
+    # unread URLs before the gate gives up (Superior's /service-areas/kearns-utah answered 429 for a whole
+    # run, then 200 a minute later).
+    import time as _t
+    stuck = [i for i, r in enumerate(results)
+             if r is None or ((r.get("status") or 200) not in (200, 404, 410))]
+    if stuck:
+        _t.sleep(_SECOND_PASS_WAIT)
+        for i in stuck:
+            results[i] = _resolve(pages[i])
     out, unread = set(urls), []
     for url, page in zip(pages, results):
         status = (page or {}).get("status")
@@ -450,7 +503,7 @@ def build(slug, cfg, svc, notes):
         if _excluded(d["url"], cfg):
             dropped.append((d["url"], "excluded for this client (candidate_exclude)"))
             continue
-        if d["url"].rstrip("/") in worked:
+        if _is_worked(d["url"], worked):
             dropped.append((d["url"], "already offered or worked in a recent workbook"))
             continue
         lm = lastmod.get(d["url"].rstrip("/"))
@@ -480,7 +533,7 @@ def build(slug, cfg, svc, notes):
         if _excluded(d["url"], cfg):
             skips[d["url"]] = "excluded for this client (candidate_exclude)"
             continue
-        if d["url"].rstrip("/") in worked:
+        if _is_worked(d["url"], worked):
             skips[d["url"]] = "already offered or worked in a recent workbook"
             continue
         lm = lastmod.get(d["url"].rstrip("/"))
@@ -590,8 +643,11 @@ def build(slug, cfg, svc, notes):
         intent = ov["intent"] if "intent" in ov else (
             "Commercial-intent query, so the searcher is close to buying." if r["buy"] else
             "Informational intent: useful for reach, further from revenue.")
-        why = " ".join(x.strip() for x in (f"ACTION: {act}.", f"{r['kind']}: {r['ev']}.",
-                                           ov.get("note", ""), intent) if x and x.strip())
+        why = S.compose(("Action", [act[0].upper() + act[1:] + "."]),
+                        ("Evidence", [f"{r['kind']}: {r['ev']}."]),
+                        ("Why this row", ov.get("note", "")),
+                        ("Intent", intent),
+                        where=r["url"])
         body.append([i, r["url"], r["src"], r["q"], round(r["pos"], 1),
                      int(r["impr"]), why, r["bv"],
                      "Y" if r["bv"] in ("High", "Medium") else "N"])
@@ -606,12 +662,13 @@ def build(slug, cfg, svc, notes):
         curve_month = res["month"][0].strftime("%B %Y")
         n = S.write(cfg["sheet_id"], f"'{TAB}'!A{p['a']+1}:G{p['a']+1}", [[
             "BASELINE MONTH - nothing to measure yet", "", "", "", "", "",
-            f"First run of the workbook, so there is no recorded set of {worked_month} "
-            "optimizations to compare against. Fills from next month using whatever "
-            "1.8 selects. Do not back-fill from ranking history: a position change "
-            "with no record of a change made is not a before/after. This client's own "
-            f"CTR curve, {curve_month}: {curve_txt}. Judge any CTR claim against THAT, "
-            "not a generic curve."]]).cells
+            S.compose(
+                ("Nothing to measure yet", f"First run of the workbook, so there is no recorded set of "
+                 f"{worked_month} optimizations to compare against. Fills from next month using whatever "
+                 "1.8 selects. Do not back-fill from ranking history: a position change with no record "
+                 "of a change made is not a before/after."),
+                ("Client CTR curve", [f"{curve_month}: {curve_txt}.",
+                                      "Judge any CTR claim against this, not a generic curve."]))]]).cells
     else:
         print(f"{slug:<22} section A left to fill_1_5_section_a.py (a prior workbook exists)")
     # Clear the whole candidate block first. A shorter list than last run would

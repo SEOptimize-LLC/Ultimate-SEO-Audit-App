@@ -102,7 +102,7 @@ def moved_from(cfg) -> dict:
     _key, prior = PW.previous_workbook(cfg)
     out: dict = {}
     for d in (PW.worked_pages(prior) if prior else []):
-        page = R._onpage(d["page"])
+        page = R._resolve(d["page"])
         if page and page.get("status") == 200:
             dest = (page.get("final") or d["page"]).split("?")[0].rstrip("/")
             if dest != d["page"].rstrip("/"):
@@ -117,6 +117,10 @@ def verify_section_a(sid, pull, rows, first, aliases=None):
         if not row or not row[0] or row[0] == "CLIENT CTR CURVE" or len(row) < 12 or not str(row[1]).startswith("http"):
             continue
         note = row[13] if len(row) > 13 else ""
+        if not S.is_formatted(note):
+            FAILS.append(f"A r{r}: notes are a paragraph, not a label and bullets")
+        if re.search(r"(?:2\.4|2\.5|3\.1)", note):
+            FAILS.append(f"A r{r}: notes name a retired task number")
         m = re.search(r"Before (\w+) (\d{4}), after (\w+) (\d{4})", note)
         if not m:
             FAILS.append(f"row {r}: notes carry no 'Before <month>, after <month>' to take the windows from")
@@ -180,8 +184,10 @@ def verify_section_b(pull, rows, first, after_window):
                     check(f"B r{r} decay impressions after", im[2], cur["impressions"])
             else:
                 FAILS.append(f"B r{r}: decay rationale has no position and clicks movement to verify")
-        if not str(why).startswith("ACTION:"):
+        if not str(why).startswith("ACTION"):
             FAILS.append(f"B r{r}: rationale does not open with ACTION")
+        if not S.is_formatted(why):
+            FAILS.append(f"B r{r}: rationale is a paragraph, not a label and bullets")
         if row[8] not in ("Y", "N"):
             FAILS.append(f"B r{r}: Selected in 1.8? is {row[8]!r}, not Y or N")
 

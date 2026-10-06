@@ -242,7 +242,7 @@ def landing(url: str) -> str:
     """Where a recorded URL lands now. A workbook records the address as it stood that month, and a
     site that moves its tree leaves every recorded address redirecting. The page is judged, and
     printed, at the address that serves it. A URL that cannot be read raises rather than passing."""
-    page = R._onpage(url)
+    page = R._resolve(url)
     status = (page or {}).get("status")
     if page is None or (status and status not in (200, 404, 410)):
         raise RuntimeError(f"could not resolve {url} ({'no response' if page is None else 'HTTP ' + str(status)})")
@@ -410,8 +410,9 @@ def build(slug: str, cfg: dict, svc) -> int:
 
     sel = []
     for d in PW.worked_pages(prior):
-        label = (d["task"] or "2.3") + (" quick win" if d["kind"] == PW.QUICK else "")
-        sel.append({"page": d["page"], "task": label, "q": target_label(d["query"])})
+        # Every page worked last month is a 2.3 page now. Prior workbooks numbered the same work 2.3, 2.4,
+        # 2.5 and 3.1; those numbers no longer exist and must not reach a sheet.
+        sel.append({"page": d["page"], "q": target_label(d["query"])})
     if not sel:
         print(f"{slug:<22} last month's workbook worked no pages")
         return 0
@@ -469,31 +470,34 @@ def build(slug: str, cfg: dict, svc) -> int:
             when = f"Page last changed {d}, outside the {an} work window"
             share = ""
 
-        note = (f"{s['task']} target. {when}. Before {bn} {yr}, after {an} {yr}."
-                f"{share} Treat it as an early reading; Google normally needs "
-                "three to four weeks to re-read a page.")
-        if pick and not pos_a:
-            note = (f"This query returned no Search Console rows for this page in "
-                    f"{an}. " + note)
-        if pick and not exact and s["q"]:
-            note = (f"Best intent match in the \"{s['q']}\" target family. " + note)
-        elif pick and not exact:
-            note = ("Page-level target; this is the page's strongest query on "
-                    "its own subject. " + note)
         key = s["page"].rstrip("/")
         rkey = s["recorded"].rstrip("/")
+        pb, pa = (combine(bpages.get(key), bpages.get(rkey) if rkey != key else None),
+                  combine(apages.get(key), apages.get(rkey) if rkey != key else None))
+        measured = ["Recorded in 2.3 Page Optimizations."]
         if rkey != key:
-            note = (f"This page moved from {s['recorded'].replace(site.rstrip('/'), '')}; traffic at both "
-                    "addresses is counted. " + note)
-        pb, pa = combine(bpages.get(key), bpages.get(rkey) if rkey != key else None),             combine(apages.get(key), apages.get(rkey) if rkey != key else None)
+            measured.append(f"This page moved from {s['recorded'].replace(site.rstrip('/'), '')}; "
+                            "traffic at both addresses is counted.")
+        if pick and not exact and s["q"]:
+            measured.append(f"Best intent match in the \"{s['q']}\" target family.")
+        elif pick and not exact:
+            measured.append("Page-level target; this is the page's strongest query on its own subject.")
+        if pick and not pos_a:
+            measured.append(f"This query returned no Search Console rows for this page in {an}.")
         if not pick:
             if (pb and pb["impressions"]) or (pa and pa["impressions"]):
                 # Page-level data exists. "No query to pick" is not "no impressions".
-                note = ("No single query is recorded as this page's target, so this row "
-                        "compares the page as a whole. " + note)
+                measured.append("No single query is recorded as this page's target, so this row "
+                                "compares the page as a whole.")
             else:
-                note = (f"This page returned no Search Console impressions at all in "
-                        f"{bn} or {an} {yr}, so there is nothing to compare. " + note)
+                measured.append(f"This page returned no Search Console impressions at all in {bn} or "
+                                f"{an} {yr}, so there is nothing to compare.")
+        note = S.compose(
+            ("Target", measured),
+            ("Timing", [f"{when}.", f"Before {bn} {yr}, after {an} {yr}.", share.strip()]),
+            ("Reading", "Treat it as an early reading; Google normally needs three to four weeks to "
+                        "re-read a page."),
+            where=s["page"])
         # Page level, from the page dimension. Average position is deliberately
         # NOT carried: it is impression-weighted across every query the page
         # surfaces for, so a page that starts winning MORE terms reads as if it
@@ -520,9 +524,10 @@ def build(slug: str, cfg: dict, svc) -> int:
     # replaces that row, so the curve is carried here as the section's last row.
     res = T.analyse(svc, site, cfg)
     body.append(["CLIENT CTR CURVE", "", "", "", "", "", "", "", "", "", "", "", "",
-                 f"This client's own CTR by position band, {res['month'][0]:%B %Y}: "
-                 f"{T.ctr_curve_text(res['sd'])}. Judge any CTR claim against this, "
-                 "not a generic curve."])
+                 S.compose(("Client CTR curve",
+                            [f"By position band, {res['month'][0]:%B %Y}: {T.ctr_curve_text(res['sd'])}.",
+                             "Judge any CTR claim against this, not a generic curve."]),
+                           where="CTR curve")])
 
     header = ["Keyword", "Page", "Query Pos Before", "Query Pos After",
               "Query Clicks Before", "Query Clicks After",
@@ -541,6 +546,13 @@ def build(slug: str, cfg: dict, svc) -> int:
             S.insert_rows(cfg["sheet_id"], TAB, p["b"] - 1, len(body) - room)
             p = S.find_rows(cfg["sheet_id"], TAB, {"a": "Keyword", "b": "Rank"})
         S.clear(cfg["sheet_id"], f"'{TAB}'!A{p['a']}:N{p['b'] - 2}")
+        # The baseline banner is a merged row. When Section A grows, that merge ends up under a data row
+        # and Google refuses the format copy ("partially intersects a merge"): EW failed on it. Section A's
+        # data rows are never merged, so any merge left there is removed.
+        sid_ = S.tab_id(cfg["sheet_id"], TAB)
+        S._call(S.service().spreadsheets().batchUpdate(spreadsheetId=cfg["sheet_id"], body={"requests": [
+            {"unmergeCells": {"range": {"sheetId": sid_, "startRowIndex": p["a"], "endRowIndex": p["b"] - 2,
+                                        "startColumnIndex": 0, "endColumnIndex": 14}}}]}))
         n = S.write(cfg["sheet_id"], f"'{TAB}'!A{p['a']}:N{p['a']}", [header]).cells
         # autoformat off: its float rule stamps 0.0 on the CTR column, so a
         # written 0.09 reads back as "0.1" and write()'s own verification

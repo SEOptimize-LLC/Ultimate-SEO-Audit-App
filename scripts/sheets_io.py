@@ -41,15 +41,39 @@ _service = None
 # genuinely cannot see a file nobody shared with it.
 SA_KEY = "credentials/sheets-service-account.json"
 
+# Minted by scripts/auth_sheets.py. This is the credential that actually works
+# here; see the note in service() for why the other two do not.
+OAUTH_TOKEN = "credentials/sheets-token.json"
+
+
+def reset() -> None:
+    """Drop the cached client so a newly minted token is picked up."""
+    global _service
+    _service = None
+
 
 def service():
-    """Cached Sheets client. Service account key if present, else ADC."""
+    """Cached Sheets client.
+
+    Credential order, most durable first:
+
+    1. Service account key. Never expires, no human in the loop. Currently
+       unavailable here: org policy blocks key creation and this account has no
+       organization IAM permission to change that.
+    2. Our own OAuth token at credentials/sheets-token.json, minted by
+       scripts/auth_sheets.py. This is the one that actually works. Same
+       pattern the Search Console scripts use.
+    3. Application Default Credentials. Left last on purpose. ADC is a user
+       credential and this Workspace enforces Google Cloud session control, so
+       it dies on a timer, and re-consenting it for Sheets scopes is refused
+       outright with "This app is blocked".
+    """
     global _service
     if _service is None:
         # Validity, not existence. A blocked `gcloud ... keys create` still
         # creates the output file and leaves it empty, so an existence check
-        # sends every call into a JSONDecodeError instead of falling back to
-        # ADC, and the error names json rather than auth.
+        # sends every call into a JSONDecodeError instead of falling through,
+        # and the error names json rather than auth.
         creds = None
         try:
             import json
@@ -60,9 +84,27 @@ def service():
                     info, scopes=SCOPES)
         except (OSError, ValueError):
             creds = None
+
+        if creds is None:
+            try:
+                import json
+                from google.auth.transport.requests import Request
+                from google.oauth2.credentials import Credentials
+                tok = pathlib.Path(OAUTH_TOKEN)
+                info = json.loads(tok.read_text(encoding="utf-8"))
+                c = Credentials.from_authorized_user_info(info)
+                if not c.valid and c.expired and c.refresh_token:
+                    c.refresh(Request())
+                    tok.write_text(c.to_json(), encoding="utf-8")
+                if c.valid:
+                    creds = c
+            except (OSError, ValueError, KeyError):
+                creds = None
+
         if creds is None:
             creds, _ = google.auth.default(scopes=SCOPES)
-        _service = build("sheets", "v4", credentials=creds, cache_discovery=False)
+        _service = build("sheets", "v4", credentials=creds,
+                         cache_discovery=False)
     return _service
 
 
@@ -174,6 +216,99 @@ def _norm_cell(v) -> str:
         return s.lower()
 
 
+BULLET = "•"
+CELL_MAX = 950          # characters. Past this nobody reads the cell.
+LABEL_MAX = 34          # an uppercase label is a label, not a sentence.
+
+_MD = re.compile(r"\*\*|__|`")
+_BULLET_LINE = re.compile(r"^\s*[-*]\s+")
+# A label may carry a lowercase parenthetical tail: "AI PROMPT (absent on 2)".
+_LABEL_LINE = re.compile(r"^[A-Z0-9][A-Z0-9 ,'/&–-]{2,}(\([^)]*\))?$")
+
+
+def cell(text: str) -> str:
+    """House format for a multi-line sheet cell. Mechanical, idempotent.
+
+    Sheets renders no markdown, so `**bold**` arrives as literal asterisks.
+    What reads is a short uppercase label, a blank line, then bullets.
+
+    This exists because the format was written into five task files and
+    enforced by nothing, so it decayed back to a wall of text every month.
+    Prose that says "format it nicely" is not a mechanism; this is.
+    """
+    s = _MD.sub("", str(text or "")).replace("\r\n", "\n").replace("\r", "\n")
+    out: list[str] = []
+    for raw in s.split("\n"):
+        ln = raw.rstrip()
+        if _BULLET_LINE.match(ln):
+            ln = _BULLET_LINE.sub(f"{BULLET} ", ln.lstrip())
+        # A bulleted line that is really a label reads as a stray bullet.
+        # Promote it back so the verdict still sits above its detail.
+        body = ln.strip().lstrip(BULLET).strip()
+        if ln.strip().startswith(BULLET) and _LABEL_LINE.match(body):
+            ln = body
+        stripped = ln.strip()
+        # A label gets air above it so the verdict reads before the detail.
+        if stripped and _LABEL_LINE.match(stripped) and out and out[-1].strip():
+            out.append("")
+        out.append(ln)
+    # Never more than one blank line in a row.
+    tidy: list[str] = []
+    for ln in out:
+        if not ln.strip() and tidy and not tidy[-1].strip():
+            continue
+        tidy.append(ln)
+    return "\n".join(tidy).strip()
+
+
+def sentences(text: str) -> list[str]:
+    """Split prose into one sentence per bullet. A dot between digits or inside a path is not a break."""
+    return [p.strip() for p in re.split(r"(?<=[.!?])\s+(?=[A-Z'\"(])", str(text or "").strip()) if p.strip()]
+
+
+def compose(*blocks: tuple[str, object], where: str = "") -> str:
+    """Build a cell the way a person reads it: LABEL, then bullets, a blank line between blocks.
+
+    Each block is (label, items); items is one string or a list. A string is split into sentences, one
+    bullet each. Empty blocks are dropped. Goes through check_cell, so a cell over the cap or a label over
+    the limit raises. Callers compose cells with this instead of joining prose, which is how a paragraph
+    reached a client sheet five times despite the rule.
+    """
+    out = []
+    for label, items in blocks:
+        items = sentences(items) if isinstance(items, str) else [str(i).strip() for i in items if str(i).strip()]
+        if items:
+            out.append(label.upper() + "\n" + "\n".join(f"{BULLET} {i}" for i in items))
+    return check_cell("\n\n".join(out), where)
+
+
+def is_formatted(text: str) -> bool:
+    """True when a long cell is a label plus bullets, False for a paragraph. Short cells always pass."""
+    s = str(text or "").strip()
+    if len(s) <= 160:
+        return True
+    lines = [ln.strip() for ln in s.split("\n") if ln.strip()]
+    return bool(lines) and bool(_LABEL_LINE.match(lines[0])) and any(ln.startswith(BULLET) for ln in lines[1:])
+
+
+def check_cell(text: str, where: str = "") -> str:
+    """cell(), plus the two limits that need a human to fix the CONTENT."""
+    s = cell(text)
+    if len(s) > CELL_MAX:
+        raise ValueError(
+            f"cell {where or '(unnamed)'} is {len(s)} chars, over the "
+            f"{CELL_MAX} limit. Cut it - do not raise the limit. A cell this "
+            f"long is a wall of text and will not be read.")
+    for ln in s.split("\n"):
+        t = ln.strip()
+        if _LABEL_LINE.match(t) and len(t) > LABEL_MAX:
+            raise ValueError(
+                f"cell {where or '(unnamed)'} has a {len(t)}-char uppercase "
+                f"label: {t!r}. A label carries the verdict in a few words; "
+                f"put the sentence in a bullet under it.")
+    return s
+
+
 def write(sheet_id: str, a1: str, values: list[list], *, verify: bool = True,
           autoformat: bool = True) -> WriteResult:
     """Write a 2D block, then read it back and prove it landed.
@@ -181,11 +316,25 @@ def write(sheet_id: str, a1: str, values: list[list], *, verify: bool = True,
     USER_ENTERED is deliberate: it makes '2026-09-15' a real date rather than
     text. Text dates would make the 4.5 COUNT formulas read zero, which is the
     exact bug class already fixed once in this workbook.
+
+    Every multi-line string is passed through cell() on the way out, so the
+    house format cannot be forgotten by a caller.
     """
     for pat in DENY_PATTERNS:
         if pat.search(a1):
             raise WriteRefused(
                 f"{a1} is on the deny-list (formula range). Refusing to write.")
+
+    values = [[cell(v) if isinstance(v, str) and "\n" in v else v for v in row]
+              for row in values]
+    for r, row in enumerate(values):
+        for c, v in enumerate(row):
+            if isinstance(v, str) and len(v) > CELL_MAX:
+                print(f"  !! long cell in {a1} (row {r + 1}, col {c + 1}): "
+                      f"{len(v)} chars, over {CELL_MAX} - shorten it")
+            if isinstance(v, str) and not is_formatted(v):
+                print(f"  !! paragraph in {a1} (row {r + 1}, col {c + 1}): {len(v)} chars with no label and "
+                      "bullets - build it with sheets_io.compose()")
 
     _call(_values().update(
         spreadsheetId=sheet_id, range=a1,
@@ -438,6 +587,41 @@ def delete_rows(sheet_id: str, tab: str, at_row: int, count: int) -> int:
             "range": {"sheetId": tab_id(sheet_id, tab), "dimension": "ROWS",
                       "startIndex": at_row - 1, "endIndex": at_row - 1 + count}}}]}))
     return count
+
+
+def append_rows(sheet_id: str, tab: str, count: int) -> int:
+    """Add `count` blank rows at the BOTTOM, leaving the column count alone.
+
+    insert_rows cannot do this: startIndex must fall inside the existing grid
+    when inheritFromBefore is false, so appending past the last row is a 400.
+    Growing the grid by letting a write run off the end is worse - Sheets
+    expands to its own default of 26 columns and the new columns inherit the
+    last column's formatting.
+    """
+    if count <= 0:
+        return 0
+    _call(service().spreadsheets().batchUpdate(
+        spreadsheetId=sheet_id,
+        body={"requests": [{"appendDimension": {
+            "sheetId": tab_id(sheet_id, tab), "dimension": "ROWS",
+            "length": count}}]}))
+    return count
+
+
+def grid_size(sheet_id: str, tab: str) -> tuple[int, int]:
+    """(rows, cols) the tab actually has. Addressing past these GROWS the grid."""
+    meta = service().spreadsheets().get(
+        spreadsheetId=sheet_id, includeGridData=False).execute()
+    for sh in meta["sheets"]:
+        if sh["properties"]["title"] == tab:
+            g = sh["properties"]["gridProperties"]
+            return int(g.get("rowCount", 0)), int(g.get("columnCount", 0))
+    raise KeyError(f"tab {tab!r} not found")
+
+
+def last_row(sheet_id: str, tab: str) -> int:
+    """Index of the last row holding a value, 0 if the tab is empty."""
+    return len(read(sheet_id, f"'{tab}'!A:A"))
 
 
 def clear(sheet_id: str, a1: str) -> None:
