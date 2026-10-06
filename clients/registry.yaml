@@ -8,6 +8,12 @@
 # sheet_id      Google Sheet, verified readable via the Sheets API
 # semrush_project  Position Tracking project id; a project may hold SEVERAL
 #               campaigns (city/state/country) and 1.1 reports ALL of them
+# drive_folder  Drive folder id holding every month's workbook for the client
+# sheet_id      is ALWAYS the current month's workbook; prior months sit in
+#               sheet_id_YYYY_MM. A client with active: false has no sheet_id,
+#               which is what makes every 'all' loop skip it.
+# clickup_milestone  the current month's '[Month] 2026 - Monthly SEO Workbook Tasks'
+#               parent task; prior months in clickup_milestone_YYYY_MM
 # brand_token   substring for the GSC 'query contains' branded-impressions filter
 # is_local      does 4.4 GBP Fundamentals apply
 # ecommerce     does the 1.1 "GA4 Organic Revenue (e-comm only)" row apply
@@ -16,6 +22,20 @@
 #               excluded globally in crawl_targets.UTILITY
 # crawl.money_pages  explicit URL allowlist. When present it WINS over
 #               crawl.money entirely - no heuristic, no guessing.
+# watchlist     optional URL list for scripts/index_watchlist.py: pages under
+#               remediation whose indexation progress is tracked month over
+#               month (snapshots land next to index_audit.json). Absent by
+#               default - add it when a client has URLs worth watching.
+
+# ihs_group   the four sister properties under the same ownership. They are
+#             competitors in the market but NOT competitors of each other, so
+#             every competitor analysis excludes the other three by rule.
+#             Owner instruction 2026-08-31.
+ihs_group:
+  - beehiveplumbing.com
+  - samedayutah.com
+  - superiorwaterandair.com
+  - comfortsolutionsutah.com
 
 superior:
   name: Superior Water & Air
@@ -23,11 +43,49 @@ superior:
   folder: Clients/Superior
   gsc_property: https://superiorwaterandair.com/
   ga4_property: "314969736"
-  sheet_id: 1uVDqUbPRpdFCgfn4IlsDDnwIdRpjwjdcBoh2LRH4jA0
-  clickup_milestone: 86ak0e259
+  drive_folder: 1g1u-qK3_8qE7KQI66hmUrVIYM8wn6X_C   # Drive folder holding every month's workbook
+  sheet_id: 1wmVotc1dWgZYfa0EDy0VFlGvIPAlE6QgWzSM7AeTieI   # October 2026
+  sheet_id_2026_09: 1lOVM7FNonwfKa9zYo-2s1Q6VPyrxyaoYFD8OmKhhBEw
+  sheet_id_2026_08: 1uVDqUbPRpdFCgfn4IlsDDnwIdRpjwjdcBoh2LRH4jA0
+  clickup_milestone: 17tmdg793au   # October 2026
+  clickup_milestone_2026_08: 86ak0e259
+  clickup_milestone_2026_09: 86ak7uxty
   semrush_project: "26537085"
   semrush_campaign: "26537085_4904292"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "superior"
+  competitor_tokens: ["supreme", "any hour", "whipple", "neerings"]
+  # competitors  identified 2026-08-31. 220 commercial-intent queries searched
+  #              live at Salt Lake City, depth 20, scored to position 20.
+  #              Weighted toward water treatment (56 queries) and indoor air
+  #              quality (65) per owner brief; HVAC, water heaters and plumbing
+  #              retained. Evidence: Clients/Superior/Competitor Analysis/
+  competitors:
+    - domain: rotorooter.com          # Roto-Rooter
+      url: https://www.rotorooter.com/saltlakecity/
+      above_on: 52                    # of 220 queries
+    - domain: valleyplumbing.com      # Valley Plumbing, Heating & Cooling
+      url: https://www.valleyplumbing.com/
+      above_on: 43
+    - domain: mountainhomeutah.com    # Mountain Home Services
+      url: https://www.mountainhomeutah.com/
+      above_on: 40
+    - domain: bdexperts.com           # Black Diamond Experts
+      url: https://bdexperts.com/
+      above_on: 35
+    - domain: utahwatersystems.net    # 0 organic, 45 of 46 Map Packs above client
+      url: https://utahwatersystems.net/
+      above_on: 0
+  competitors_watch:
+    - anyhourservices.com             # 33
+    - manwill.net                     # 31
+    - justrightair.com                # 30
+    - atyourservicepros.us            # 27
+    - westernheatingair.com           # 25
+    - sosairutah.com                  # 24
+    - culliganslc.com                 # 10 franchise + 25 national brand pages
+    - kineticoutah.com                # 14
+    - filtertechnologies.com          # Map Pack only, 15 of 15
+    - wasatchwaterspecialist.com      # Map Pack only, 12 of 15
   is_local: true
   ecommerce: false
   crawl:            # subfolder rules, supplied by owner 2026-08-17
@@ -41,11 +99,44 @@ sameday:
   folder: Clients/SameDay
   gsc_property: https://samedayutah.com/
   ga4_property: "319451315"
-  sheet_id: 1tB_4H4-l759PLpNmcuOFpyUWcL6MzJvnMYenkFj4lKE
-  clickup_milestone: 86ak0e2nt
+  drive_folder: 1b1A1uwsyrGppW6WvWyaUmbe0HCqHtC2T   # Drive folder holding every month's workbook
+  sheet_id: 1uCJsT-KyNgjpTR5tPP_bipP1h5rDI5N6h3x8yBiylP4   # October 2026
+  sheet_id_2026_09: 1nOJUsnW6DlS5mF478y0SKoBxCNpzPSuWTjRIUtFbhBs
+  sheet_id_2026_08: 1tB_4H4-l759PLpNmcuOFpyUWcL6MzJvnMYenkFj4lKE
+  clickup_milestone: 17tmdg793ca   # October 2026
+  clickup_milestone_2026_08: 86ak0e2nt
+  clickup_milestone_2026_09: 86ak7vkgm
   semrush_project: "25650229"
   semrush_campaign: "25650229_4903357"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "sameday"  # misses 'same day' written with a space - confirm
+  competitor_tokens: ["next day", "any hour", "whipple"]
+  # competitors  identified 2026-08-31. HVAC focus. 82 commercial-intent queries
+  #              searched live at Salt Lake City: 62 from Search Console
+  #              (position 4-20, non-branded, no 'near me') plus 20 service
+  #              categories SameDay sells but does not rank for.
+  #              Evidence: Clients/SameDay/Competitor Analysis/
+  competitors:
+    - domain: justrightair.com        # Just Right Plumbing, Heating & Cooling
+      url: https://justrightair.com/
+      above_on: 48                    # of 82 queries
+    - domain: manwill.net             # Manwill
+      url: https://manwill.net/
+      above_on: 31
+    - domain: serviceexperts.com      # Service Experts
+      url: https://www.serviceexperts.com/salt-lake-ut/
+      above_on: 30
+    - domain: truepros.com            # True Pros Heating and Air
+      url: https://truepros.com/salt-lake/
+      above_on: 25
+    - domain: bdexperts.com           # Black Diamond Experts
+      url: https://bdexperts.com/
+      above_on: 22
+  competitors_watch:
+    - airdesignheating.com            # beats SameDay in the Map Pack 14x, no organic
+    - westernheatingair.com           # 21 queries
+    - ascendhvac.com                  # 17
+    - hvacinutah.com                  # 17 (HVAC Construction, Inc.)
+    - mountainhomeutah.com            # 16
   is_local: true
   ecommerce: false
   crawl:            # subfolder rules, supplied by owner 2026-08-17
@@ -59,11 +150,44 @@ beehive:
   folder: Clients/Beehive
   gsc_property: https://www.beehiveplumbing.com/
   ga4_property: "314808497"
-  sheet_id: 1ScxOuGNoPMqr7OWTSQqqt9Vt4gQf-PRLd8PghxssmcE
-  clickup_milestone: 86ak0e1ac
+  drive_folder: 1h2CVdsIsE3tyJ1VBozImj3s87GQ1fYdT   # Drive folder holding every month's workbook
+  sheet_id: 1EAAksgYjIYvH3w3D06fx8V9nTPT5N9qcIbdy4_QsVbE   # October 2026
+  sheet_id_2026_09: 13D8Lj9xFBVB78C6FzVOFgb68MXeE9jio_ngkuILNCOs
+  sheet_id_2026_08: 1ScxOuGNoPMqr7OWTSQqqt9Vt4gQf-PRLd8PghxssmcE
+  clickup_milestone: 17tmdg793a4   # October 2026
+  clickup_milestone_2026_08: 86ak0e1ac
+  clickup_milestone_2026_09: 86ak7ut6e
   semrush_project: "25650226"
   semrush_campaign: "25650226_4367846"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "beehive"
+  # competitors  identified 2026-08-31 from 46 commercial-intent Search Console
+  #              queries (position 4-20), each searched live at Salt Lake City.
+  #              Informational/TOFU and 'near me' modifier queries excluded.
+  #              Evidence: Clients/Beehive/Competitor Analysis/
+  competitors:
+    - domain: rotorooter.com           # Roto-Rooter
+      url: https://www.rotorooter.com/saltlakecity/
+      above_on: 29                     # of 46 queries
+    - domain: millcreekplumbinginc.com # Millcreek Plumbing
+      url: https://millcreekplumbinginc.com/
+      above_on: 19
+    - domain: copperpeaksplumbing.com  # Copper Peaks Plumbing
+      url: https://www.copperpeaksplumbing.com/
+      above_on: 13
+    - domain: valleyplumbing.com       # Valley Plumbing, Heating and Cooling
+      url: https://www.valleyplumbing.com/
+      above_on: 13
+    - domain: saltcityplumbing.com     # Salt City Plumbing
+      url: https://www.saltcityplumbing.com/
+      above_on: 0                      # organic; 15 Map Pack, the most of any company
+  competitors_watch:
+    - justrightair.com                 # 10 organic + 5 Map Pack
+    - plumbingutah.com                 # 8
+    - saltlakeplumbing.com             # 8
+    - actionplumbing.net               # 7
+    - mrrooter.com                     # 7 (was 21 before 'near me' queries were excluded)
+    - anyhourservices.com              # 5
+    - pipeprosutah.com                 # 5
   is_local: true
   ecommerce: false
   crawl:            # owner spec 2026-08-17: page-sitemap minus the list below.
@@ -100,6 +224,11 @@ beehive:
       - https://www.beehiveplumbing.com/get-a-quote/
       - https://www.beehiveplumbing.com/review-form/
       - https://www.beehiveplumbing.com/beehive-preferred/
+    # The page is written for Murray (H2s name Murray, body never says Salt Lake City) and its only
+    # Salt Lake City query, 'water heater repair salt lake city', belongs to
+    # /water-heater-installation-services-utah/ (1,129 impressions, position 21.1; the page's own: 60).
+    # Offering it would stack a second city onto a one-city page. Excluded 2026-10-06.
+    candidate_exclude: ["/who-homeowners-trust-for-the-best-water-heater-repair"]
   # Beehive Heating & Air (GA4 343116493) is a separate property and is
   # deliberately out of scope for this workbook.
 
@@ -109,8 +238,13 @@ comfort:
   folder: Clients/Comfort
   gsc_property: https://www.comfortsolutionsutah.com/
   ga4_property: "371327071"
-  sheet_id: 1gzCtBffq3jpgj0c-tN2Km02PAINwU5f8Nh6qDI8DRGw
-  clickup_milestone: 86ak0e1rf
+  drive_folder: 1FQmeHYHLuFSLreU7fDnZJe1EGU3OYPU4   # Drive folder holding every month's workbook
+  sheet_id: 14I13JjqjGZJ1u-4fZEs8E_r5kEdTpurB1MCcmFUc7fs   # October 2026
+  sheet_id_2026_09: 1NHqvU2G4cqFenzjVM2uuOhQ_IrSe5A7KW7LW-QxGKrw
+  sheet_id_2026_08: 1gzCtBffq3jpgj0c-tN2Km02PAINwU5f8Nh6qDI8DRGw
+  clickup_milestone: 17tmdg793ba   # October 2026
+  clickup_milestone_2026_08: 86ak0e1rf
+  clickup_milestone_2026_09: 86ak7uwyn
   semrush_project: "26537093"
   semrush_campaign: "26537093_4373621"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "comfort solutions"
@@ -122,6 +256,68 @@ comfort:
             "/cooling/", "/emergency-services/"]
   # Comfort Solutions Fireplace (GA4 400293742 / sc-domain:fireplacesutah.com)
   # is a separate site and is deliberately out of scope for this workbook.
+  # Competitor identification, Aug 2026. Live SERPs at three markets: 80 queries at
+  # Salt Lake City, 65 at West Haven, 66 at Sandy. A rival counts when it is in the
+  # organic top 20 above the client. fireplacesutah.com counts as the client alongside
+  # comfortsolutionsutah.com (verified live: same Sandy and West Haven showrooms), so a
+  # rival is only credited when it outranks both.
+  # Evidence: Clients/Comfort/Competitor Analysis/
+  competitors:                          # Salt Lake City, of 80 queries
+    - domain: manwill.net               # Manwill Plumbing Heating & Air Conditioning
+      url: https://manwill.net/
+      above_on: 55
+    - domain: justrightair.com          # Just Right Plumbing, Heating, & Cooling
+      url: https://justrightair.com/
+      above_on: 54
+    - domain: westernheatingair.com     # Western Heating, Air & Plumbing
+      url: https://westernheatingair.com/
+      above_on: 42
+    - domain: truepros.com              # True Pros
+      url: https://truepros.com/
+      above_on: 35
+    - domain: mountainhomeutah.com      # Mountain Home Services
+      url: https://www.mountainhomeutah.com/
+      above_on: 34
+  competitors_westhaven:                # of 65 queries
+    - domain: salmonhvac.com            # Salmon HVAC
+      url: https://salmonhvac.com/
+      above_on: 29
+    - domain: serviceexperts.com        # Service Experts Ogden
+      url: https://www.serviceexperts.com/ogden-ut/
+      above_on: 25
+    - domain: onehourheatandair.com     # One Hour Heating & Air Conditioning of Ogden
+      url: https://www.onehourheatandair.com/ogden/
+      above_on: 25
+    - domain: mountainhomeutah.com      # Mountain Home Services
+      url: https://www.mountainhomeutah.com/
+      above_on: 20
+    - domain: anyhourservices.com       # Any Hour Services
+      url: https://anyhourservices.com/
+      above_on: 18
+  competitors_sandy:                    # of 66 queries
+    - domain: theyesmancan.com          # YES! Air Conditioning, Heating, Plumbing and Electric
+      url: https://www.theyesmancan.com/
+      above_on: 36
+    - domain: westernheatingair.com     # Western Heating, Air & Plumbing
+      url: https://westernheatingair.com/
+      above_on: 34
+    - domain: onestoputah.com           # One Stop Heating and Air Conditioning
+      url: https://onestoputah.com/
+      above_on: 26
+    - domain: sandyheatingandair.com    # Sandy Heating and Air
+      url: https://sandyheatingandair.com/
+      above_on: 23
+    - domain: gillettehvac.com          # Gillette Services
+      url: https://www.gillettehvac.com/
+      above_on: 23
+  competitors_watch:
+    - serviceexperts.com                # 33 at Salt Lake City, 25 at West Haven
+    - sosairutah.com                    # 25 at Salt Lake City
+    - anderson-hvac.com                 # 18 at West Haven
+    - burrowsheating.net                # 16 at West Haven
+    - larsenheatingandair.com           # 19 at Sandy
+    - airdesignheating.com              # 20 Salt Lake City Map Packs, 1 organic top 20
+    - northstarheatingandairutah.com    # 44 Sandy Map Packs
 
 arsenal:
   name: Arsenal Health
@@ -129,8 +325,10 @@ arsenal:
   folder: Clients/Arsenal Health
   gsc_property: https://www.arsenalhealth.com/
   ga4_property: "359612721"
-  sheet_id: 1aHB2WEm551sf9AT_hBWe5Xp_Y0qrPuMmLDBdKuN1mfU
-  clickup_milestone: null   # not found in ClickUp search 2026-08-14
+  active: false   # campaign ended; October 2026 is the first month with no workbook. Last active week is the week of 2026-10-05
+  sheet_id_2026_09: 1VY_NL5IAGJ-dS2mgkymGOFVBZSy2YhJihZgdk4publ4   # no current-month sheet_id on purpose: 'all' loops filter on sheet_id
+  sheet_id_2026_08: 1aHB2WEm551sf9AT_hBWe5Xp_Y0qrPuMmLDBdKuN1mfU
+  clickup_milestone_2026_09: 86ak8mjp2   # August milestone was never found in ClickUp (searched 2026-08-14)
   semrush_project: "28428944"
   semrush_campaign: "28428944_4584598"   # Position Tracking campaign for the aug-2026 tag flow   # separate SEMrush account (fid 10507450);
                                 # not returned by list_projects - see 1.1 calibration
@@ -139,6 +337,10 @@ arsenal:
   ecommerce: false
   crawl:            # flat sitemap: patterns match the URL path
     posts: ["/blog/"]
+    # Owned by the developer handoff (AH-12: thicken the location pages and
+    # mark them up as real locations). Listing them as 1.5 candidates too
+    # would bill the same work twice. Owner instruction 2026-09-03.
+    candidate_exclude: ["/locations"]   # the hub and every page under it
     money_pages:      # explicit allowlist, supplied by owner 2026-08-17
       - https://www.arsenalhealth.com/
       - https://www.arsenalhealth.com/clinic
@@ -189,11 +391,50 @@ cudio:
   folder: Clients/Cudio
   gsc_property: https://www.cudio.com/
   ga4_property: "404082865"
-  sheet_id: 1_Ufm-_2cajXeR7C_4XKjEBjPEf7L3RBPzawuKbTp79U
-  clickup_milestone: 86ak0dnjz
+  drive_folder: 15jhxFmEOTfSH9Luiy5WVtdIpt3XpwS3M   # Drive folder holding every month's workbook
+  sheet_id: 1SoOe351eP-vfcCUFy5iCRJDcsxZTstxehqcEXQ9FwNg   # October 2026
+  sheet_id_2026_09: 1src8vX59uyDxqFIrUuqPFYDUwwINWW2G8jaOM-ud3v4
+  sheet_id_2026_08: 1_Ufm-_2cajXeR7C_4XKjEBjPEf7L3RBPzawuKbTp79U
+  clickup_milestone: 17tmdg7939b   # October 2026
+  clickup_milestone_2026_08: 86ak0dnjz
+  clickup_milestone_2026_09: 86ak6dxuu
   semrush_project: "25429387"
   semrush_campaign: "25429387_3251023"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "cudio"
+  # competitors  identified 2026-08-31. 126 commercial-intent queries searched
+  #              live at country level for the United States (is_local false, so
+  #              no market city), depth 20, scored to position 20. Ordered by the
+  #              owner's service priority: migration, implementation,
+  #              customization, development, integration, upgrade. Canada left
+  #              out as a secondary market.
+  #              Evidence: Clients/Cudio/Competitor Analysis/
+  competitors:
+    - domain: o2btechnologies.com     # O2B Technologies, Austin TX
+      url: https://www.o2btechnologies.com/
+      above_on: 71                    # of 126 queries
+    - domain: captivea.com            # Captivea
+      url: https://www.captivea.com/
+      above_on: 44
+    - domain: silentinfotech.com      # Silent Infotech
+      url: https://silentinfotech.com/
+      above_on: 39
+    - domain: odooexpress.com         # Odoo Express
+      url: https://www.odooexpress.com/
+      above_on: 32
+    - domain: webkul.com              # Webkul
+      url: https://webkul.com/
+      above_on: 31
+  competitors_watch:
+    - ksolves.com                     # 28
+    - candidroot.com                  # 24
+    - onestopodoo.com                 # 22
+    - ventor.tech                     # 21
+    - bayforward.com                  # 20
+    - mmcconvert.com                  # 18, migration line only
+  # odoo.com is the platform vendor, above Cudio on 122 of 126 via its own
+  # "Find Resellers" directory. Structural, not a services competitor.
+  # cloudpepper.io and oec.sh are Odoo HOSTING products ranking partner
+  # directory pages - do not count them as implementation rivals.
   is_local: false
   ecommerce: false
   crawl:            # owner spec 2026-08-17: /blog/ posts, /services/ money.
@@ -207,11 +448,47 @@ snow:
   folder: Clients/Snow
   gsc_property: https://www.trysnow.com/
   ga4_property: "402493455"
-  sheet_id: 1TDkNup04beT4HbLg3NJTmNoEHTXgRAYPqxxwySfswcA
-  clickup_milestone: 86ak0jb5p
+  active: false   # all work on hold until further notice (owner, 2026-10-05); no October workbook
+  sheet_id_2026_09: 1ONpcUOogAq2zF_Qbwz3VOJQJQPCDoBsXEtR2zChCRs0   # no current-month sheet_id on purpose: 'all' loops filter on sheet_id
+  sheet_id_2026_08: 1TDkNup04beT4HbLg3NJTmNoEHTXgRAYPqxxwySfswcA
+  clickup_milestone_2026_08: 86ak0jb5p
+  clickup_milestone_2026_09: 86ak7vgyu
   semrush_project: "24584014"
   semrush_campaign: "24584014_2987931"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "snow"  # generic word; may catch non-brand queries - confirm
+  competitor_tokens: ["amazon", "seares", "asuno", "hismile", "auraglow",
+                      "crest", "colgate", "smiledirectclub"]
+  # competitors  identified 2026-08-31 from 47 commercial purchase queries
+  #              (position 4-20) searched live at United States to position 20.
+  #              Branded ('snow' is a generic word), informational/TOFU and
+  #              'near me' excluded. Editorial media, dental practices and
+  #              retail platforms excluded as non-competitors.
+  #              Evidence: Clients/Snow/Competitor Analysis/
+  competitors:
+    - domain: crest.com               # Crest - strips + sensitivity
+      url: https://crest.com/en-us/oral-care-products/whitening-treatments
+      above_on: 20                    # of 47 queries
+    - domain: purelywhitedeluxe.com   # PurelyWHITE DELUXE - purple strips/powder
+      url: https://purelywhitedeluxe.com/
+      above_on: 9
+    - domain: sensodyne.com           # Sensodyne - owns the sensitivity claim
+      url: https://www.sensodyne.com/en-us/products/product-results/teeth-whitening-toothpaste/
+      above_on: 9
+    - domain: perforacare.com         # Perfora - purple self-dissolving strips
+      url: https://perforacare.com/collections/teeth-whitening-products
+      above_on: 8
+    - domain: auraglow.com            # AuraGlow - whitening pens
+      url: https://auraglow.com/products/teeth-whitening-pen
+      above_on: 7
+  competitors_watch:
+    - laserglowspa.com                # 10; med spa selling a PAP+ pen, not a national brand
+    - lumineuxhealth.com              # 7
+    - moonoralbeauty.com              # 6; pen marketed for sensitive teeth
+    - mysmilesteeth.com               # 6
+    - whiteglo.com                    # 5; purple strips
+    - colgate.com                     # 5
+    - hismileteeth.com                # 4; V34 created the purple category
+    - novashinesmile.com              # 4
   is_local: false
   ecommerce: true
   crawl:            # Shopify. Same shape for any Shopify client:
@@ -229,8 +506,13 @@ educationwalkthrough:
   folder: Clients/Education Walkthrough
   gsc_property: https://educationwalkthrough.com/
   ga4_property: "304261130"
-  sheet_id: 1vxLJKWWCd9HI0cynXmSG6Yooy5E1VtEgpnDO3vVcipA
-  clickup_milestone: 86ak0e0rg
+  drive_folder: 1KxQChNzJaDb__JeRDLXpPypAtO-WHsBB   # Drive folder holding every month's workbook
+  sheet_id: 1zpbed7eG29OUopSSw0hTSuM2fLDu9BcnJ4VC0x16MT0   # October 2026
+  sheet_id_2026_09: 1-gOcsoWjkPGucHMIhpHKq_Zoabhlf3Qxy_mA1wgSZeg
+  sheet_id_2026_08: 1vxLJKWWCd9HI0cynXmSG6Yooy5E1VtEgpnDO3vVcipA
+  clickup_milestone: 17tmdg7938f   # October 2026
+  clickup_milestone_2026_08: 86ak0e0rg
+  clickup_milestone_2026_09: 86ak7unb1
   semrush_project: "20947643"
   semrush_campaign: "20947643_2330707"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "education walkthrough"
@@ -244,6 +526,16 @@ educationwalkthrough:
     # have started matching the day anyone removed money_pages below. EW uses the
     # explicit allowlist instead.
     exclude: ["/es/", "/ar/"]   # no-op today: no non-English URLs in the sitemap
+    # 1.5 candidates, excluded 2026-10-06. A trailing "$" names one address exactly.
+    #  - the homepage: its only unbranded target was 'it has my face walkthrough reddit', a query about
+    #    a game walkthrough, and its real queries are the brand and the bare head term 'walkthrough'.
+    #  - the compliance-audits post: its top queries are 8+ word phrases with 0 clicks on 12,000+
+    #    impressions at positions 2.5 to 9.8, so there is no snippet or ranking gap to act on.
+    #  - /entry-plan-new-principal: the August plan gave the template and example intent to the other
+    #    entry-plan page and told this one to narrow to the general question, so 'principal entry plan
+    #    template' as its target would build the same angle on both pages.
+    candidate_exclude: ["https://educationwalkthrough.com$", "/protecting-your-school-from-compliance-audits",
+                        "/entry-plan-new-principal"]
     access_exclude:   # 1.4 section B sampling only - owner rule 2026-08-19:
       # the AI-access render check samples pages with SEO value (content we
       # are trying to rank), not legal/utility/sales-collateral templates.
@@ -264,3 +556,52 @@ educationwalkthrough:
       - https://educationwalkthrough.com/whos-it-for/it-and-security/
       - https://educationwalkthrough.com/pricing/
       - https://educationwalkthrough.com/case-studies/
+
+barts:
+  name: Bart's Asphalt
+  domain: bartsasphalt.com
+  folder: Clients/Barts Asphalt
+  gsc_property: https://www.bartsasphalt.com/   # verified siteOwner 2026-09-01
+  ga4_property: "454871981"   # verified 2026-10-05: GA4 hostName = www.bartsasphalt.com
+  drive_folder: 1lsmojMqpwTR0YloTVGGzzmcvaXuLAnCc   # Drive folder holding every month's workbook
+  sheet_id: 1ZOe5mjZOhhc4jefGCoLX2qM3t4A1uni0dnQ2pvLUXvQ   # October 2026, second month
+  sheet_id_2026_09: 1gen8V7L1_eCAXFuXreSaIz0G9yhoxFOdzcsxvRZJzms   # first month
+  clickup_milestone: 17tmdg7936x   # October 2026
+  clickup_milestone_2026_09: 86ak7uanr
+  semrush_project: "22249902"   # verified 2026-10-05: SEMrush project "Barts Asphalt"
+  semrush_campaign: "22249902_2591567"   # verified 2026-10-05: Michigan (state), 98 keywords, domain bartsasphalt.com
+  crawl:            # posts rule matches the SITEMAP GROUP NAME, not a URL path
+    posts: ["post-sitemap"]
+    money: ["/services/", "/service-areas/", "/industries-we-serve/"]
+    # Named in the September plan as one of the cost posts tied to the Ann Arbor paving work, and its
+    # sitemap lastmod is 2026-09-15. No workbook row lists it, so the gate cannot see it. Owner rule
+    # 2026-10-06: nothing worked in the last six workbook months is offered.
+    candidate_exclude: ["/blog/how-much-does-asphalt-paving-cost"]
+  brand_token: "bart's asphalt"
+  is_local: true
+  ecommerce: false
+  markets: ["Ann Arbor, MI", "Lansing, MI", "Jackson, MI"]
+  # Competitor identification 2026-08-31, 60 service-by-city commercial searches run live at each market; non-branded, no 'near me', informational excluded
+  competitors:
+    - domain: mckearneyasphalt.com
+      url: https://mckearneyasphalt.com/
+      above_on: 36
+    - domain: american-asphalt.com
+      url: http://www.american-asphalt.com/
+      above_on: 21
+    - domain: michiganpaving.com
+      url: http://www.michiganpaving.com/
+      above_on: 21
+    - domain: alliedasphalt.com
+      url: https://www.alliedasphalt.com/
+      above_on: 20
+    - domain: tburkespaving.com
+      url: https://tburkespaving.com/
+      above_on: 14
+  competitors_watch:
+    - asphaltsolutionsplus.com
+    - ckpaving.com
+    - mullinsasphalt.com
+    - belsonasphaltpaving.com
+    - cornstubblesasphalt.com
+    - mikeandsonasphalt.com

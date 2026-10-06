@@ -27,8 +27,14 @@ from googleapiclient.discovery import build
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 
 DECAY_DROP = 0.20        # clicks down more than this counts as decay
-SD_MIN, SD_MAX = 4.0, 15.0
-SD_MIN_IMPR = 100        # per month, so a query has real demand behind it
+SD_MIN, SD_MAX = 4.0, 20.0
+# Widened 2026-09-03. A 100/month floor is written for national search volume and
+# silently excludes local commercial queries, which are the money on this client
+# base: "furnace repair sandy utah" can carry 40 impressions a month and still be
+# worth winning. Measured effect on the August window, unique candidate pages:
+# Comfort 2 -> 12, Arsenal 9 -> 21, Bart's 5 -> 16. Position 20 is the floor the
+# owner already works to, so page 2 -> page 1 is in scope and deeper is not.
+SD_MIN_IMPR = 50         # per month, so a query has real demand behind it
 CTR_DROP = 0.20          # relative CTR fall
 CTR_MIN_IMPR = 200
 
@@ -62,7 +68,15 @@ def sc():
     return build("searchconsole", "v1", credentials=c, cache_discovery=False)
 
 
-def query(svc, site, start, end, dims, rows=25000):
+# GSC returns rows ordered by CLICKS descending, so a cap does not sample - it
+# keeps the top and discards the long tail. That tail is exactly where striking
+# distance lives: high impressions, few clicks. The old default of 25000 was
+# also the page size, so the loop broke after ONE page and SameDay's query data
+# stopped dead at 25000 rows. Raised 2026-09-03.
+MAX_ROWS = 500000
+
+
+def query(svc, site, start, end, dims, rows=MAX_ROWS):
     out, start_row = [], 0
     while True:
         body = {"startDate": start.isoformat(), "endDate": end.isoformat(),
@@ -340,3 +354,19 @@ def rank(res: dict, limit: int = 10) -> list[dict]:
         if len(final) >= limit:
             break
     return final
+
+
+def ctr_curve_text(sd_rows: list[dict]) -> str:
+    """The client's own CTR by position band, from the striking-distance rows of the latest month.
+
+    Bands of two positions (4-5, 6-7, ...), kept only where the band holds more than 400
+    impressions, so a thin band cannot pass for a curve. "n/a" when no band qualifies.
+    """
+    curve: dict[int, list[float]] = {}
+    for d in sd_rows:
+        band = int(d["pos"] // 2) * 2
+        acc = curve.setdefault(band, [0, 0])
+        acc[0] += d["clicks"]
+        acc[1] += d["impr"]
+    return ", ".join(f"pos {b}-{b + 1} {100 * c / i:.2f}%"
+                     for b, (c, i) in sorted(curve.items()) if i > 400) or "n/a"
