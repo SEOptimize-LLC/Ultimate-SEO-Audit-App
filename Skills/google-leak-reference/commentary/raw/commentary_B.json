@@ -1,0 +1,911 @@
+[
+  {
+    "id": "MM-01",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityAuthorityTopicEmbeddingsVersionedItem (pageEmbedding)",
+    "claim": "A page-level embedding field exists that stores a vector capturing the page's content.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Field existence only; module placement is as quoted by the author, verify in hexdocs. How or whether it is used is not in the docs."
+  },
+  {
+    "id": "MM-02",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityNsrNsrData (site2vecEmbedding, site2vecEmbeddingEncoded)",
+    "claim": "Site-level embedding fields (site2vec, plus an encoded/compressed form) exist in the NSR data module.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Names corroborated independently by mojodojo (site2vecEmbeddingEncoded)."
+  },
+  {
+    "id": "MM-03",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityNsrNsrData (siteScore)",
+    "claim": "siteScore provides an aggregated site-level quality score.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Wording 'aggregated' is the author's; check the attribute's own description. Existence is not proof of ranking use."
+  },
+  {
+    "id": "MM-04",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityAuthorityTopicEmbeddingsVersionedItem (siteFocusScore)",
+    "claim": "siteFocusScore quantifies how focused a site is on a particular topic.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Author places it in QualityAuthorityTopicEmbeddingsVersionedItem; mojodojo places it under nsrDataProto/QualityNSR. Resolve the module in hexdocs before citing a path. Definition itself is corroborated by mojodojo."
+  },
+  {
+    "id": "MM-05",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityAuthorityTopicEmbeddingsVersionedItem (siteRadius)",
+    "claim": "siteRadius measures how far individual pages deviate from the site's central theme.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Same module-placement discrepancy as siteFocusScore; definition corroborated by mojodojo."
+  },
+  {
+    "id": "MM-06",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "site2vecEmbeddingEncoded (via Mike King quote)",
+    "claim": "Site vectors seem to be only 64 dimensions (quoted from Mike King: 'kinda shocked me considering so many of the other embeddings models are much higher dimensionality').",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Recycled from Mike King, not original. Checkable against the attribute description; do not cite beyond 'reported by King'."
+  },
+  {
+    "id": "MM-07",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityAuthorityTopicEmbeddingsVersionedItem (versionId)",
+    "claim": "Embeddings are versioned via versionId.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Trivial structural fact, low value."
+  },
+  {
+    "id": "MM-08",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "ImageRepositoryFrameLevelStarburstEmbeddings",
+    "claim": "Frame-level image embeddings exist in the docs.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Existence only; irrelevant to local-SEO work."
+  },
+  {
+    "id": "MM-09",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSaftEntity (entityType, entityTypeProbability, gender, name); NlpSemanticParsingSaftMentionAnnotation; NlpSaftAnnotatedPhrase; NlpSaftLabeledSpan",
+    "claim": "SAFT identifies named entities (PER, ORG, LOC) and annotates arbitrary spans in a document.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Restates module descriptions; shows an entity-typing NLP stack exists. Says nothing about ranking."
+  },
+  {
+    "id": "MM-10",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSemanticParsingSaftCoreference",
+    "claim": "SAFT resolves pronouns and nominal mentions to their entities.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-description restatement."
+  },
+  {
+    "id": "MM-11",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSaftRelation (source, target, type, score); NlpSaftRelationMention",
+    "claim": "SAFT defines relations between entities in a document.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-description restatement."
+  },
+  {
+    "id": "MM-12",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSaftSemanticNode; NlpSaftSemanticNodeArc",
+    "claim": "SAFT represents semantic constructions as a directed acyclic graph.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-description restatement."
+  },
+  {
+    "id": "MM-13",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSaftEntityProfile; NlpSaftToken (tag, lemma); NlpSaftMorphology; NlpSemanticParsingSaftMeasure; NlpSaftDocument; VideoContentSearchSaftEntityInfo",
+    "claim": "An entity profile holds canonical names, attributes and embeddings for one entity, and SAFT integrates with Google's Knowledge Vault for entity fusion/linkage.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Knowledge Vault linkage is the author's reading of module text; verify the specific attribute before repeating it."
+  },
+  {
+    "id": "MM-14",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "QualityAuthorityTopicEmbeddingsVersionedItem; QualityNsrNsrData",
+    "claim": "Embeddings could be used for finding similar content, evaluating quality, detecting spam, and tracking site change over time.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Author labels it 'totally speculative' ('I'm not saying this is how it's used'). No basis in the docs."
+  },
+  {
+    "id": "MM-15",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "NlpSaft* (all)",
+    "claim": "Detailed 'inferred architecture', component interactions and data-flow diagram of how SAFT feeds Google Search.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Author states it is a constructed 'theoretical product' and 'a long shot'. Discard as fact."
+  },
+  {
+    "id": "MM-16",
+    "source": "https://blog.marketmuse.com/google-content-warehouse-api-leak/",
+    "modules": "none cited",
+    "claim": "No SEO recommendations; the value of the leak is a shared vocabulary rather than confirmed ranking factors.",
+    "class": "SEO-ADVICE",
+    "call": "KEEP",
+    "reason": "Honest framing, useful as a calibration of how to treat the docs. Author is the most careful of the six; mostly original structured walk-through, with King as the only recycled element (also names Fishkin, Goodwin)."
+  },
+  {
+    "id": "DL-01",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "NavBoost",
+    "claim": "NavBoost has collected and analysed clickstream data since the mid-2000s; long clicks vs short clicks are 'pivotal' to relevance and ranking.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Recycled from Fishkin/King. Keep: NavBoost exists and is click-derived. Discard: 'pivotal' (a weight claim the docs cannot support)."
+  },
+  {
+    "id": "DL-02",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited (Chrome)",
+    "claim": "Google uses Chrome user data to assess page popularity/relevance and high Chrome engagement 'can significantly boost' rankings.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "'Significantly boost' is an asserted ranking weight. Recycled from King; docs only show Chrome-derived fields."
+  },
+  {
+    "id": "DL-03",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "topUrl",
+    "claim": "topUrl uses Chrome click data to identify a site's most important pages for sitelinks.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Recycled from King. Plausible doc-text restatement; verify attribute description."
+  },
+  {
+    "id": "DL-04",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "EWOK",
+    "claim": "EWOK lets human quality raters give feedback that is 'directly integrated' into search algorithms.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Keep: EWOK/rater platform referenced in docs (King). Discard 'directly integrated': not shown."
+  },
+  {
+    "id": "DL-05",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Google keeps whitelists for sectors such as travel, COVID-19 and elections.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Recycled from King (no attribute names given here). Presence of sector flags is doc-based; 'ensures credible sources' is speculation. Not relevant to local service SEO."
+  },
+  {
+    "id": "DL-06",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "geoFenceClicks, geoFenceImpressions",
+    "claim": "Click data is segmented by geography and device type.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Attribute names are not corroborated by the other five sources; verify in hexdocs before use."
+  },
+  {
+    "id": "DL-07",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Established brands receive preferential treatment in rankings; domain- and query-level interaction boosts sites that satisfy intent.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Asserts a ranking effect with no attribute and no docs basis."
+  },
+  {
+    "id": "DL-08",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "goodClicks, badClicks, lastLongestClicks, impressions",
+    "claim": "These click attributes exist and capture user engagement with results.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Names recycled from King's post. Keep existence only; 'influencing ranking decisions' is not shown."
+  },
+  {
+    "id": "DL-09",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "pageQualityScore, documentQualityScore",
+    "claim": "Quality scores are derived from engagement metrics and human rater feedback.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Attribute names not corroborated; the derivation is invented. Probable AI-assisted embellishment (site advertises a Leak Help GPT)."
+  },
+  {
+    "id": "DL-10",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "querySatisfactionScore",
+    "claim": "Measures how well a result satisfies intent, driven by clicks, engagement and feedback.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Name uncorroborated; mechanism not documented."
+  },
+  {
+    "id": "DL-11",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "navigationClicks, backClicks",
+    "claim": "These track navigation through results and inform ranking adjustments.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Names uncorroborated by other sources; 'informs ranking' is an assertion. Verify before reuse."
+  },
+  {
+    "id": "DL-12",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "spamScore, linkSpamScore",
+    "claim": "Attributes indicate how Google mitigates spam, penalising high-score sites.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Generic names uncorroborated; penalty claim not shown. mojodojo's uacSpamScore is the verifiable spam attribute."
+  },
+  {
+    "id": "DL-13",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Docs were accidentally exposed on GitHub between March and May 2024, distributed via Hexdocs.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Corroborated by Okoone; consistent with the package being hosted on hexdocs."
+  },
+  {
+    "id": "DL-14",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Former Google employees reviewed the docs and found them authentic (anonymous, initial review).",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Author hedges ('reports suggest'); hearsay but widely repeated."
+  },
+  {
+    "id": "DL-15",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Anonymous source identified as Erfan Azimi (29 May update).",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Public fact, corroborated by Okoone."
+  },
+  {
+    "id": "DL-16",
+    "source": "https://dealersleague.com/google-api-content-warehouse-leak/",
+    "modules": "none cited",
+    "claim": "Recommendations: speed/mobile, Chrome-insight page optimisation, content audits, GBP and reviews, brand PR, backlink monitoring.",
+    "class": "SEO-ADVICE",
+    "call": "DISCARD",
+    "reason": "Generic advice dressed as leak implications; adds nothing checkable. Source overall is recycled from iPullRank (cited in references), no original analysis."
+  },
+  {
+    "id": "OK-01",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Leak spans 2,500+ pages and 14,014 attributes in the 'Content API Warehouse'; docs do not specify attribute weights.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Scale and the no-weights caveat are the most useful lines in the piece and match Fishkin/King."
+  },
+  {
+    "id": "OK-02",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Docs were accidentally public on GitHub March-May 2024; Fishkin reported it, Azimi was the source.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Provenance, corroborated by Dealers League."
+  },
+  {
+    "id": "OK-03",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited (Chrome)",
+    "claim": "Chrome was built to collect full clickstream data to improve results.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Recycled from King; motive/history, not something the attribute docs state."
+  },
+  {
+    "id": "OK-04",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "NavBoost",
+    "claim": "NavBoost collects click patterns and trending-search data that Google uses to adjust rankings.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Existence keeps; the 'secret weapon' framing and use in production are not proven by the docs."
+  },
+  {
+    "id": "OK-05",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "'Leaked documents confirm' click and engagement data are significant ranking factors.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "'Confirm' and 'significant' assert weight and production use; docs prove fields exist only."
+  },
+  {
+    "id": "OK-06",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "siteAuthority",
+    "claim": "A siteAuthority attribute exists.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Field existence is real (reported by King). Google has said it has no 'domain authority'; the docs do not say how the value is used."
+  },
+  {
+    "id": "OK-07",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "siteAuthority",
+    "claim": "A higher siteAuthority 'significantly boosts the rankings' of a site's pages.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Asserted ranking weight with no doc support."
+  },
+  {
+    "id": "OK-08",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Google uses CTR and user interactions to adjust rankings.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Stated as confirmed; no attribute cited."
+  },
+  {
+    "id": "OK-09",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "New or suspected spammy sites are placed in a sandbox until they build credibility.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No attribute cited. The only sandbox-adjacent attribute is hostAge, and mojodojo reads it as fresh-spam handling, not a new-domain sandbox."
+  },
+  {
+    "id": "OK-10",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "User-generated content quality and engagement metrics feed Google's content-quality evaluation.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No attribute cited."
+  },
+  {
+    "id": "OK-11",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Personalisation and machine learning continuously refine rankings.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Generic and unrelated to anything specific in the leak."
+  },
+  {
+    "id": "OK-12",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Dwell time and long clicks are indicators of valuable content that can improve rankings.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "No attribute named (lastLongestClicks exists elsewhere); effect on ranking asserted."
+  },
+  {
+    "id": "OK-13",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Google gives priority to video content in rankings.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No basis cited; docs show nothing of the sort in this article."
+  },
+  {
+    "id": "OK-14",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited (PageRank)",
+    "claim": "Link juice and PageRank sculpting are no longer in use 'according to the leaked documents'.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No attribute cited and contradicted by mojodojo, who counts four Pagerank fields with comments as recent as late 2022 (a deprecated flag on one does not retire the concept)."
+  },
+  {
+    "id": "OK-15",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Leak contradicts public Google statements, e.g. Gary Illyes saying clicks do not influence rankings.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Reasonable framing: click-derived fields exist (NavBoost family) in tension with public statements. Does not prove production use or weight."
+  },
+  {
+    "id": "OK-16",
+    "source": "https://www.okoone.com/spark/marketing-growth/seo-insights-from-the-google-api-documentation-leak/",
+    "modules": "none cited",
+    "claim": "Ten recommendations: authority/backlinks, titles and CTR, patience with new sites, UGC, personalisation, structured data, video with geotags, independent A/B testing.",
+    "class": "SEO-ADVICE",
+    "call": "DISCARD",
+    "reason": "Generic; several rest on discarded claims. Piece is almost entirely recycled from Fishkin and King with no attribute-level analysis."
+  },
+  {
+    "id": "MD-01",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "CompositeDoc",
+    "claim": "CompositeDoc collects all information about a document, comparable to the on-page data for a URL.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Restates the module's purpose."
+  },
+  {
+    "id": "MD-02",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "CompositeDoc",
+    "claim": "CompositeDoc 'clearly defines all attributes of On-page SEO and what is and is not important for a URL'.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Overreach: the module lists fields, not importance."
+  },
+  {
+    "id": "MD-03",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "CompressedQualitySignals",
+    "claim": "CompressedQualitySignals is a model that feeds into Google systems.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Cited with no detail here; see DL/OK for the click-signal fields reported by King."
+  },
+  {
+    "id": "MD-04",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "Mustang; AScorer",
+    "claim": "Mustang scores, ranks and returns results using input from several models, with an underlying ranking algorithm called AScorer.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "System names appear in doc comments (also in King's post); the description of the scoring role is inference from those comments."
+  },
+  {
+    "id": "MD-05",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "TeraGoogle",
+    "claim": "TeraGoogle is an indexing system storing the recent processed corpus for retrieval.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "System named in doc comments; description is inferred."
+  },
+  {
+    "id": "MD-06",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "Amarna; SafesearchVideoContentSignals",
+    "claim": "Amarna is referenced in SafesearchVideoContentSignals.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Bare reference, low value."
+  },
+  {
+    "id": "MD-07",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "Raffia",
+    "claim": "Raffia is probably an indexing system ('some references indicate').",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Author hedges; low confidence."
+  },
+  {
+    "id": "MD-08",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "PerDocData",
+    "claim": "PerDocData is a protocol buffer used for indexing and serving; the author's notes are a 'cursory analysis'.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Structural fact, appropriately labelled cursory."
+  },
+  {
+    "id": "MD-09",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "scienceDoctype",
+    "claim": "scienceDoctype classifies science documents: <0 not science, 0 fully visible, >0 limited visibility (number of visible terms).",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Doc-comment restatement; not relevant to local SEO."
+  },
+  {
+    "id": "MD-10",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "uacSpamScore",
+    "claim": "uacSpamScore is a value 0-127 where above 64 indicates spam.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Presented as comment text; verify the scale and threshold in hexdocs. Existence plus a stated scale, not a demotion rule."
+  },
+  {
+    "id": "MD-11",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "spamtokensContentScore; SiteBoostTwiddler",
+    "claim": "spamtokensContentScore measures user-generated-content spam and is used in SiteBoostTwiddler.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Verify the 'used in' link in the attribute description."
+  },
+  {
+    "id": "MD-12",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "OriginalContentScore; bodyWordsToTokensRatioTotal; bodyWordsToTokensRatioBegin",
+    "claim": "OriginalContentScore runs 0-127 for little-content pages and up to 512 for actual originality score; 'little content' is undefined and may be relative.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Ranges are doc-text as presented; the 'relative' reading is the author's flagged hypothesis. Author correctly notes the definition is missing."
+  },
+  {
+    "id": "MD-13",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "none cited",
+    "claim": "'Originality may be rewarded and closely related to topical authority.'",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No doc basis."
+  },
+  {
+    "id": "MD-14",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "freshboxArticleScores; semanticDateInfo; datesInfo; freshnessEncodedSignals (deprecated); lastSignificantUpdate",
+    "claim": "PerDocData stores several freshness signals: freshbox classifier scores, date-component confidence, page-age dates, a deprecated encoded field, and last significant update.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-text restatement of what is stored. Highly relevant to the refresh workflow as proof the fields exist."
+  },
+  {
+    "id": "MD-15",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "freshboxArticleScores et al.",
+    "claim": "'Content freshness looks like a key factor' and regular updates earn a freshness boost.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Key-factor and boost claims are ranking-weight assertions; many fields prove storage only."
+  },
+  {
+    "id": "MD-16",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "SmartphonePerDocData (isSmartphoneOptimised, isWebErrorMobileContent, maximumFlashRatio)",
+    "claim": "Mobile-specific per-document fields exist: smartphone optimisation, desktop-error/mobile-ok mismatch, flash ratio.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Doc-text as presented; descriptions unverified. isWebErrorMobileContent phrasing carries the author's own question mark."
+  },
+  {
+    "id": "MD-17",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "violatesMobileInterstitialPolicy",
+    "claim": "A boolean flags mobile-interstitial violations and demotes the page when set.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "The 'demotes' wording is presented as doc-text; consistent with Google's public interstitial policy. Refresh timing claim ('no way to know if and when this refreshes') is not in the docs."
+  },
+  {
+    "id": "MD-18",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "Pagerank; Pagerank0; Pagerank1; Pagerank2",
+    "claim": "Four PageRank attributes exist (one deprecated, three undocumented); comments as new as late 2022 mean 'pagerank is well and alive'.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Keep the four-field fact. 'Alive' is inference from comment dates, which show maintenance not use in ranking."
+  },
+  {
+    "id": "MD-19",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "spamMuppetSignals; SpamMuppetjoinsMuppetSignals (hackedDateNautilus, hackedDateRaiden, raidenScore, site)",
+    "claim": "Hacked-site signals exist and are used in query-time joins, which likely demote affected pages.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Fields and join usage are doc-based; the demotion is the author's own 'likely'."
+  },
+  {
+    "id": "MD-20",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "nsrDataProto; QualityNSR",
+    "claim": "nsrDataProto leads to QualityNSR, a model of stripped-down site-level signals.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Structural fact; corroborated by MarketMuse using the same family (QualityNsrNsrData)."
+  },
+  {
+    "id": "MD-21",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "titlematchScore",
+    "claim": "titlematchScore signals how well titles match the user query.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Definition as presented; 'extremely important' is a weight claim and is discarded."
+  },
+  {
+    "id": "MD-22",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "site2vecEmbeddingEncoded",
+    "claim": "A compressed site embedding exists, likely used for site theme and topical clustering.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Existence corroborated by MarketMuse; use is flagged 'likely'."
+  },
+  {
+    "id": "MD-23",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "siteFocusScore; siteRadius",
+    "claim": "Higher siteFocusScore means more topic concentration; siteRadius shows how far a page strays from the site topic.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Definitions corroborated by MarketMuse."
+  },
+  {
+    "id": "MD-24",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "siteFocusScore; siteRadius",
+    "claim": "'Higher concentration leads to higher authority', so prune off-topic content.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Effect on ranking is not shown; the pruning advice is a recommendation the docs do not support."
+  },
+  {
+    "id": "MD-25",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "smallPersonalSite",
+    "claim": "A numeric small-personal-site promotion score exists, likely promoting small blogs.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Field exists; the 'promotion of small blogs' reading is inference."
+  },
+  {
+    "id": "MD-26",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "hostAge",
+    "claim": "hostAge is the earliest firstseen date across pages on a host, used in a twiddler to 'sandbox fresh spam in serving time'.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-text restatement, and the author correctly reads it as spam handling rather than a new-domain sandbox (his own labelled opinion)."
+  },
+  {
+    "id": "MD-27",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "hostAge",
+    "claim": "If host_age equals domain_age, domain_age is omitted, so changing hosts restarts the clock.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Inference from a comment fragment; treat 'resets on host change' as unproven."
+  },
+  {
+    "id": "MD-28",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "badSslCertificate",
+    "claim": "badSslCertificate checks for a bad SSL certificate or a redirect chain and feeds back into CompositeDoc.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Verify the exact description; effect on ranking not stated."
+  },
+  {
+    "id": "MD-29",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "tofu",
+    "claim": "tofu is a site-level quality predictor based on site content.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Description only; the 'keep top-of-funnel users happy' tip is the author's own question mark and is discarded."
+  },
+  {
+    "id": "MD-30",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "impressions",
+    "claim": "impressions likely stores total site impressions and feeds perDocData, 'which indicates that impressions play a role in rankings'.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Ranking-role inference from a field's data flow, which proves existence only."
+  },
+  {
+    "id": "MD-31",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "clutterScore",
+    "claim": "clutterScore is a site-level delta signal for distracting/annoying resources, with a comment about 'penalizing sites with a large number of distracting/annoying resources'.",
+    "class": "DOC-TEXT",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Comment text is doc-based; 'explicit penalty' is interpretation, and the author admits the resource definition is missing."
+  },
+  {
+    "id": "MD-32",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "QualityNsrPQData (contentEffort)",
+    "claim": "contentEffort is an LLM-based effort estimate for article pages; unclear if it detects LLM text or scores effort.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc text with the ambiguity honestly flagged."
+  },
+  {
+    "id": "MD-33",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "rhubarb; unversionedRhubarb; Goldmine",
+    "claim": "rhubarb is a site-URL delta quality score computed in Goldmine via the Rhubarb model; unversionedRhubarb is the URL-level delta.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Doc-text restatement."
+  },
+  {
+    "id": "MD-34",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "CompositeDoc.LocalWWWInfo (address, brickAndMortarStrength, geotopicality, isLargeChain, isLargeLocalwwwinfo, siteSiblings)",
+    "claim": "The local info model carries address, a float brick-and-mortar strength, geotopicality, chain and large-site booleans and sibling-site count; notes say these are per-document signals independent of a specific address.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Highest-value material for local SEO; doc-text restatement of field types and the independence note."
+  },
+  {
+    "id": "MD-35",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "WrapptorItem",
+    "claim": "WrapptorItem keeps the address footprint (address, phone, business name), which essentially 'validates the NAP'.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Fields are doc-based; 'validates NAP' and the NAP advice are inference."
+  },
+  {
+    "id": "MD-36",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "isLargeLocalwwwinfo",
+    "claim": "isLargeLocalwwwinfo 'likely provides a boost for larger sites'.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Boost is asserted from a boolean's existence."
+  },
+  {
+    "id": "MD-37",
+    "source": "https://mojodojo.io/blog/googleapi-content-warehouse-leak-an-ongoing-analysis",
+    "modules": "none cited (document structure)",
+    "claim": "Docs hosted on hexdocs.pm as Elixir modules named GoogleApi.ContentWarehouse.V1.Model.*, protobuf-derived; the author says it is an 'ongoing' 'cursory analysis' and that comments run as new as late 2022; no weights, code or thresholds are given, and key terms (little content, distracting resources) are undefined.",
+    "class": "DOC-TEXT",
+    "call": "KEEP",
+    "reason": "Raw page states no version number, module count or namespace tally; those the first fetch summary reported (e.g. version 0.4.0) were not in the page text. Treat structural statistics as absent."
+  },
+  {
+    "id": "MJ-01",
+    "source": "https://community.mojeek.com/t/takeaways-from-the-google-content-warehouse-api-documentation-leak/1079",
+    "modules": "none cited",
+    "claim": "Seirdy's linked post argues the SEO hype around the leak is overblown and that readers should focus on 'agent optimization' over SEO (thread shows only this one-line summary of the post).",
+    "class": "SEO-ADVICE",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "The thread is a pointer; the substance is in Seirdy's own article (not fetched, not in the assigned list). Opinion, not a leak claim."
+  },
+  {
+    "id": "MJ-02",
+    "source": "https://community.mojeek.com/t/takeaways-from-the-google-content-warehouse-api-documentation-leak/1079",
+    "modules": "none cited",
+    "claim": "Brad: agent optimisation rather than SEO suits the non-commercial web long term.",
+    "class": "SEO-ADVICE",
+    "call": "DISCARD",
+    "reason": "Opinion unrelated to leak content."
+  },
+  {
+    "id": "MJ-03",
+    "source": "https://community.mojeek.com/t/takeaways-from-the-google-content-warehouse-api-documentation-leak/1079",
+    "modules": "none cited (document truncation)",
+    "claim": "Colin (Mojeek): the truncation limit the post discusses may apply to embeddings and may not apply, or may differ, for keyword search.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Search-engine-builder inference, explicitly hedged ('perhaps', 'may'). No attribute name given in the thread."
+  },
+  {
+    "id": "MJ-04",
+    "source": "https://community.mojeek.com/t/takeaways-from-the-google-content-warehouse-api-documentation-leak/1079",
+    "modules": "none cited (max page size)",
+    "claim": "Colin, relaying Marc: Google and Mojeek have always had a maximum page size, which would explain the truncation, though he expects a different limit for embeddings.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "The Mojeek fact is first-hand; applying it to Google is inference. Only builder-perspective content on the page. No module counts, namespaces or versions appear anywhere in the thread."
+  },
+  {
+    "id": "BC-01",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "GoogleApi.ContentWarehouse.V1",
+    "claim": "The leak comprises 'some 3000 internal documents'.",
+    "class": "DOC-TEXT",
+    "call": "DISCARD",
+    "reason": "Contradicts the 2,500+ pages and 14,014 attributes in Okoone/Fishkin/King; unsourced figure."
+  },
+  {
+    "id": "BC-02",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "GoogleApi.ContentWarehouse.V1",
+    "claim": "The leak is both a technical tool for engineers and a manual for managing content data.",
+    "class": "INTERPRETATION",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Loose but harmless description of an API-docs package."
+  },
+  {
+    "id": "BC-03",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "none cited (patent 'Framework for evaluating web search scoring functions')",
+    "claim": "Google runs different ranking systems by sector (travel, commerce) and picks which to show after processing.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Rests on a patent title and SERP observation, not on the leak; patent not verified."
+  },
+  {
+    "id": "BC-04",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "pagerankWeight; source_context; anchor_text",
+    "claim": "An internal link carries a pagerankWeight of 0.87, so authority transfers through links.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Names are not documented in other sources; the snippet value reads as illustrative. Presents a number as a ranking weight."
+  },
+  {
+    "id": "BC-05",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "relevance_score; 'Anchor Management algorithm'",
+    "claim": "Google assigns a relevance_score of 0.76 to a link from a fuzzy anchor-to-page match.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No such module or attribute is corroborated; the numeric score is unverifiable and looks invented."
+  },
+  {
+    "id": "BC-06",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "AbuseiamGeoRestriction",
+    "claim": "Module restricts content by user region (example: restricted in FR, allowed in US/CA), proving Google filters by geo rules for UX.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Module name is not corroborated here and it concerns abuse-policy restriction, not local ranking; the local-SEO application is speculation."
+  },
+  {
+    "id": "BC-07",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "AbuseiamAgeRestriction",
+    "claim": "Module filters underage users from sensitive content.",
+    "class": "INTERPRETATION",
+    "call": "DISCARD",
+    "reason": "Same: unverified here and unrelated to organic ranking."
+  },
+  {
+    "id": "BC-08",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "none cited (metadata)",
+    "claim": "Poorly structured metadata leads to incomplete indexing and lower visibility; metadata optimisation is crucial for fast indexing.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "No attribute named; generic claim."
+  },
+  {
+    "id": "BC-09",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "contextual_entities",
+    "claim": "A built-in NLP algorithm assigns a semantic relevance score from contextual_entities.",
+    "class": "SPECULATION",
+    "call": "DISCARD",
+    "reason": "Name uncorroborated; contrast with real NlpSaft* modules documented by MarketMuse."
+  },
+  {
+    "id": "BC-10",
+    "source": "https://blackcatseo.ca/en/google-api-contentwarehouse-v1-series-leak-a-complete-technical-analysis-by-blackcat/",
+    "modules": "none cited",
+    "claim": "Recommendations: internal links from high-traffic pages, anchors like 'Pest Extermination in Repentigny', multimodal image metadata.",
+    "class": "SEO-ADVICE",
+    "call": "DISCARD",
+    "reason": "Generic and tied to unverifiable snippets. Promotional client-case framing; not original leak analysis."
+  },
+  {
+    "id": "META-01",
+    "source": "all",
+    "modules": "none",
+    "claim": "Fetch method and fidelity notes.",
+    "class": "META",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "OK, DL, BC, MD, MJ read via raw fetch tool; MM blocked raw fetch (403) and was read through WebFetch summaries, so MM quotes are summariser-extracted. BC code snippets appear to be images and were not captured as text. The first WebFetch pass for MD and MJ contained facts absent from the raw page (e.g. version 0.4.0, a not-present list); raw text was used instead."
+  },
+  {
+    "id": "META-02",
+    "source": "all",
+    "modules": "none",
+    "claim": "Source quality ranking.",
+    "class": "META",
+    "call": "KEEP-WITH-CAVEAT",
+    "reason": "Best to worst: MD (original attribute-level reading, flags its own gaps, but several 'ranking factor' leaps and one 'Pro Tip' per section) > MM (original but self-declared speculation beyond field names) > MJ (a pointer thread, almost no content) > OK and DL (recycled Fishkin/King, assert weights) > BC (unverifiable snippets, likely invented values). None of the six is a primary source; verify every attribute in hexdocs before use."
+  }
+]

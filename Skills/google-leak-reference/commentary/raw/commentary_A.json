@@ -1,0 +1,1508 @@
+[
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "CompositeDoc",
+  "claim": "CompositeDoc is the per-URL master record aggregating document info.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Structural fact checkable in docs.",
+  "id": 1
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "PerDocData",
+  "claim": "PerDocData holds document-level on-page, quality, spam, freshness and engagement data.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Checkable module description.",
+  "id": 2
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "CompressedQualitySignals",
+  "claim": "Holds the most critical signals because it lives in very limited serving memory (Mustang/TeraGoogle).",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Memory-constraint wording is quotable from module docs.",
+  "id": 3
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "siteAuthority; CompressedQualitySignals",
+  "claim": "siteAuthority is a \"confirmed\", calculated, persistent domain authority score.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists in CompressedQualitySignals; \"persistent\" and production use are not shown by docs. Keep as: Google stores a site-level authority value.",
+  "id": 4
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "siteFocusScore; siteRadius",
+  "claim": "Quantify topical concentration of a site and how far a page deviates from the site core theme.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Matches attribute descriptions.",
+  "id": 5
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "hostAge",
+  "claim": "hostAge is used to sandbox fresh spam, a technical basis for the sandbox effect.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc text says used to sandbox fresh spam at serving time; does not prove a general new-site sandbox.",
+  "id": 6
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "contentEffort",
+  "claim": "LLM-based effort estimation for article pages (labour, originality, resources).",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Close to attribute doc text.",
+  "id": 7
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "OriginalContentScore",
+  "claim": "Measures uniqueness of page content, mainly for short content.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 8
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "pandaDemotion; CompressedQualitySignals",
+  "claim": "Panda lives on as a persistent site-wide demotion factor.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Attribute exists; \"active in production\" not demonstrated.",
+  "id": 9
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "clutterScore",
+  "claim": "Site-level penalty for distracting/annoying resources, smeared across similar pages.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Quotable doc text.",
+  "id": 10
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "navDemotion",
+  "claim": "Demotion signal tied to poor navigation/UX.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 11
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "SmartphonePerDocData; violatesMobileInterstitialPolicy; adsDensityInterstitialViolationStrength",
+  "claim": "Mobile penalty flags exist.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Attribute list.",
+  "id": 12
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "titlematchScore",
+  "claim": "Calculated metric of title-to-content match, confirming title tag as primary intent statement.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Attribute is documented; \"primary intent statement\" conclusion is inferred.",
+  "id": 13
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "ugcDiscussionEffortScore",
+  "claim": "Scores quality/effort of user discussion; moderated community is a positive signal.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists; positivity direction inferred.",
+  "id": 14
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "NavBoost",
+  "claim": "NavBoost re-ranks on user clicks over a 13-month rolling window.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "13 months corroborated by DOJ testimony (Nayak); NavBoost named in docs.",
+  "id": 15
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "goodClicks; badClicks; lastLongestClicks",
+  "claim": "NavBoost tracks satisfied clicks, quick-return clicks and final long dwell clicks.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; behavioural definitions (pogo-sticking, dwell) are the author reading.",
+  "id": 16
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Craps",
+  "claim": "Craps handles click/impression signal storage for NavBoost.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Craps click-signal modules exist; role is inferred.",
+  "id": 17
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "unsquashedClicks",
+  "claim": "Clicks vetted as genuine vs spam/bot.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Meaning invented from the name; \"squashing\" is normalisation, not bot vetting.",
+  "id": 18
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "QualityNsrNsrData",
+  "claim": "NSR is an offline, batch-calculated authority ceiling/baseline at site level.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "\"Offline batch ceiling\" appears in no attribute doc.",
+  "id": 19
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Goldmine; BlockBERT; NavBoost",
+  "claim": "Goldmine is a universal quality judge pitting title/H1/body text blocks against each other.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Described function not in docs.",
+  "id": 20
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "QualityNsrPQData",
+  "claim": "PQ data bridges Quality Rater Guidelines into machine scores.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "No doc says this; contentEffort is the only well-documented field in it.",
+  "id": 21
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "QualityFringeFringeQueryPriorPerDocData",
+  "claim": "Framework for fringe/controversial/sensitive content classification.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Module exists; description loose.",
+  "id": 22
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "encodedDaftScore",
+  "claim": "Predicts how far a doc skews into fringe-topic territory.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Meaning inferred from name only.",
+  "id": 23
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "QualityCopiaFireflySiteSignal",
+  "claim": "Firefly detects scaled content abuse via publishing velocity and engagement drop-off.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Module exists; detection purpose inferred.",
+  "id": 24
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "ractorScores",
+  "claim": "Might be a site-level AI-generated-content classifier.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Author flags it as \"might be\"; no basis.",
+  "id": 25
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Trawler",
+  "claim": "Stage 1 crawler fetching new/updated content.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "System named in docs.",
+  "id": 26
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Alexandria; TeraGoogle; SegIndexer; SourceType",
+  "claim": "Index tiers (Base/Zeppelins/Landfills); higher-tier links carry more weight.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Tier enum documented; \"carry more weight\" is extrapolated.",
+  "id": 27
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Mustang; CompressedQualitySignals",
+  "claim": "Mustang does first-pass ranking using relevance and precomputed compressed quality signals.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Mustang as scoring system documented; exact pipeline order is the author model.",
+  "id": 28
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "NavBoost; FreshnessTwiddler; QualityBoost",
+  "claim": "Twiddlers re-rank Mustang output.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Twiddler objects documented.",
+  "id": 29
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Glue; Tangram",
+  "claim": "Stage 5 ranks universal features and assembles SERP.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Glue documented; Tangram role comes from other sources.",
+  "id": 30
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "CompressedQualitySignals; Mustang",
+  "claim": "Two-stage gating: docs must pass a compressed-signal pre-check; \"SEO is maintaining a clean rap sheet\".",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Reasoned from memory constraints; unproven as a gate.",
+  "id": 31
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Mustang; NavBoost",
+  "claim": "Clicks have minimal direct impact on initial ranking but dominate NavBoost re-ranking, reconciling Google denials.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Reconciliation is conjecture.",
+  "id": 32
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "none cited",
+  "claim": "Google changed ranking weights after the leak and leans into Trust (Algoroo flux).",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Correlation with volatility monitor only.",
+  "id": 33
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "Q*; P*; T*",
+  "claim": "Google is a system of competing philosophies (Quality, Popularity, Topicality) over E-E-A-T.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Q*/P*/T* come from DOJ testimony, not leak-specific.",
+  "id": 34
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "RankEmbedBERT",
+  "claim": "Modern ranking uses neural weights, not fixed formulas, so leak shows structure not weights.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP",
+  "reason": "Correct limiting statement.",
+  "id": 35
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "none cited",
+  "claim": "Some parameters may be inactive or superseded in production.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP",
+  "reason": "Key caveat; supports hard-grading field-existence claims.",
+  "id": 36
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "attributes": "none cited",
+  "claim": "Leak provenance: Azimi found repo, Fishkin/King analysis, Petrovic prior knowledge, yoshi-code-bot publish (Mar 13 2024).",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Historical, not ranking claims; not independently checked.",
+  "id": 37
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "siteAuthority",
+  "claim": "Google denied domain authority but calls it siteAuthority.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Recycled from Fishkin; field exists, usage unproven.",
+  "id": 38
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "NavBoost",
+  "claim": "NavBoost uses click data to modify results despite Google denials.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Recycled; corroborated by DOJ testimony.",
+  "id": 39
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Leak confirms a sandbox for new sites exists.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "No attribute cited; only hostAge exists.",
+  "id": 40
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Backlink number and diversity remain significant ranking factors.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Asserts weight; no attribute.",
+  "id": 41
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Chrome data is used for ranking.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Asserts production use; no attribute.",
+  "id": 42
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Author expertise/authority helps rankings.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Asserts effect; no attribute.",
+  "id": 43
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Title keywords and query matching remain important.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic; no attribute.",
+  "id": 44
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Google tracks page dates for freshness.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "True of bylineDate/syntacticDate/semanticDate but author names none.",
+  "id": 45
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "Six recommendations: integrate SEO/UX, focus on click metrics, focused content, experiments, post-visit behaviour, SERP diversification.",
+  "cls": "SEO-ADVICE",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Generic advice derived from Fishkin.",
+  "id": 46
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "Mustang",
+  "claim": "Primary scoring, ranking and serving system.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Quoted doc text.",
+  "id": 47
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "Twiddlers; FreshnessTwiddler; QualityBoost",
+  "claim": "Twiddlers are C++ objects that modify IR score after initial ranking.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Quoted doc text.",
+  "id": 48
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "NavBoost; goodClicks; badClicks",
+  "claim": "Click metrics adjust rankings.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Corroborated by DOJ testimony.",
+  "id": 49
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPReviewPage; CompressedQualitySignals",
+  "claim": "Probability that a page is a review page.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 50
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPUhqPage",
+  "claim": "Classifier for ultra-high-quality review pages.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc says high quality; UHQ expansion inferred.",
+  "id": 51
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPPromotePage",
+  "claim": "ML promotion confidence, stored x1000 floored.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 52
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPDemotePage",
+  "claim": "ML confidence for page-level demotion.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 53
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPPromoteSite",
+  "claim": "Site-wide promotion signal for consistent high-quality reviews.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists; scope from naming.",
+  "id": 54
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPDemoteSite",
+  "claim": "Site-wide demotion for pattern of low-quality review content.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists; scope from naming.",
+  "id": 55
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "siteAuthority",
+  "claim": "siteAuthority is a foundational multiplier on review quality.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Placement does not show multiplier role.",
+  "id": 56
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "isAuthor; QualityAuthority",
+  "claim": "Determines whether an entity is the page author.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Module placement of isAuthor needs checking against the docs.",
+  "id": 57
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "authorReputationScore; WebrefMentionRatings",
+  "claim": "Scores author reputation.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists; algorithmic use unproven.",
+  "id": 58
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "OriginalContentScore",
+  "claim": "Quantifies uniqueness/replication risk.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc-level meaning only.",
+  "id": 59
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "contentEffort; QualityNsrPQData",
+  "claim": "LLM effort estimation measures work invested.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 60
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "ugcDiscussionEffortScore",
+  "claim": "UGC discussion quality is a positive signal.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Direction inferred.",
+  "id": 61
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "siteFocusScore; siteRadius",
+  "claim": "Topical focus and deviation of page from site theme.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text (module attribution left implicit).",
+  "id": 62
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "clutterScore",
+  "claim": "Site-level signal for obstructive ads/popups.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 63
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "siteQualityStddev",
+  "claim": "Std deviation of page quality across domain; Google rewards consistency.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field plausible; \"rewards consistency\" inferred.",
+  "id": 64
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "NavBoost; T*; ABC",
+  "claim": "Topicality = Anchors, Body, Clicks.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "DOJ testimony (Nayak), not leak; label source accurately.",
+  "id": 65
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "QualityBoost; productReviewPPromotePage",
+  "claim": "QualityBoost uses productReviewPPromotePage as input.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Connection not documented.",
+  "id": 66
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewP*Page; productReviewP*Site",
+  "claim": "Four-quadrant page/site promote/demote matches Google public guidance.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Reasonable pattern; not proven wired.",
+  "id": 67
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPDemoteSite",
+  "claim": "Reviews system descends from Panda.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Historical analogy.",
+  "id": 68
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPDemoteSite",
+  "claim": "Helpful Content System drives productReviewPDemoteSite.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "No basis; reviews system predates HCS.",
+  "id": 69
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "isAuthor; authorReputationScore; siteAuthority; OriginalContentScore; contentEffort; NavBoost",
+  "claim": "Public review-guidance items (show expertise, visuals, measurements, comparisons) map to specific attributes.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "Mapping exercise asserting behaviour; no doc links content features to scores.",
+  "id": 70
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "none cited",
+  "claim": "HouseFresh 91% traffic drop and 2021-2023 reviews-update timeline.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Not leak content; external facts.",
+  "id": 71
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "attributes": "productReviewPDemoteSite",
+  "claim": "Thin reviews suppress the whole domain; prune; demotion is \"catastrophic\".",
+  "cls": "SEO-ADVICE",
+  "call": "DISCARD",
+  "reason": "Severity language is author opinion.",
+  "id": 72
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "smallPersonalSite; QualityNsrNsrData",
+  "claim": "A small-personal-site flag exists.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Attribute doc text.",
+  "id": 73
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "smallPersonalSite; commercialScore",
+  "claim": "Personal sites are likely demoted, commercial content boosted.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Direction not in docs; author hedges.",
+  "id": 74
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "GoodocFontSizeStats; fontSize; AnchorsAnchor",
+  "claim": "Google records weighted font size stats for terms/anchors.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Existence verified by attribute; author notes production use is speculative.",
+  "id": 75
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "golden; NlpSaftDocument",
+  "claim": "A flag marks manually reviewed gold-standard documents.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Flag exists; extra ranking weight is unproven.",
+  "id": 76
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "hostAge; PerDocData",
+  "claim": "Sandbox bias against new sites.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc says sandbox fresh spam; author disputes King's broader reading.",
+  "id": 77
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "RegistrationInfo; createdDate; expiredDate",
+  "claim": "Domain registration history is stored.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Existence only.",
+  "id": 78
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "numTokens; DocProperties",
+  "claim": "Pages are truncated at a token cap.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc-adjacent; exact truncation semantics unclear.",
+  "id": 79
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "none cited",
+  "claim": "Google tracks author name mismatches across page locations.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "No attribute cited.",
+  "id": 80
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "urlHistory; CompositeDocIndexingInfo",
+  "claim": "Only limited page version history is kept.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text (last 20 changes).",
+  "id": 81
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "crawlerPageRank; pagerank2; toolbarPagerank; PerDocData",
+  "claim": "Legacy PageRank fields likely carry zero modern weight.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Reasonable hedge; contrasts with H8 and others.",
+  "id": 82
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "attributes": "none cited",
+  "claim": "Google uses Chrome and click data (King).",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Credited to King; asserts use.",
+  "id": 83
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Leak shows emphasis on content quality and user satisfaction metrics.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic, no attribute cited; ranking-weight assertion.",
+  "id": 84
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Advanced semantic analysis/structured data crucial for relevance.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic, no attribute cited; ranking-weight assertion.",
+  "id": 85
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Local search patterns and site usability matter significantly.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic, no attribute cited; ranking-weight assertion.",
+  "id": 86
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Link relevance and authority outweigh volume.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic, no attribute cited; ranking-weight assertion.",
+  "id": 87
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Google evaluates authority and relevance in specific ways.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Generic, no attribute cited; ranking-weight assertion.",
+  "id": 88
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Some longstanding SEO assumptions might now be outdated.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Unspecific.",
+  "id": 89
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "attributes": "none cited",
+  "claim": "Commentary quotes from Fishkin, Capper, King, Mihm on transparency, dynamic strategy, engagement and entities.",
+  "cls": "SEO-ADVICE",
+  "call": "DISCARD",
+  "reason": "Recycled third-party opinion.",
+  "id": 90
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "badClicks; goodClicks; lastLongestClicks",
+  "claim": "Engagement metrics (CTR, dwell, bounce) determine helpfulness.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; CTR/bounce framing added by author.",
+  "id": 91
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "none cited",
+  "claim": "CTR is a confirmed ranking factor.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Confirms field existence at best; asserts ranking factor.",
+  "id": 92
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "syntacticDate; semanticDate",
+  "claim": "Freshness measured via syntacticDate and semanticDate.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Both attributes documented.",
+  "id": 93
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "siteAuthority; homePageInfo",
+  "claim": "siteAuthority evaluates credibility via backlinks, domain age and history.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Composition invented.",
+  "id": 94
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "homePageInfo",
+  "claim": "homePageInfo measures topical authority from backlink/homepage correlation.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Not what the attribute documents.",
+  "id": 95
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "chromeInTotal",
+  "claim": "Google uses Chrome data for engagement, speed and usability.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Only a Chrome view count field is shown; speed use invented.",
+  "id": 96
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "attributes": "isCovidLocalAuthority; isElectionAuthority",
+  "claim": "Certain .gov domains get preferential rankings for health/election.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Flags exist; \"preferential rankings\" extrapolates.",
+  "id": 97
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "NavBoost",
+  "claim": "Uses click metrics over 13 months to boost/demote.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "DOJ-corroborated.",
+  "id": 98
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "Craps; goodClicks; badClicks; lastLongestClicks; unicorn clicks",
+  "claim": "Granular click categorization tracks success/failure.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; semantic readings are inferred.",
+  "id": 99
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "chromeInTotal; chrome_trans_clicks",
+  "claim": "Chrome clickstream data influences rankings.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; influence on ranking unproven.",
+  "id": 100
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "PerDocData; hostAge",
+  "claim": "hostAge is used to sandbox fresh spam at serving time.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc text, narrow scope.",
+  "id": 101
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "QualityTravelSitesData",
+  "claim": "Travel whitelist exists.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Module exists; term \"whitelist\" interpretive.",
+  "id": 102
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "isCovidLocalAuthority",
+  "claim": "Covid authorities elevated.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Flag exists; behaviour inferred.",
+  "id": 103
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "isElectionAuthority",
+  "claim": "Election authority sources controlled via whitelist.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Flag exists.",
+  "id": 104
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "EWOK",
+  "claim": "Human rater data may feed ranking; role unclear.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP",
+  "reason": "Author states uncertainty correctly.",
+  "id": 105
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "sourceType",
+  "claim": "Links from higher-tier indexed pages carry more weight.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "sourceType quoted; weighting extrapolated.",
+  "id": 106
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "topUrl; chrome_trans_clicks",
+  "claim": "Links from high-traffic pages pass more value.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Inferred from field names.",
+  "id": 107
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "anchorMismatchDemotion",
+  "claim": "Contextually irrelevant links ignored or downgraded.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Attribute exists.",
+  "id": 108
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "localCountryCodes",
+  "claim": "Same-country links weighted higher; US business example.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "Example and weighting invented.",
+  "id": 109
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "phraseAnchorSpam; anchorSpamPenalizer; avg weighted font size",
+  "claim": "Over-optimized anchors demoted; font emphasis tracked.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Documented fields.",
+  "id": 110
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "titlematchScore",
+  "claim": "Titles matching query get more weight.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Attribute exists; weight claim is extrapolation.",
+  "id": 111
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "textConfidence; OriginalContentScore; keywordStuffingScore; ugcDiscussionEffortScore; effortScore",
+  "claim": "Content quality metrics tracked.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields exist.",
+  "id": 112
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "siteFocusScore; siteEmbeddings; pageEmbeddings; siteRadius",
+  "claim": "Topic deviation measured; deviating pages may be demoted.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Measure documented; demotion is inference.",
+  "id": 113
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "bylineDate; syntacticDate; semanticDate; lastGoodClick",
+  "claim": "Multiple date signals tracked.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields documented.",
+  "id": 114
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "siteAuthority",
+  "claim": "Site authority exists, contradicting past denials.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Existence only.",
+  "id": 115
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "siteEmbeddings; siteFocusScore; siteRadius",
+  "claim": "Compressed site embeddings represent core topics.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Doc text.",
+  "id": 116
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "chromeInTotal; siteImpressions; siteClicks",
+  "claim": "Site popularity/engagement influence rankings.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; influence unproven.",
+  "id": 117
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "siteNavBrandingScore; siteNavBrandQualityScore; navBrandWeight",
+  "claim": "Brand presence weighted in ranking.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; weighting unproven.",
+  "id": 118
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "WebrefMentionRatings; authorReputationScore",
+  "claim": "Author prominence scored.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Field exists.",
+  "id": 119
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "QualityTravelSitesData; NewsPublisherScores; VideoContentSearchScoringSignals; ShoppingAnnotations",
+  "claim": "Vertical-specific scoring modules exist.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP",
+  "reason": "Module existence supports it.",
+  "id": 120
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "Mustang",
+  "claim": "Primary scoring/ranking/serving system.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Quoted doc text.",
+  "id": 121
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "Twiddlers; FreshnessTwiddler; QualityBoost",
+  "claim": "Post-algorithm re-ranking functions.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Quoted doc text.",
+  "id": 122
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "Trawler; Alexandria; TeraGoogle; SuperRoot; SnippetBrain; HtmlrenderWebkitHeadless",
+  "claim": "Named systems for crawl, index, serving, snippets and rendering.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Names only, accurately labelled.",
+  "id": 123
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "none cited",
+  "claim": "Illyes and Mueller statements on clicks/Chrome are contradicted by the leak.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Leak shows fields, not use; NavBoost has DOJ support.",
+  "id": 124
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "attributes": "none cited",
+  "claim": "Multiple former Google employees confirmed the docs legitimate.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Unnamed sources.",
+  "id": 125
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "siteAuthority; CompressedQualitySignals",
+  "claim": "siteAuthority is an internal sitewide quality metric.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Existence only.",
+  "id": 126
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "pandaDemotion; babyPandaV2Demotion; unauthoritativeScore; exactMatchDomainDemotion; authorityPromotion",
+  "claim": "These Panda-era signals show siteAuthority includes legacy quality beyond links.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Composition not shown.",
+  "id": 127
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "siteImpressions; siteClicks; siteFocusScore; siteRadius; siteNavBrandingScore; nsrSitechunk",
+  "claim": "siteAuthority synthesizes click, focus, brand and section signals.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Composition invented.",
+  "id": 128
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "QualityNsrPQData; linkIncoming; linkOutgoing; tofu; page2vecLq",
+  "claim": "Page-level predictors roll into sitewide authority.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Roll-up asserted without docs.",
+  "id": 129
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "homePagePagerankNs (homepage PageRank)",
+  "claim": "Every page inherits homepage PageRank as baseline trust.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Doc hints at homepage PR as proxy for new pages; \"every page\" overstated.",
+  "id": 130
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "homepage PageRank",
+  "claim": "Sandbox mechanically results from zero homepage authority.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Mechanism invented.",
+  "id": 131
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "PageRank-NearestSeeds; pagerank_ns",
+  "claim": "Modern PageRank is proximity to trusted seed sites.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "PageRank-NS documented; \"proximity to seeds\" from doc description, not weights.",
+  "id": 132
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "EncodedNewsAnchorData",
+  "claim": "Links from high-quality news sites get disproportionate weight.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Weight asserted from name.",
+  "id": 133
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "SourceType; SegIndexer",
+  "claim": "Three-tier link index with placement via SourceType.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Tier enum documented.",
+  "id": 134
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "TotalClicks",
+  "claim": "Pages with zero clicks drop to low tier and outbound links pass no value.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Matches Fishkin/King reading; \"no value\" is inference.",
+  "id": 135
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "NavBoost; goodClicks; badClicks; lastLongestClicks",
+  "claim": "13-month click data; lastLongestClicks signals satisfaction.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "DOJ-corroborated.",
+  "id": 136
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "metroNavboost",
+  "claim": "NavBoost is geographically granular.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Inferred from field name.",
+  "id": 137
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "navDemotion",
+  "claim": "Poor interaction triggers navDemotion punishing outbound links.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Outbound-link effect and bounce trigger not in docs.",
+  "id": 138
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "RepositoryWebrefSimplifiedAnchor; SimplifiedAnchor; numOffdomainAnchors",
+  "claim": "Internal and external anchor profiles are scored separately.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields documented.",
+  "id": 139
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "SimplifiedAnchor",
+  "claim": "Partial anchors count same as exact match.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "No doc support.",
+  "id": 140
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "SimplifiedAnchor",
+  "claim": "Excess exact-match anchors trigger demotion.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Mechanism not in this module.",
+  "id": 141
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "anchorMismatchDemotion; QualityBoost.mismatched.boost",
+  "claim": "Irrelevant-anchor links actively demoted.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Attribute exists; \"actively demoted not ignored\" overstated.",
+  "id": 142
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "context2; fullLeftContext; fullRightContext; referrerUrl",
+  "claim": "Surrounding text context stored for link relevance.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields documented.",
+  "id": 143
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "avgTermWeight",
+  "claim": "Anchor font size affects prominence.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Stored; effect inferred.",
+  "id": 144
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "none cited",
+  "claim": "Same-country links worth more than foreign.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "No attribute cited.",
+  "id": 145
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "parallelLinks",
+  "claim": "Repeat links from one domain show diminishing returns.",
+  "cls": "SPECULATION",
+  "call": "DISCARD",
+  "reason": "Inferred from name only.",
+  "id": 146
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "FreshnessTwiddler",
+  "claim": "Boosts newer content; links from recent pages more valuable.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Twiddler exists; link-value extension unproven.",
+  "id": 147
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "none cited",
+  "claim": "Link first-seen/last-seen timestamps used for freshness.",
+  "cls": "INTERPRETATION",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Timestamps exist; use unproven.",
+  "id": 148
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "urlHistory (unnamed)",
+  "claim": "Google keeps every page version but uses last 20 changes for links.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Last-20 documented; \"stores every version\" contradicts Seirdy's limited-history reading.",
+  "id": 149
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "urlAfterRedirects",
+  "claim": "Full redirect chain tracked to final destination.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Field documented.",
+  "id": 150
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "IndexingDocjoinerAnchorSpamInfo; phraseCount; phraseFraq; phraseDays; phraseRate",
+  "claim": "AnchorSpamPenalizer tracks spam phrase velocity, fraction, timeframe.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields documented.",
+  "id": 151
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "IndexingDocjoinerAnchorPhraseSpamInfo; LINK_SPAM_PHRASE_SPIKE",
+  "claim": "Unnatural anchor-phrase spikes get tagged.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Enum documented.",
+  "id": 152
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "spamProbability; spamPenalty; demotedStart; demotedEnd; demotedAll",
+  "claim": "Spam probability yields time-bound anchor demotion.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP",
+  "reason": "Fields documented.",
+  "id": 153
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "trustedTotal; trustedMatching; trustedTarget",
+  "claim": "Spam detection cross-references trusted sources.",
+  "cls": "DOC-TEXT",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Fields exist; behaviour inferred.",
+  "id": 154
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "siteAuthority; pandaDemotion",
+  "claim": "Site-quality-score theory validated; siteAuthority is holistic with Panda legacy.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 155
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "NavBoost; lastLongestClicks",
+  "claim": "Duration-metric and selection-quality theories confirmed.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 156
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "Tiered Link Index; TotalClicks",
+  "claim": "Traffic-gated link patent theories proven.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 157
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "PageRank-NearestSeeds",
+  "claim": "PageRank continued importance confirmed; seed model and homepage trust validated.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 158
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "FreshnessTwiddler; phraseRate",
+  "claim": "Link freshness and unnatural-growth patents confirmed with velocity metrics.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 159
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "SimplifiedAnchor; anchorMismatchDemotion",
+  "claim": "Anchor analysis with internal/external split and relevance penalties proven.",
+  "cls": "INTERPRETATION",
+  "call": "DISCARD",
+  "reason": "\"Proven/confirmed\" patent vindication overclaims; fields exist but activation unproven.",
+  "id": 160
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "Tiered Link Index; NavBoost",
+  "claim": "Link building is two steps: get the link and ensure source page gets traffic.",
+  "cls": "SEO-ADVICE",
+  "call": "KEEP-WITH-CAVEAT",
+  "reason": "Sensible; rests on inferred TotalClicks gating.",
+  "id": 161
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "attributes": "siteAuthority; NavBoost; PageRank",
+  "claim": "All site aspects feed core metrics.",
+  "cls": "SEO-ADVICE",
+  "call": "DISCARD",
+  "reason": "Vacuous synthesis.",
+  "id": 162
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-google-content-warehouse-leak-2024/",
+  "entry_type": "source_verdict",
+  "verdict": "Most original and most doc-grounded; ~half restates attribute text with quotes; system-level inferences (Goldmine, NSR ceiling, ractorScores) are speculation. Not Fishkin/King recycling.",
+  "id": 163
+ },
+ {
+  "source": "https://www.getfound.id/blogs/google-content-warehouse-api-leak/",
+  "entry_type": "source_verdict",
+  "verdict": "Entirely recycled Fishkin summary; no attribute detail. Low value.",
+  "id": 164
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/googles-product-reviews-updates-signals-in-the-google-content-warehouse-api-leak/",
+  "entry_type": "source_verdict",
+  "verdict": "Original, strong doc-text on productReview* fields; weak where it maps public guidance to attributes.",
+  "id": 165
+ },
+ {
+  "source": "https://seirdy.one/posts/2024/05/30/google-document-warehouse-api-docs-leak/",
+  "entry_type": "source_verdict",
+  "verdict": "Most skeptical and credible; original analysis; flags speculation; best for caveats.",
+  "id": 166
+ },
+ {
+  "source": "https://www.brainz.digital/blog/google-api-leak-insights/",
+  "entry_type": "source_verdict",
+  "verdict": "No attributes cited; recycled quotes. Discard.",
+  "id": 167
+ },
+ {
+  "source": "https://www.bmg360.com/blog/post/what-google-leak-means-for-seo",
+  "entry_type": "source_verdict",
+  "verdict": "Mostly names plus inflated conclusions (CTR confirmed, homePageInfo). Low value.",
+  "id": 168
+ },
+ {
+  "source": "https://www.marketingaid.io/google-api-leak-comprehensive-review-and-guidance/",
+  "entry_type": "source_verdict",
+  "verdict": "Mostly King/Fishkin recap, but attributes are cited accurately; claims overreach on \"influences ranking\".",
+  "id": 169
+ },
+ {
+  "source": "https://www.hobo-web.co.uk/the-definitive-guide-to-linkbuilding-after-the-google-content-warehouse-leak/",
+  "entry_type": "source_verdict",
+  "verdict": "Original and exhaustive on anchor/spam attributes (strong doc-text); siteAuthority composition and \"confirmed patent theories\" are speculation.",
+  "id": 170
+ }
+]
