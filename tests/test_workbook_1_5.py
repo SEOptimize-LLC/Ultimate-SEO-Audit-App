@@ -203,3 +203,9 @@ def test_only_cells_that_are_pages_count_as_worked_not_prose_that_mentions_one()
     assert W.is_url_cell("• https://x.com/a/\n• https://x.com/b/")
     assert not W.is_url_cell("178 URLs, 58% of the sitemap. Every instance points at https://x.com/service-areas/lehi-ut/ and")
     assert W.urls_in([["https://x.com/a/", "points at https://x.com/b/ for every page in the template"]], "x.com") == {"x.com/a"}
+
+
+def test_a_cell_that_is_only_urls_is_not_a_paragraph():
+    import sheets_io as S
+    assert S.is_formatted("\n".join(f"https://example.com/some/long/path/number-{i}/" for i in range(6)))
+    assert not S.is_formatted("See https://example.com/a/ and then " + "word " * 40)

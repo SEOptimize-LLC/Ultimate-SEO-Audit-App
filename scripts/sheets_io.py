@@ -287,6 +287,8 @@ def is_formatted(text: str) -> bool:
     s = str(text or "").strip()
     if len(s) <= 160:
         return True
+    if not re.sub(r"https?://\S+", "", s).strip():
+        return True   # a list of URLs is data, not a paragraph
     lines = [ln.strip() for ln in s.split("\n") if ln.strip()]
     return bool(lines) and bool(_LABEL_LINE.match(lines[0])) and any(ln.startswith(BULLET) for ln in lines[1:])
 

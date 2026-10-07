@@ -1,11 +1,28 @@
 """Fill tab 1.6 (sections A, B, C and the SOV header) for any client.
 
-    python scripts/fill_1_6_all.py beehive 2026-08
-    python scripts/fill_1_6_all.py all 2026-08
+    python scripts/fill_1_6_all.py beehive 2026-10
+    python scripts/fill_1_6_all.py all 2026-10
+
+October 2026 template (task numbers moved when 2.3/2.4/3.1/2.5 merged into 2.3):
+old 3.4 Mentions is now 3.3, so section B's last column reads "Routed to 3.3 (Y)"
+(it read "Routed to 3.4 (Y)" through September). This engine leaves that column
+BLANK on purpose: Y means a person read the row and decided it is a mention
+target, and a Y from a rule would be a judgment field filled by lookup
+(REASONING.md). Section B's header has five columns in the October template
+(Money Prompt | Competitor Present | Third-Party Page AI Cites | Opportunity /
+Next Step | Routed to 3.3 (Y)); September workbooks had only the first three.
+This engine writes the CURRENT month only, so it targets the October layout only
+and refuses to write anything if a header does not match (see preflight).
+
+The SOV summary lives in B4:B6 (the template's yellow input cells; the 4.5 report
+reads B4 and B5 and concatenates them as text, so B holds a short text value such
+as "20% (9 of 46)", never a bare percentage, which would concatenate as 0.2).
+Detail sits beside it in C4:C6. September workbooks held a long sentence in D4:D6.
 
 Generalisation of the EW-specific fill_1_6.py / fill_1_6_bc.py pair. EW's tab is
-already filled by those; this engine covers the other seven and next month all
-eight. Everything the EW build learned is carried here:
+already filled by those; this engine covers every active client in the registry
+(`all` is read from clients/registry.yaml, so an `active: false` client with no
+sheet_id is skipped). Everything the EW build learned is carried here:
 
 - SOV counts CATEGORY prompts only. Branded prompts return the brand nearly
   every time by construction; folding them in turned 9% into 25% on EW.
@@ -41,6 +58,47 @@ TRACKED = ("chatgpt", "google_ai_mode", "perplexity")   # tab columns F, H, I
 VALID_INTENT = {"Discovery", "Comparison", "Best-X", "Decision"}
 MONEY_INTENT = {"Best-X", "Decision"}
 
+# October 2026 template headers. check_layout compares them case- and
+# whitespace-insensitively, so line breaks inside a header cell do not matter.
+HEADER_A = ["#", "Sourced From (Top Ranking Query)", "Impressions & Avg Position",
+            "Prompt", "Intent", "ChatGPT", "Prominence", "AIO / AI Mode",
+            "Perplexity", "Competitors Named", "Our URLs Cited",
+            "Third-Party URLs Cited", "Notes"]
+HEADER_B = ["Money Prompt", "Competitor Present", "Third-Party Page AI Cites",
+            "Opportunity / Next Step", "Routed to 3.3 (Y)"]
+HEADER_C = ["Prompt", "Why stale", "Roger decision"]
+# Row labels of the three SOV summary cells; the value cell is column B.
+SOV_LABELS = {"sov": "SOV this month", "sov_prev": "SOV last month",
+              "run": "Prompts run"}
+
+
+def preflight(sid: str) -> dict[str, int]:
+    """Locate every anchor and verify every header BEFORE the first write.
+
+    The old flow found its anchors after section A was already written, so a
+    missing heading died with StopIteration halfway through a tab (the
+    2026-09 repair_1_6_sections.py incident). Everything is checked up front
+    here, and any mismatch raises with the tab name, the row and what was
+    found. Nothing is guessed.
+    """
+    a = S.find_rows(sid, TAB, {**SOV_LABELS, "a_hdr": "#", "b": "B.",
+                               "b_hdr": "Money Prompt", "c": "C. Prompt-set"},
+                    scan_to=160)
+    if not a["a_hdr"] < a["b"] < a["b_hdr"] < a["c"]:
+        raise RuntimeError(f"{TAB}: sections out of order {a}")
+    for key, expected, last_col, row in (
+            ("a_hdr", HEADER_A, "M", a["a_hdr"]),
+            ("b_hdr", HEADER_B, "E", a["b_hdr"]),
+            ("c_hdr", HEADER_C, "C", a["c"] + 1)):
+        chk = S.check_layout(sid, f"'{TAB}'!A{row}:{last_col}{row}", expected)
+        if not chk.ok:
+            raise RuntimeError(
+                f"{TAB} header at row {row} does not match the October "
+                f"template. expected {chk.expected} found {chk.found}. "
+                f"Nothing was written.")
+        a[key] = row
+    return a
+
 
 def rx(*parts):
     return [re.compile(p) for p in parts]
@@ -60,6 +118,11 @@ BRAND = {
                r"(?i)snow\s+(whitening|magic|wand|advanced|diamond)\b"),
     "arsenal": rx(r"(?i)arsenal\s+health"),
     "educationwalkthrough": rx(r"(?i)education\s*walk\s*through|educationwalkthrough"),
+    # "bart" alone is a given name and collides with Bartley, a nearby paving
+    # contractor that already appears in this client's own GSC queries.
+    # The apostrophe class includes the typographic one: Google AI Mode wrote "Bart’s Asphalt" with U+2019
+    # and the plain-quote pattern missed a real mention, so September's SOV was one prompt short.
+    "barts": rx(r"(?i)bart['’‘ʼ]?s\s+asphalt|bartsasphalt"),
 }
 
 # Competitor vendor maps: display name -> word-boundary token. Curated from
@@ -141,6 +204,19 @@ VENDORS = {
   "Anytime Fitness": "anytime\\s*fitness", "Planet Fitness": "planet\\s*fitness",
   "EoS Fitness": "\\beos\\s*fitness", "24 Hour Fitness": "24\\s*hour\\s*fitness",
   "CorePower": "corepower", "TruFusion": "trufusion",
+ },
+ "barts": {
+  "McKearney Asphalt": r"mckearney",
+  "American Asphalt": r"american\s*asphalt",
+  "Michigan Paving": r"michigan\s*paving",
+  "Allied Asphalt": r"allied\s*asphalt",
+  "T Burke's Paving": r"t\.?\s*burke'?s?|burke'?s?\s*paving",
+  "Asphalt Solutions Plus": r"asphalt\s*solutions\s*plus",
+  "CK Paving": r"\bck\s*paving",
+  "Mullins Asphalt": r"mullins",
+  "Belson Asphalt Paving": r"belson",
+  "Cornstubbles Asphalt": r"cornstubble",
+  "Mike & Son Asphalt": r"mike\s*(and|&)\s*son",
  },
 }
 
@@ -243,12 +319,14 @@ def analyse(slug: str, doc, data):
     return out
 
 
-def prior_sov(slug: str, doc, cfg, stamp: str):
+def prior_sov(slug: str, doc, cfg, stamp: str, plats=TRACKED):
     """Category SOV recomputed from LAST month's stored records, or None.
 
     The raw platform JSONs are the durable record; the sheet is a monthly copy.
     So last month's figure is recomputed from disk rather than read from a cell
-    that may live in a different workbook copy. Computed over the CURRENT prompt
+    that may live in a different workbook copy. Computed over the platforms THIS month
+    actually ran (`plats`), so a month that skipped a platform is not compared against a
+    month that had it. Computed over the CURRENT prompt
     set, so if a prompt was swapped between months the comparison covers only
     the prompts both months actually ran; the count in the note says how many.
     """
@@ -260,7 +338,7 @@ def prior_sov(slug: str, doc, cfg, stamp: str):
     prev = stamps[-1]
     cat = {p["prompt"] for p in doc["prompts"] if p["kind"] == "category"}
     hits = n = 0
-    for plat in TRACKED:
+    for plat in plats:
         f = d / f"{prev}-{plat}.json"
         if not f.exists():
             continue
@@ -274,11 +352,41 @@ def prior_sov(slug: str, doc, cfg, stamp: str):
     return (prev, 100.0 * hits / n, n) if n else None
 
 
+def sov_summary(sov_h: int, sov_n: int, plats: list[str], ncat: int,
+                bpct: float, prior, mom_text: str, n_prompts: int,
+                miss_txt: str) -> list[list[str]]:
+    """The three [value, detail] rows for B4:C6 (this month, last month, run).
+
+    Column B is the value, and the 4.5 report reads B4 and B5 and joins them
+    as text. It is deliberately text: "20%" typed into a USER_ENTERED cell
+    becomes the number 0.2, and 4.5 would print "0.3 -> 0.2". "20% (9 of 46)"
+    cannot parse as a number. Column C holds the supporting detail.
+    """
+    pct = 100.0 * sov_h / sov_n if sov_n else 0.0
+    if prior is None:
+        prev_value = "baseline month"
+    else:
+        prev_hits = round(prior[1] * prior[2] / 100.0)
+        prev_value = f"{prior[1]:.0f}% ({prev_hits} of {prior[2]})"
+    return [
+        [f"{pct:.0f}% ({sov_h} of {sov_n})",
+         S.compose(("Basis", [f"{sov_h} of {sov_n} checks across {', '.join(plats)}, {ncat} non-branded prompts.",
+                              f"Branded prompts run separately at {bpct:.0f}% and are excluded here."]),
+                   where="1.6 SOV basis")],
+        [prev_value, S.compose(("Change vs last month", mom_text), where="1.6 SOV change")],
+        [f"{n_prompts} of {n_prompts}", S.compose(("Coverage", miss_txt.strip()), where="1.6 coverage")]]
+
+
 def fill(slug: str, stamp: str):
     doc, cfg, data = load(slug, stamp)
+    sid = cfg.get("sheet_id")
+    if not sid:
+        print(f"{slug:<10} no current-month workbook (active: false in the "
+              f"registry), skipped")
+        return
     # own citations detected by domain as well as brand text
     doc["own_domain"] = cfg["domain"].replace("www.", "")
-    sid = cfg["sheet_id"]
+    anchors = preflight(sid)          # raises before any write if the layout moved
     rows = analyse(slug, doc, data)
 
     plats_present = [p for p in TRACKED if data.get(p)]
@@ -305,7 +413,7 @@ def fill(slug: str, stamp: str):
                         "is real visibility; the answer text never says the name.")
         if p["kind"] == "category" and vals and all(v == "N" for v in vals):
             top = ", ".join(n for n, _ in r["comps"].most_common(3))
-            note.append("Absent on all three platforms." +
+            note.append(f"Absent on all {len(vals)} platforms queried." +
                         (f" Named instead: {top}." if top else ""))
         if r["ours"]:
             note.append(f"{len(r['ours'])} of our URLs cited here.")
@@ -319,7 +427,7 @@ def fill(slug: str, stamp: str):
             ", ".join(f"{n} ({c})" for n, c in r["comps"].most_common(5)) or "none named",
             "\n".join(r["ours"][:3]) or "none",
             ", ".join(f"{d} ({c})" for d, c in r["third"].most_common(4)) or "none",
-            " ".join(note),
+            S.compose(("Notes", note), where=f"1.6 prompt {i}"),
         ])
 
     colA = S.read(sid, f"'{TAB}'!A1:A140")
@@ -336,7 +444,7 @@ def fill(slug: str, stamp: str):
     pct = 100.0 * sov_h / sov_n if sov_n else 0.0
     bpct = 100.0 * br_h / br_n if br_n else 0.0
     ncat = sum(1 for r in rows if r["p"]["kind"] == "category")
-    prior = prior_sov(slug, doc, cfg, stamp)
+    prior = prior_sov(slug, doc, cfg, stamp, plats_present)
     if prior is None:
         mom_text = ("Baseline month, nothing to compare against yet. From next "
                     "month, treat a move under 12 points as noise, not movement.")
@@ -354,13 +462,31 @@ def fill(slug: str, stamp: str):
                     f"stored records over the current prompt set). Delta "
                     f"{delta:+.0f} points: {verdict}.")
     miss_txt = ("" if not missing else
-                f" NOT RUN: {', '.join(missing)} — that column is empty, not zero.")
-    S.write(sid, f"'{TAB}'!D4:D6", [
-        [f"{pct:.0f}% category SOV ({sov_h} of {sov_n} checks across "
-         f"{', '.join(plats_present)}, {ncat} non-branded prompts). Branded "
-         f"prompts run separately at {bpct:.0f}% and are excluded here."],
-        [mom_text],
-        [f"{len(body)} of {len(body)}.{miss_txt}"]])
+                f" NOT RUN: {', '.join(missing)}. That column is empty, not zero.")
+    # A platform can return FEWER records than prompts sent, which the file-level
+    # check above cannot see: the file exists, it is simply thin. The SOV maths
+    # already ignores a prompt a platform never answered, so the figure is not
+    # wrong - but a reader told "across chatgpt, google_ai_mode, perplexity"
+    # reasonably assumes all three answered everything. State the denominator.
+    partial = {pl: sum(1 for r in rows if r["seen"].get(pl))
+               for pl in plats_present}
+    partial = {pl: c for pl, c in partial.items() if c < len(rows)}
+    if partial:
+        miss_txt += (" PARTIAL COVERAGE: "
+                     + "; ".join(f"{pl} answered {c} of {len(rows)} prompts"
+                                 for pl, c in sorted(partial.items()))
+                     + ". Those prompts count for no platform they were not "
+                       "answered on, so that column rests on a smaller sample "
+                       "than the others.")
+    # AI Mode answers collected through a different vendor than last month's are not like for like.
+    ai_mode_src = {str(r.get("source", "")) for r in (data.get("google_ai_mode") or {}).values()}
+    if "dataforseo" in ai_mode_src:
+        miss_txt += (" METHOD CHANGE: Google AI Mode answers were collected with a different method this "
+                     "month, so its change against last month is indicative, not like for like.")
+    summary = sov_summary(sov_h, sov_n, plats_present, ncat, bpct, prior,
+                          mom_text, len(body), miss_txt)
+    for key, vals in zip(("sov", "sov_prev", "run"), summary):
+        S.write(sid, f"'{TAB}'!B{anchors[key]}:C{anchors[key]}", [vals])
 
     # ---------------- section B ----------------
     money = [r for r in rows
@@ -387,7 +513,10 @@ def fill(slug: str, stamp: str):
                     "assistants already read for this question"
                     + (f"; displacing {lead[0][0]} head-on is the slow path."
                        if lead else "."))
-        brows.append([r["q"], comps, "\n".join(pages) or "none cited", step, ""])
+        # Last cell is "Routed to 3.3 (Y)": blank by design. A person decides
+        # which cited pages become mention targets, never a rule.
+        brows.append([r["q"], comps, "\n".join(pages) or "none cited",
+                      S.compose(("Next step", step), where=f"1.6 gap {r['q'][:30]}"), ""])
     colA = S.read(sid, f"'{TAB}'!A1:A160")
     b_first = next(i for i, rr in enumerate(colA, 1)
                    if rr and str(rr[0]).strip().startswith("Money Prompt")) + 1
@@ -399,16 +528,15 @@ def fill(slug: str, stamp: str):
         p = r["p"]
         if (p["kind"] == "competitor" and not r["comps"]
                 and not any(v == "Y" for v in r["seen"].values())):
-            crows.append([r["q"], "No competitor from this client's map appeared "
-                          "in any response to it this month. Either the framing "
-                          "misses how buyers ask, or the map lacks the names the "
-                          "models actually use. Check before keeping.", ""])
+            crows.append([r["q"], S.compose(("Why stale", [
+                "No competitor from this client's map appeared in any response to it this month.",
+                "Either the framing misses how buyers ask, or the map lacks the names the models actually use.",
+                "Check before keeping."]), where="1.6 section C"), ""])
         elif (p["kind"] == "category" and p.get("position") and p["position"] > 40
                 and not any(v == "Y" for v in r["seen"].values())):
-            crows.append([r["q"], f"Sourced from a query ranking at position "
-                          f"{p['position']} and absent from every platform. "
-                          f"Candidate to swap for a stronger vendor-intent "
-                          f"prompt.", ""])
+            crows.append([r["q"], S.compose(("Why stale", [
+                f"Sourced from a query ranking at position {p['position']} and absent from every platform.",
+                "Candidate to swap for a stronger vendor-intent prompt."]), where="1.6 section C"), ""])
     c_first = next(i for i, rr in enumerate(colA, 1)
                    if rr and str(rr[0]).strip().startswith("C. Prompt-set")) + 2
     n_c = S.write(sid, f"'{TAB}'!A{c_first}:C{c_first+len(crows)-1}", crows).cells if crows else 0
@@ -418,10 +546,23 @@ def fill(slug: str, stamp: str):
           f"{'  MISSING: ' + ','.join(missing) if missing else ''}")
 
 
+def active_slugs(reg: dict) -> list[str]:
+    """Registry clients with a current-month workbook and a prompt set.
+
+    Reading the registry is what keeps `all` honest: a hardcoded list went stale
+    twice (Bart's was missing from it, and Arsenal and Snow stay on it after
+    going inactive). An `active: false` client has no sheet_id by design.
+    """
+    return [k for k, v in reg.items()
+            if isinstance(v, dict) and v.get("sheet_id")
+            and Path(f"clients/prompts/{k}.yaml").exists()]
+
+
 if __name__ == "__main__":
-    slugs = (["educationwalkthrough", "beehive", "sameday", "superior", "comfort",
-              "cudio", "snow", "arsenal"]
-             if sys.argv[1] == "all" else [sys.argv[1]])
+    if len(sys.argv) != 3 or not re.fullmatch(r"\d{4}-\d{2}", sys.argv[2]):
+        raise SystemExit("usage: fill_1_6_all.py <client|all> <YYYY-MM>")
+    registry = yaml.safe_load(Path("clients/registry.yaml").read_text(encoding="utf-8"))
+    slugs = active_slugs(registry) if sys.argv[1] == "all" else [sys.argv[1]]
     for s in slugs:
         try:
             fill(s, sys.argv[2])
