@@ -23,6 +23,12 @@ TRACKER_ENV = Path(__file__).resolve().parents[2] / "GEO-AEO-LLM-Tracker" / ".en
 SOV_ENGINES = ("chatgpt", "ai_mode")      # the tab's two filled columns
 NOTE_ENGINES = ("gemini",)                # reported in a note, never in SOV (recipe 1.6)
 THIN_WEEK_SHARE = 0.7                     # a week below this share of the prior week's samples is partial
+LOCK_SHARE = 0.5                          # one brand above this share of a topic's brand mentions holds it
+# 20 answered samples per TOPIC. The number is the tracker's high-confidence count (lib/scoring/confidence.ts),
+# which it applies per prompt per engine; applied to a whole topic it is looser (two prompts on two engines at
+# the default five samples). A per-prompt-per-engine bar would never be met at the default settings.
+TOPIC_MIN_SAMPLES = 20
+TOPIC_MIN_MENTIONS = 10                   # a share over fewer brand mentions is noise, not a lock
 
 # Tracker intent labels -> the tab's dropdown. A vocabulary map, not a judgement about the client.
 INTENT_MAP = {"local_best_of": "Best-X", "buying": "Decision", "comparison": "Comparison",
@@ -149,6 +155,45 @@ def prompt_stats(cur, cid: str, week: str, engines=SOV_ENGINES) -> list[dict]:
     out = list(prompts.values())
     out.sort(key=lambda p: (-(p["volume"] or 0), -(p["priority"] or 0), p["text"]))
     return out
+
+
+def client_name(cur, cid: str) -> str:
+    cur.execute("select name from geo_tracker.clients where id = %s", (cid,))
+    return cur.fetchone()[0]
+
+
+def topic_stats(cur, cid: str, week: str, engines=SOV_ENGINES) -> list[dict]:
+    """One dict per tracker topic (keyword): answered category samples and mentions per tracked brand."""
+    args = dict(cid=cid, week=week, engines=list(engines), branded=False)
+    cur.execute(_BASE + "select coalesce(keyword, '(no topic)'), count(distinct sid) from base group by 1", args)
+    topics = {k: dict(topic=k, answered=n, mentions=Counter()) for k, n in cur.fetchall()}
+    cur.execute(_BASE + """
+      select coalesce(keyword, '(no topic)'), j.brand_name, count(distinct sid) from base
+      join geo_tracker.judgements j on j.sample_id = sid and j.mentioned
+      group by 1,2""", args)
+    for k, name, n in cur.fetchall():
+        topics[k]["mentions"][name] += n
+    return sorted(topics.values(), key=lambda t: (-t["answered"], t["topic"]))
+
+
+def topic_lock(answered: int, mentions: dict[str, int], client: str) -> dict:
+    """Open or Locked for one topic, for the keyword-research feasibility score.
+
+    Share is the tracker's share of voice: a brand's mentions over every tracked brand's mentions. Tracked
+    brands only, so a topic an untracked rival dominates can still read Open; say so wherever this is used.
+    """
+    total = sum(mentions.values())
+    out = dict(answered=answered, leader=None, leader_share=None, client_share=None)
+    if answered < TOPIC_MIN_SAMPLES:
+        return {**out, "label": "Too few answers"}
+    if not total:
+        return {**out, "label": "No brands named"}
+    if total < TOPIC_MIN_MENTIONS:
+        return {**out, "label": "Too few mentions"}
+    leader, n = max(mentions.items(), key=lambda kv: (kv[1], kv[0] == client))
+    return {**out, "leader": leader, "leader_share": round(n / total, 2),
+            "client_share": round(mentions.get(client, 0) / total, 2),
+            "label": "Locked" if n / total > LOCK_SHARE else "Open"}
 
 
 def snapshot(domain: str) -> dict:
