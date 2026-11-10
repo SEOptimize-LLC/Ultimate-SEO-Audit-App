@@ -59,13 +59,14 @@ Per-stage references:
 
 ## REQUIRED — Stage Verdict Contract (every audit, full-site AND single-URL)
 
-**Every audit must return four verdicts, one per stage, in pipeline order. A missing stage
-verdict is an audit defect**, on the same non-negotiable footing as the indexability-directive
+**Every audit must return four verdicts, one per stage, in pipeline order, after a pre-check
+for causes outside the pipeline (row 0). A missing stage verdict is an audit defect**, on the same non-negotiable footing as the indexability-directive
 verdict below. This is what makes stage sequencing enforceable instead of advisory: an audit
 that never states a rendering verdict cannot silently have skipped rendering.
 
 | Stage | Verdict values | Minimum evidence required |
 |---|---|---|
+| **0 Pre-check (outside the pipeline)** | CLEAR / FOUND / NOT CHECKED | Search Console Manual actions report and Data Anomalies page read for the period. A manual action or a listed anomaly explains the loss before any stage does |
 | **1 Crawlability** | PASS / FAIL / PARTIAL | `robots.txt` read; response codes across the crawl; internal-link path to money pages confirmed; sitemap cross-checked |
 | **2 Rendering** | PASS / FAIL / PARTIAL | Raw-vs-rendered comparison on at least each indexable **template**; `title`, `canonical`, `meta robots`, `H1` and primary nav confirmed present in **raw** HTML |
 | **3 Indexability** | PASS / FAIL / PARTIAL | The four directive checks (head `noindex`, `X-Robots-Tag`, body placement, declared-vs-Google-selected canonical); index status for money pages |
@@ -244,7 +245,7 @@ Google treats a `noindex` value in the `X-Robots-Tag` HTTP response header ident
 
 Screaming Frog crawl data can only ever show what a page's HTML and HTTP response look like — it cannot show Google's own decision NOT to index a page despite no technical block existing. Two GSC "Page indexing" report statuses fall entirely outside what a crawl can reveal:
 
-**Crawled — currently not indexed.** Google crawled the page but chose not to index it — a content-quality judgment, not a technical block. Common drivers: thin or low-value content, near-duplication that doesn't fit a formal duplicate category, weak internal + external signals combined, or rendering issues leaving the page looking empty. The fix is never technical (redirects, canonicals, robots.txt) — only content depth, originality, and internal-linking improvements move this status. Re-submitting for indexing without an on-page change does not help.
+**Crawled — currently not indexed.** Google crawled the page but chose not to index it. This is not a verdict on its own: Google's help calls it common and not necessarily an issue. Common drivers: thin or low-value content, near-duplication that doesn't fit a formal duplicate category, weak internal + external signals combined, or rendering issues leaving the page looking empty (including robots.txt blocking the CSS or JavaScript the page needs to render). **Rule out rendering before calling it content:** run Test live URL and read the rendered HTML and screenshot, per the symptom decoder in [stage-3-indexability.md](references/stage-3-indexability.md). If the render is incomplete, the fix is technical (Stage 2). If the render is complete, content depth, originality and internal linking are what move this status; when many pages show it with no technical cause, read it as a site-quality signal. Re-submitting for indexing without a change does not help.
 
 **Discovered — currently not indexed.** Google knows the URL exists but hasn't crawled it yet (no last-crawl date recorded). Usually a crawl-budget or perceived-low-value signal: rationing on large sites, the page buried many clicks from the homepage with weak internal linking, or mass low-value URL generation (faceted nav, parameter explosion) competing for the same crawl budget. Unlike "Crawled — not indexed", this status often resolves through internal-linking and crawl-budget fixes alone, without any content rewrite.
 

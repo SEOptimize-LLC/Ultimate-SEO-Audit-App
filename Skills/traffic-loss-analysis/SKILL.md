@@ -16,9 +16,10 @@ You are a Traffic Loss Analysis specialist. Your job is to systematically invest
 > `CRAWLABILITY → RENDERING → INDEXABILITY → RANKING`
 
 **The loss shape sets your prior before any evidence is gathered.** Stages 1 to 3 fail
-binary, so they produce **cliffs**. Stage 4 degrades continuously, so it produces **slow
-bleeds**. A six-month gradual decline is not a robots.txt block; a two-week 40% drop is not
-quality erosion. Full overlay, the branch-to-stage map, and the non-pipeline causes that must
+binary, so they usually produce **cliffs**. Stage 4 degrades continuously, so it usually
+produces **slow bleeds**. A prior, not a verdict: Google's traffic-drop guide says a
+misplaced page-level `noindex` takes effect only as Google recrawls each page, so it shows
+as a slower drop, and a core update can produce a step. Full overlay, the branch-to-stage map, and the non-pipeline causes that must
 be cleared first are in
 [references/diagnostic-decision-tree.md § Stage Overlay](references/diagnostic-decision-tree.md).
 
@@ -111,6 +112,17 @@ Call `mcp__dfs-mcp__dataforseo_labs_google_historical_rank_overview`:
 - Check if DFS also shows a ranking/traffic decline for the domain
 - If DFS shows stable rankings while GSC shows a click drop → likely SERP feature displacement (not a ranking loss)
 - This provides an independent third-party signal to confirm or contradict GSC data
+
+### Step 0.5: Data Anomalies and Manual Actions (every analysis)
+
+Two checks Google's traffic-drop guide puts first, run before any branch:
+
+| Check | Where | Result |
+|---|---|---|
+| **Data anomaly** | Search Console → Data Anomalies page (linked from the Performance report) | A listed anomaly covering the loss dates means the drop is a reporting change, not a real loss. Stop or narrow the window |
+| **Manual action** | Search Console → Security & Manual Actions → Manual actions | Any action listed is the cause until it is resolved. It sits outside the four pipeline stages. Record it and go to Branch A3 in the decision tree |
+
+Neither has a call in the GSC MCP or this project's scripts (task 1.2 also leaves Manual Actions to the owner), so the owner or the analyst reads both in the Search Console UI. When neither was checked, say so in the report rather than assuming clean.
 
 ### Output
 
@@ -448,11 +460,13 @@ Based on the data:
 
 ### Step 3.1: Algorithm Update Correlation
 
-Reference `Skills/traffic-loss-analysis/references/algorithm-updates-timeline.md`. Compare the loss onset date against:
+Read Google's live feed first: `https://status.search.google.com/incidents.json` (the same feed task 1.2 reads). It holds only the most recent incidents, so for older drops fall back to `Skills/traffic-loss-analysis/references/algorithm-updates-timeline.md` and the dashboard history page. Compare the loss onset date against:
 - Core Updates
 - Spam Updates
 - AI Overview expansion dates
 - Any other confirmed updates within ±14 days of onset
+
+**Measure a core update the way Google says to.** Wait at least a full week after the rollout completes, then compare that week with the week before the rollout started (Google Search Central, core updates guide). A comparison window that overlaps the rollout mixes the before and after states.
 
 **Match the loss SHAPE to the update type, not just the date (DERIVED-FROM-TESTING, Daniel Foley Carter).** Onset date alone produces false matches because updates cluster. Use the decline's shape as a second filter:
 - **Core update → delayed and gradual.** Core updates roll out over 2-4 weeks and the impact ramps in and compounds. Expect the onset to *lead into* a sloping multi-week decline, not a cliff — and the visible drop often lags the announced rollout start by days.

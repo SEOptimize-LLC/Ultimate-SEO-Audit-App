@@ -125,3 +125,52 @@ def test_country_divergence_also_detected(crawl_df: pd.DataFrame) -> None:
 
     # Assert
     assert "ctr_diverges_by_country" in _divergence_issue_types(issues)
+
+
+def _low_ctr_site(impressions_per_page: int) -> pd.DataFrame:
+    """Four pages at position 3, each with a 3% CTR on an informational query.
+
+    The generic informational baseline at position 3 is 11%, so 3% is below
+    0.7 x baseline. Against the site's own curve (also 3%) it is average.
+    """
+    pages = [f"https://x.com/p{i}" for i in range(4)]
+    clicks = round(impressions_per_page * 0.03)
+    return pd.DataFrame({
+        "page": pages,
+        "query": ["how to fix a leak"] * 4,
+        "clicks": [clicks] * 4,
+        "impressions": [impressions_per_page] * 4,
+        "position": [3.0] * 4,
+        "ctr": [0.03] * 4,
+    })
+
+
+def _below_baseline_issue(issues):
+    return next((i for i in issues if i.issue_type == "ctr_below_position_baseline"), None)
+
+
+def test_site_curve_replaces_generic_baseline_when_band_has_data(crawl_df: pd.DataFrame) -> None:
+    # Arrange: 4 pages x 200 impressions = 800 in band 3-4, above the 400 minimum.
+    auditor = ClickSignalAuditor(crawl_df, _low_ctr_site(200))
+
+    # Act
+    issues = auditor.run_audit()
+
+    # Assert: average for this site, so no page is flagged as a snippet failure.
+    assert _below_baseline_issue(issues) is None
+    assert auditor._site_curve == {1: pytest.approx(0.03, abs=0.001)}
+
+
+def test_generic_baseline_used_when_band_is_thin(crawl_df: pd.DataFrame) -> None:
+    # Arrange: 3 pages x 100 impressions = 300 in band 3-4, under the 400 minimum.
+    gsc_df = _low_ctr_site(100).iloc[:3]
+
+    auditor = ClickSignalAuditor(crawl_df, gsc_df)
+
+    # Act
+    issues = auditor.run_audit()
+
+    # Assert: no site curve for the band, so the generic 11% baseline flags all three.
+    assert auditor._site_curve == {}
+    issue = _below_baseline_issue(issues)
+    assert issue is not None and issue.count == 3

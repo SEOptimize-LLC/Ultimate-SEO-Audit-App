@@ -14,8 +14,13 @@ accordingly:
 - At baseline (position limiter)    → ranking improvement is high-leverage; snippet rewrite has near-zero ceiling
 - Above baseline (outperforming)    → page is earning clicks; protect/replicate the pattern
 
-Position-adjusted CTR baselines are from Advanced Web Ranking, SISTRIX,
-FirstPageSage averages and split by query-intent class.
+The baseline is the site's own CTR curve, built from the same GSC export in
+two-position bands (1-2, 3-4, 5-6, 7-8, 9-10). A band is used only when it
+holds at least MIN_CURVE_IMPRESSIONS impressions across MIN_CURVE_PAGES pages;
+otherwise that band falls back to the generic tables below (Advanced Web
+Ranking, SISTRIX, FirstPageSage averages, split by query-intent class).
+Task 1.5 showed why: a generic curve made two average pages on one client look
+like CTR failures, because that site earns about a third of typical CTR.
 """
 
 from __future__ import annotations
@@ -39,6 +44,12 @@ CTR_BASELINES_COMMERCIAL = {
     1: 0.22, 2: 0.12, 3: 0.08, 4: 0.055, 5: 0.035,
     6: 0.025, 7: 0.0225, 8: 0.0175, 9: 0.0125, 10: 0.0085,
 }
+
+# A site-curve band is trusted only with this much data behind it. 400 matches
+# task 1.5's band threshold; the page minimum stops one page from becoming its
+# own baseline.
+MIN_CURVE_IMPRESSIONS = 400
+MIN_CURVE_PAGES = 3
 
 # Minimum impressions a single (page, segment) slice must carry before it is
 # classified. Lower than the page-level gate (100) because slicing by device or
@@ -69,6 +80,7 @@ class ClickSignalAuditor(BaseAuditor):
         """
         super().__init__(crawl_df)
         self.gsc_df = gsc_df
+        self._site_curve: dict[int, float] = {}
 
     def get_audit_type(self) -> str:
         return "click_signals"
@@ -83,6 +95,7 @@ class ClickSignalAuditor(BaseAuditor):
         if not required.issubset(set(self.gsc_df.columns)):
             return self.issues
 
+        self._site_curve = self._build_site_curve()
         self._check_underperforming_snippets()
         self._check_at_baseline_pages()
         self._check_outperforming_pages()
@@ -99,18 +112,48 @@ class ClickSignalAuditor(BaseAuditor):
         """
         return self.gsc_df is not None and column in self.gsc_df.columns
 
+    @staticmethod
+    def _band(pos_int: int) -> int:
+        """Two-position band index: 1-2 -> 0, 3-4 -> 1, ... 9-10 -> 4."""
+        return (pos_int - 1) // 2
+
+    def _build_site_curve(self) -> dict[int, float]:
+        """The site's own CTR per two-position band, where the band has enough data."""
+        df = self.gsc_df[["page", "clicks", "impressions", "position"]].dropna()
+        df = df[(df["position"] >= 0.5) & (df["position"] < 10.5)]
+        if df.empty:
+            return {}
+        bands = df["position"].round().astype(int).map(self._band)
+        grouped = df.assign(band=bands).groupby("band").agg(
+            clicks=("clicks", "sum"),
+            impressions=("impressions", "sum"),
+            pages=("page", "nunique"),
+        )
+        usable = grouped[
+            (grouped["impressions"] >= MIN_CURVE_IMPRESSIONS)
+            & (grouped["pages"] >= MIN_CURVE_PAGES)
+        ]
+        return {
+            int(band): float(row["clicks"] / row["impressions"])
+            for band, row in usable.iterrows()
+        }
+
     def _classify_page(self, position: float, ctr: float, query: str = "") -> str:
-        """Classify a page's CTR against position-adjusted baseline."""
+        """Classify a page's CTR against the site curve, or the generic table as fallback."""
         pos_int = int(round(position))
         if pos_int < 1 or pos_int > 10:
             return "out_of_striking_distance"
 
-        intent_class = self._infer_intent(query)
-        baseline = (
-            CTR_BASELINES_COMMERCIAL[pos_int]
-            if intent_class == "commercial"
-            else CTR_BASELINES_INFORMATIONAL[pos_int]
-        )
+        site_baseline = self._site_curve.get(self._band(pos_int))
+        if site_baseline is not None:
+            baseline = site_baseline
+        else:
+            intent_class = self._infer_intent(query)
+            baseline = (
+                CTR_BASELINES_COMMERCIAL[pos_int]
+                if intent_class == "commercial"
+                else CTR_BASELINES_INFORMATIONAL[pos_int]
+            )
 
         if ctr < baseline * 0.7:
             return "underperforming"
@@ -201,7 +244,13 @@ class ClickSignalAuditor(BaseAuditor):
                 "satisfying the query. This becomes a self-reinforcing demotion: "
                 "weak clicks → weaker rankings → fewer impressions → fewer clicks."
             ),
-            additional_data={"underperforming_count": len(underperforming)},
+            additional_data={
+                "underperforming_count": len(underperforming),
+                "site_curve_bands": {
+                    f"{b * 2 + 1}-{b * 2 + 2}": round(v * 100, 2)
+                    for b, v in sorted(self._site_curve.items())
+                },
+            },
         )
 
     def _check_at_baseline_pages(self) -> None:

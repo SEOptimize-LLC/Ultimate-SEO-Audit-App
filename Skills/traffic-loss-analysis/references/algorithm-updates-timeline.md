@@ -1,6 +1,6 @@
 # Google Algorithm Updates Timeline (2023-2026)
 
-> **Last updated:** 2026-03-20
+> **Last updated:** 2026-11-10 (December 2025 to September 2026 checked against the dashboard feed)
 > **Purpose:** Correlate observed traffic drops with confirmed Google algorithm changes.
 > **Maintained by:** Traffic Loss Analysis Skill
 
@@ -259,23 +259,62 @@ A traffic drop within 1-2 weeks of a confirmed update is a strong correlation si
 **October 2025 — Search Serving Issue**
 - **Dates:** October 3 – October 6, 2025
 - **Type:** Serving infrastructure incident
-- **Source:** https://status.search.google.com/incidents/DsirqJ1gpPRgVQeccPRv
+- **Source:** unconfirmed. The incident ID this entry used to cite (`DsirqJ1gpPRgVQeccPRv`) is the December 2025 core update (checked 2026-11-10), so this entry has no verified source. Confirm it on the dashboard history page before using it in a diagnosis.
 - **Summary:** Brief Google Search serving issue. For some sites the post-incident period coincided with the start of a recovery from the Aug 2025 Spam Update — possibly because Google's fix recalibrated something in the ranking pipeline that had been holding sites suppressed.
 
 ---
 
-### 2026
+### 2025-12 to 2026 — confirmed against the Search Status Dashboard on 2026-11-10
 
-#### Q1 2026
+Every entry below is copied from `https://status.search.google.com/incidents.json` (begin and end dates as published). An earlier "January 2026 Core Update" entry was removed: it had no source and the dashboard lists no such update.
 
-**January 2026 Core Update**
-- **Dates:** January 2026
-- **Type:** Core Update (Quality & Relevance)
-- **Summary:** First core update of 2026, focused on quality and relevance refinement. Early reports suggest continued emphasis on content that provides unique perspectives, original data, and demonstrable first-hand experience. The update appeared to further refine how Google assesses topical authority at the domain level and may have adjusted how AI-generated content is evaluated for quality.
-- **Key Impact Areas:** Domain-level topical authority, original research, E-E-A-T signals, AI-generated content quality assessment
+**December 2025 Core Update**
+- **Dates:** December 11 – December 29, 2025
+- **Type:** Core Update
+- **Source:** https://status.search.google.com/incidents/DsirqJ1gpPRgVQeccPRv
 
-**May 2026 — Current Date**
-- **Status as of May 20, 2026:** No major core or spam update has been confirmed for April–May 2026 via Google Search Status Dashboard as of the current date. Always verify the latest at https://status.search.google.com/products/rGHU1u7OQJGH69TPLS2FnGHp/history before audits. AI Overview expansion continues incrementally throughout 2026.
+**February 2026 Discover Update**
+- **Dates:** February 5 – February 27, 2026
+- **Type:** Discover core update (English-language users in the US). Affects Discover traffic, not web search rankings
+- **Source:** https://status.search.google.com/incidents/mYbNTqV1ytDc2fA8hUz4
+
+**February 2026 — Serving Issue**
+- **Dates:** February 25, 2026
+- **Type:** Serving infrastructure incident
+- **Source:** https://status.search.google.com/incidents/TZF4pLmbzFdoBPP6o3iv
+
+**March 2026 Spam Update**
+- **Dates:** March 24 – March 25, 2026
+- **Type:** Spam Update
+- **Source:** https://status.search.google.com/incidents/VbnSXAH4SmEcxPtx4YSD
+- **Note:** It ended two days before the March core update began, so ranking data cannot cleanly separate the two.
+
+**March 2026 Core Update**
+- **Dates:** March 27 – April 8, 2026
+- **Type:** Core Update
+- **Source:** https://status.search.google.com/incidents/7eTbAa2jWdToLkraZj5y
+
+**May 2026 Core Update**
+- **Dates:** May 21 – June 2, 2026
+- **Type:** Core Update
+- **Source:** https://status.search.google.com/incidents/wdAXJk6LRRihEjpzEeWE
+
+**June 2026 Spam Update**
+- **Dates:** June 24 – June 26, 2026
+- **Type:** Spam Update
+- **Source:** https://status.search.google.com/incidents/YUX1peHev5a4fkxLDiUQ
+
+**August 2026 Spam Update**
+- **Dates:** August 18 – August 21, 2026
+- **Type:** Spam Update
+- **Source:** https://status.search.google.com/incidents/LEubPCm2octf2uMqCFKE
+
+**September 2026 Spam Update**
+- **Dates:** September 24 – October 8, 2026
+- **Type:** Spam Update
+- **Source:** https://status.search.google.com/incidents/XhUDXP7A67iHCD2kmbVu
+
+**Read the live feed first.** This file goes stale between edits. Phase 3.1 reads `incidents.json` before this file, the same feed task 1.2 uses. The feed holds only the most recent incidents (9 on 2026-11-10, back to December 2025), so drops older than that need this file or the dashboard history page: https://status.search.google.com/products/rGHU1u7OQJGH69TPLS2FnGHp/history
 
 ---
 

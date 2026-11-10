@@ -30,10 +30,10 @@ indexed or it is not. Stage 4 degrades **continuously**, as relative position ag
 competitors. That asymmetry means the shape of the loss curve constrains the cause before
 you look at anything else.
 
-| Loss shape | Almost certainly | Almost certainly NOT |
+| Loss shape | Usually | Rarely |
 |---|---|---|
 | **Cliff** (>20% in 1–2 weeks) | Stage 1, 2 or 3 binary failure, a measurement artifact, or a manual action | Gradual quality erosion. Quality does not fall off a cliff |
-| **Slow bleed** (<10% MoM over 3+ months) | Stage 4 erosion, competitor gains, demand decline | A robots.txt block or a deployed `noindex`. Those produce cliffs |
+| **Slow bleed** (<10% MoM over 3+ months) | Stage 4 erosion, competitor gains, demand decline | A site-wide robots.txt block or template-wide `noindex`. Those produce cliffs. A page-level `noindex` is the exception: it takes effect only as Google recrawls each page, so Google's traffic-drop guide says it shows as a slower drop |
 | **Step then plateau** | An algorithm update (Stage 4) **or** a partial technical failure that hit one template (Stages 1–3) | |
 | **Accelerating decline** | Stage 4 compounding: quality, authority, or expanding cannibalisation | A single technical event |
 
@@ -115,13 +115,12 @@ Q1: Does the drop align (within 7 days) with a known Google algorithm update?
     Q2: Were there any site changes in the 2 weeks before the drop?
     ├── YES → Go to A2: Site Change / Technical Regression
     └── NO →
-        Q3: Is there a manual action in Google Search Console?
-        ├── YES → Go to A3: Manual Action
-        └── NO →
-            Q4: Did backlinks drop significantly (>20% referring domains lost)?
-            ├── YES → Go to A4: Backlink Loss Event
-            └── NO → Go to A5: Unknown Sudden Drop (investigate further)
+        Q3: Did backlinks drop significantly (>20% referring domains lost)?
+        ├── YES → Go to A4: Backlink Loss Event
+        └── NO → Go to A5: Unknown Sudden Drop (investigate further)
 ```
+
+Manual actions are checked in Phase 0 (Step 0.5) on every analysis, whatever the loss shape. A listed action goes straight to A3.
 
 #### A1: Algorithm Update Diagnosis
 
@@ -301,7 +300,8 @@ Q1: Are multiple factors degrading simultaneously?
 Keyword cannibalization occurs when multiple pages on the same domain compete for the same keyword, splitting authority and confusing Google about which page to rank.
 
 **Detection from GSC data:**
-- Pull `query,page` dimensions — any keyword with 2+ URLs from the same domain is a cannibalization candidate
+- First drop every query with no single resolvable intent (`~/.claude/rules/common/cannibalization-needs-clear-intent.md`). Several pages surfacing for a topic head term is topical coverage, not cannibalization
+- Pull `query,page` dimensions — any remaining keyword with 2+ URLs from the same domain is a cannibalization candidate
 - Check for URL switching: keyword ranked on URL A in the before period, URL B in the after period
 - Check for position instability: keyword fluctuates >5 positions week-to-week
 

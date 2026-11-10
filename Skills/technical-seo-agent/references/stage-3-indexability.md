@@ -135,7 +135,7 @@ stopped, not what caused it. **The cause frequently sits upstream of the symptom
 
 | GSC status | What Google did | Real cause usually lives at | First check |
 |---|---|---|---|
-| **Crawled, currently not indexed** | Fetched and rendered; declined to store | **Stage 2 or Stage 3** | Is the raw HTML hollow? If yes it is a render failure, not a content failure. If raw is fine, it is a genuine quality or duplication judgment |
+| **Crawled, currently not indexed** | Fetched and rendered; declined to store | **Stage 2 or Stage 3** | (1) Is the raw HTML hollow? (2) Test live URL → View tested page: is the main content in the rendered HTML and screenshot? A robots.txt rule blocking the theme's CSS or JavaScript leaves raw HTML fine and the render broken. A no on either is a render failure, not a content failure. Only with both clean is it a genuine quality or duplication judgment |
 | **Discovered, currently not indexed** | Knows the URL; has not fetched it | **Stage 1** | Internal link count, crawl depth, sitemap presence, crawl allocation on large sites |
 | **Excluded by 'noindex' tag** | Honoured a directive | Stage 3, config | Intentional? Check all three noindex sources including the header |
 | **Duplicate, Google chose different canonical** | Canonicalisation went against you | Stage 3, canonicalisation | Declared vs selected; is the chosen URL actually the better one? |

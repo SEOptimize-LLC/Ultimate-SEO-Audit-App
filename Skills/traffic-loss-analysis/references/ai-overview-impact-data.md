@@ -70,8 +70,8 @@ CONTRAST WITH:
 ## How to Detect AI Overview Displacement
 
 ### Step 1: CTR Anomaly Detection
-For each keyword, compare expected CTR (based on position) vs actual CTR:
-- Position 1 expected CTR: ~28-31% (no AIO) vs ~10-14% (with AIO)
+For each keyword, compare actual CTR against an expected CTR for that position. Take the expected figure from the site's own CTR curve in the same Search Console data (pages without an AI Overview at the same positions), not a fixed table: industry curves such as the figures below are a fallback only, because a site's CTR varies with SERP layout and the site's own authority.
+- Industry fallback, position 1: ~28-31% (no AIO) vs ~10-14% (with AIO)
 - If actual CTR is 50%+ below expected for stable positions → likely AIO displacement
 
 ### Step 2: SERP Feature Check

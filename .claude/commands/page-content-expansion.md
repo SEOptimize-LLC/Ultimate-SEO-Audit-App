@@ -95,7 +95,7 @@ If any of these fail, fix before delivering. If a client folder is involved, the
 
 The clearest existing case in the project is Cudio's `/services/odoo-migration`:
 
-- Position 2.7 for "odoo migration services" (824 impressions, 0.49% CTR over 28 days) — expected CTR at position 2.7 should be 12-18%
+- Position 2.7 for "odoo migration services" (824 impressions, 0.49% CTR over 28 days). Judge that against Cudio's own CTR at positions 1-4 from the same Search Console export, not a generic table: generic curves put position 2-3 at 12-18%, but some client sites earn a third of that, so a gap only counts when the page sits well below its own site's curve
 - The page is technically strong but the SERP appearance is dragging CTR
 - A run of this command would: (a) classify "odoo migration services" as transactional at striking-distance position, (b) confirm no other Cudio URL holds the query stronger (gate passes), (c) identify expansion clusters around migration timing, risks, downtime, rollback — all transactional adjacencies, (d) recommend 3-5 intra-page section additions and possibly 1 new page on "odoo migration cost calculator" if that cluster justifies it, (e) flag entities missing from the current page (rollback guarantee, downtime window, business size tiers)
 
