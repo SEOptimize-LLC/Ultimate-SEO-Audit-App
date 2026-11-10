@@ -43,6 +43,29 @@ def derive(domain: str, week: str) -> tuple[int, int]:
     return m, n
 
 
+def derive_prev(domain: str, week: str, prev_week: str) -> tuple[int, int]:
+    """(mentioned, answered) in prev_week over only the prompts that were scanned in `week`."""
+    conn = T.connect()
+    cur = conn.cursor()
+    cur.execute("""
+      with c as (select id from geo_tracker.clients where replace(domain, 'www.', '') = %(d)s),
+      cur_prompts as (select distinct s.prompt_id from geo_tracker.samples s
+                      join geo_tracker.scan_batches b on b.id = s.batch_id
+                      where b.client_id = (select id from c) and b.week_start = %(w)s)
+      select count(*), count(*) filter (where exists (select 1 from geo_tracker.judgements j
+             where j.sample_id = s.id and j.brand_kind = 'client' and j.mentioned))
+      from geo_tracker.samples s
+      join geo_tracker.scan_batches b on b.id = s.batch_id
+      join geo_tracker.prompts p on p.id = s.prompt_id
+      where b.client_id = (select id from c) and b.week_start = %(pw)s and s.engine in ('chatgpt', 'ai_mode')
+            and s.status in ('done', 'empty') and not p.is_branded and not p.names_competitor
+            and s.prompt_id in (select prompt_id from cur_prompts)""",
+                dict(d=domain.replace("www.", ""), w=week, pw=prev_week))
+    n, m = cur.fetchone()
+    conn.close()
+    return m, n
+
+
 def main(slug: str) -> None:
     cfg = yaml.safe_load(Path("clients/registry.yaml").read_text(encoding="utf-8"))[slug]
     grid = S.read(cfg["sheet_id"], f"'{F.TAB}'!A1:M120")
@@ -59,6 +82,22 @@ def main(slug: str) -> None:
         FAILS.append(f"{slug}: sheet {h} of {n}, re-derived {dh} of {dn}")
     if round(100 * dh / dn) != int(m[1]):
         FAILS.append(f"{slug}: headline percentage {m[1]} does not match {dh} of {dn}")
+    prev_head, prev_note = str(grid[4][1]), str(grid[4][2]) if len(grid[4]) > 2 else ""
+    pm, pw = re.match(r"(\d+)% \((\d+) of (\d+)\)", prev_head), re.search(r"week of (\d{4}-\d{2}-\d{2})", prev_note)
+    if pm and pw:
+        dm, dn2 = derive_prev(cfg["domain"], wk[1], pw[1])
+        if (int(pm[2]), int(pm[3])) != (dm, dn2):
+            FAILS.append(f"{slug}: last month {pm[2]} of {pm[3]}, re-derived {dm} of {dn2}")
+        delta = round(100 * dh / dn) - round(100 * dm / dn2) if dn2 else None
+        quiet = "No measurable change" in prev_note
+        ran = re.match(r"(\d+) of", str(grid[5][1]))
+        engines = len(re.findall(r"ChatGPT|AI Mode", cov.split(".")[0]))
+        floor = F.noise_points(int(ran[1]) if ran else 0, engines or 1)
+        if delta is not None and quiet != (abs(100 * dh / dn - 100 * dm / dn2) < floor):
+            FAILS.append(f"{slug}: change wording does not match a {delta:+d}-point move")
+        print(f"{slug}: last month {pm[2]} of {pm[3]} re-derived as {dm} of {dn2} (week {pw[1]})")
+    elif prev_head != "baseline month":
+        FAILS.append(f"{slug}: could not read last month's figure ({prev_head!r})")
     for r, row in enumerate(grid, 1):
         for c, v in enumerate(row, 1):
             if len(str(v)) > S.CELL_MAX:

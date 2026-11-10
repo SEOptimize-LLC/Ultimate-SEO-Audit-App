@@ -24,6 +24,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent))
 os.environ.setdefault("GATE_LOG", "60")
 import run_1_5 as R  # noqa: E402
+import serp_features as SF  # noqa: E402
+import reporting_break as RB  # noqa: E402
 import task_1_5 as T  # noqa: E402
 
 # Files that list URLs for reasons other than work: audits, QA output, caches.
@@ -93,6 +95,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("client")
     ap.add_argument("--no-live", action="store_true")
+    ap.add_argument("--no-serp", action="store_true", help="skip the live SERP feature check")
     a = ap.parse_args()
     cfg = yaml.safe_load(open("clients/registry.yaml", encoding="utf-8"))[a.client]
     captured = {}
@@ -113,6 +116,10 @@ def main() -> int:
     print("CLIENT CTR CURVE:", R.ctr_curve_text(R.analyse(svc, site, cfg)["sd"]))
     print(f"windows: current {c0}..{c1} | prior {p0}..{p1} | year ago {y0}..{y1} | latest month {m0}..{m1}")
     folder = Path(cfg["folder"])
+    shifted = RB.affects(y0, RB.has_break(svc, site))
+    if shifted:
+        print(f"   NOTE: {RB.NOTE}. Year-ago impressions and position are not comparable; read ranking and"
+              f" demand against {RB.POST_LABEL} (printed per row). A decline that predates it shows in clicks only.")
     for row in cand:
         rank, url, src, q, pos, impr, why, bv, sel = row[:9]
         print("\n" + "=" * 112)
@@ -123,7 +130,20 @@ def main() -> int:
         cur, pri, yoy = ev.page(url, c0, c1), ev.page(url, p0, p1), ev.page(url, y0, y1)
         print(f"   SEQUENTIAL  clicks {pri['clicks']}->{cur['clicks']}  impr {pri['impr']}->{cur['impr']}  pos {pri['pos']:.1f}->{cur['pos']:.1f}")
         print(f"   YEAR-OVER-YEAR clicks {yoy['clicks']}->{cur['clicks']}  impr {yoy['impr']}->{cur['impr']}  pos {yoy['pos']:.1f}->{cur['pos']:.1f}"
-              + ("   (no prior-year data)" if not yoy["impr"] else ""))
+              + ("   (no prior-year data)" if not yoy["impr"] else "")
+              + ("   (impr/pos not comparable: Google logging error)" if shifted else ""))
+        if shifted:
+            post = ev.page(url, *RB.POST)
+            print(f"   CLEAN BASELINE  {RB.POST_LABEL} clicks {post['clicks']}  impr {post['impr']}  pos {post['pos']:.1f}"
+                  f"  -> now pos {cur['pos']:.1f}  impr {cur['impr']}")
+        held = cur["pos"] - pri["pos"] < 1.5 and pri["impr"] and cur["impr"] >= 0.85 * pri["impr"]
+        if held and cur["clicks"] < pri["clicks"] and not a.no_serp:
+            sq = q if not q.startswith("(") else (ev.queries(url, c0, c1, 1) or [("",)])[0][0]
+            try:
+                r, why, _ = SF.check(a.client, sq, cfg["domain"])
+                print(f"   SERP FEATURES for {sq!r}: {r} ({why})")
+            except Exception as e:
+                print(f"   SERP FEATURES CHECK FAILED for {sq!r}: {type(e).__name__} {e}")
         try:
             h = T.history(svc, site, url, months=11)
             print("   HISTORY   " + " | ".join(f"{m[2:]}:{d['clicks']}/{d['impressions']}/{d['position']:.1f}" if d else f"{m[2:]}:-" for m, d in h))

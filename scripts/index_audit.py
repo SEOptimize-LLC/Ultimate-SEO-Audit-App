@@ -8,8 +8,9 @@ Feeds 1.2 check 3 (Page Indexing vs last month) and check 6 (indexed count).
 
 Results are cached per client per month, so a re-run costs no quota and so that
 next month can diff against this month: a URL that was "Submitted and indexed"
-and is now "Crawled - currently not indexed" is exactly the quality signal
-check 3 asks for, and nothing else surfaces it.
+and is now "Crawled - currently not indexed" is the signal check 3 asks for, and
+nothing else surfaces it. It reads as quality only after the 1.2 render check finds
+the page renders clean (run_index_checks.render_gate, added 2026-11-10).
 
     python scripts/index_audit.py superior
     python scripts/index_audit.py superior --limit 50
@@ -24,6 +25,7 @@ import os
 import random
 import threading
 import time
+import urllib.request
 from collections import Counter
 from pathlib import Path
 
@@ -95,6 +97,37 @@ def sitemap_urls(sc, site, exclude=None):
     return [u for u in seen if not any(x in u.lower() for x in ex)]
 
 
+def resolve(url: str, timeout: float = 15.0) -> str:
+    """Follow redirects and return the URL that actually serves the page.
+
+    NEVER INSPECT A URL THAT DOES NOT RETURN 200. A sitemap that still lists
+    a pre-restructure address, or lists the unslashed form of a path the site
+    normalises, makes Search Console answer about the address we asked for
+    rather than the page. That comes back "URL is unknown to Google" or "Page
+    with redirect" and reads as a de-indexed page, while the destination is
+    indexed perfectly well. The count is then wrong in the direction that
+    causes work: somebody goes hunting for an indexation problem that does
+    not exist.
+
+    A site that refuses automated requests gets its original URL back
+    unchanged. A page we could not reach is not evidence of a redirect, and
+    guessing here would trade one wrong answer for another.
+    """
+    req = urllib.request.Request(url, method="HEAD", headers={
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/124.0 Safari/537.36"),
+        "Accept": "text/html,application/xhtml+xml",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            if r.status == 200 and r.url:
+                return r.url
+    except Exception:
+        pass
+    return url
+
+
 def inspect_one(site: str, url: str) -> dict:
     """One URL, with backoff. Transient SSL/timeout noise is common and retryable."""
     for attempt in range(RETRIES):
@@ -149,9 +182,30 @@ def audit(slug: str, cfg: dict, month: str, limit: int | None = None) -> dict:
     # min per property, so Google is not the constraint. The earlier 4-worker
     # attempt that failed 9 of 12 URLs predates inspect_one's retry.
     from concurrent.futures import ThreadPoolExecutor
+
+    # Resolve BEFORE inspecting. A HEAD request is cheap next to a ~7s
+    # inspect call, and asking Google about an address that redirects
+    # produces a not-indexed verdict about the redirect rather than about
+    # the page.
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        landed = list(pool.map(resolve, urls))
+    moved = [(u, v) for u, v in zip(urls, landed)
+             if v.rstrip("/") != u.rstrip("/")]
+    if moved:
+        print(f"    {len(moved)} sitemap URL(s) redirect; inspecting where "
+              f"they land", flush=True)
+        for u, v in moved[:5]:
+            print(f"      {u}", flush=True)
+            print(f"        -> {v}", flush=True)
+    was = dict(zip(landed, urls))
+    urls = list(dict.fromkeys(landed))
+
     rows = []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         for n, rec in enumerate(pool.map(lambda u: inspect_one(site, u), urls), 1):
+            src = was.get(rec.get("url"), "")
+            if src and src.rstrip("/") != str(rec.get("url", "")).rstrip("/"):
+                rec["sitemap_url"] = src
             rows.append(rec)
             if n % 100 == 0:
                 print(f"    {n}/{len(urls)}", flush=True)

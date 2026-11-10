@@ -115,7 +115,7 @@ Q1: Does the drop align (within 7 days) with a known Google algorithm update?
     Q2: Were there any site changes in the 2 weeks before the drop?
     ├── YES → Go to A2: Site Change / Technical Regression
     └── NO →
-        Q3: Did backlinks drop significantly (>20% referring domains lost)?
+        Q3: Did backlinks drop significantly (>20% referring domains lost; unsourced heuristic, not a measured threshold, added 2026-11-10)?
         ├── YES → Go to A4: Backlink Loss Event
         └── NO → Go to A5: Unknown Sudden Drop (investigate further)
 ```
@@ -127,12 +127,16 @@ Manual actions are checked in Phase 0 (Step 0.5) on every analysis, whatever the
 | Evidence | Sub-Diagnosis | Confidence |
 |----------|--------------|------------|
 | Non-brand keywords most affected + content quality issues found on losing pages | Core Update — Content Quality | High (85-95%) |
-| Review-type content pages lost + lacks first-hand experience signals | Reviews/HCU Component | High (80-90%) |
-| Pages with thin/auto-generated content lost most | HCU/Spam Component | High (85-95%) |
+| Review-type content pages lost + lacks first-hand experience signals | Reviews / Core Update (helpfulness) Component | High (80-90%) |
+| Pages with thin/auto-generated content lost most | Core Update (helpfulness) / Spam Component | High (85-95%) |
 | Link-dependent keywords lost most + backlink profile has manipulation signals | Link Spam Component | Medium-High (70-85%) |
 | Losses spread evenly across content types with no quality pattern | Core Update — Relevance/Authority shift | Medium (50-70%) |
 
-**Recovery approach:** Fix content quality issues on losing pages, wait for next core update (3-6 month cycle). No quick fix exists for algorithm-based losses.
+**HCU naming (added 2026-11-10).** For losses after March 2024, the helpfulness components above are core-update components, because helpful content has been part of core ranking since March 2024 and there are no more standalone HCU updates (`algorithm-updates-timeline.md`, "HCU integration into core (March 2024)"). Use the HCU name only for losses tied to the 2022-2023 standalone Helpful Content Updates.
+
+**Size the move first (added 2026-11-10).** Google's core updates page, for top pages and queries before and after the update: "Small drop in position (dropping from position 2 to 4): There's no need to take drastic action (in fact, we recommend avoiding making changes to content that's already performing well)." And: "Large drop in position (dropping from position 4 to 29): Do a deeper assessment."
+
+**Recovery approach:** Fix content quality issues on losing pages. No quick fix exists for algorithm-based losses. On timing, Google's core updates page says: "some changes can take effect in a few days, but it could take several months for our systems to learn and confirm that the site as a whole is now producing helpful, reliable, people-first content in the long term. If it's been a few months and you still haven't seen any effect, that could mean waiting until the next core update." (added 2026-11-10, replacing an unsourced "3-6 month cycle")
 
 #### A2: Site Change / Technical Regression
 
@@ -145,7 +149,7 @@ Manual actions are checked in Phase 0 (Step 0.5) on every analysis, whatever the
 | HTTPS/SSL certificate issues | Security Regression | High (85-95%) |
 | JavaScript rendering issues (content not visible to Googlebot) | Rendering Problem | Medium (60-80%) |
 
-**Recovery approach:** Fix the technical issue. Technical regressions have the fastest recovery path — often 1-4 weeks after fix + re-crawl.
+**Recovery approach:** Fix the technical issue. Recovery follows the fix and Google's re-crawl. (unsourced "1-4 weeks" timeline removed 2026-11-10)
 
 #### A3: Manual Action
 
@@ -156,7 +160,7 @@ Manual actions are checked in Phase 0 (Step 0.5) on every analysis, whatever the
 | GSC shows "Pure spam" | Spam Penalty | Confirmed (100%) |
 | GSC shows "User-generated spam" | UGC Spam Penalty | Confirmed (100%) |
 
-**Recovery approach:** Address the specific violation, submit a reconsideration request. Timeline: 2-8 weeks after Google reviews.
+**Recovery approach:** Address the specific violation, submit a reconsideration request. (unsourced "2-8 weeks" timeline removed 2026-11-10)
 
 #### A4: Backlink Loss Event
 
@@ -358,7 +362,7 @@ The site covers topics that ARE relevant to its ICP (Ring 2), but the content fa
 
 | Evidence | Sub-Diagnosis | Confidence |
 |----------|--------------|------------|
-| Ring 2 topics dominant among losers + Weak execution quality + HCU timeline correlation + product/service pages relatively stable | Content Authority Gap — relevant topics without unique expertise | Medium-High (70-85%) |
+| Ring 2 topics dominant among losers + Weak execution quality + core-update (helpfulness) timeline correlation (HCU timeline for 2022-2023 losses) + product/service pages relatively stable | Content Authority Gap — relevant topics without unique expertise | Medium-High (70-85%) |
 | Ring 2 content lacks proprietary data, customer stories, or product-derived insights + competitors demonstrate stronger E-E-A-T on same topics | Competitive authority deficit on owned topics | Medium (60-75%) |
 
 **Key distinction:** The TOPICS are right. The EXECUTION doesn't demonstrate the company's actual authority. Do NOT diagnose this as "Content Strategy Misalignment."
@@ -371,8 +375,10 @@ The site publishes content on topics that are genuinely outside its sphere of au
 
 | Evidence | Sub-Diagnosis | Confidence |
 |----------|--------------|------------|
-| Ring 3-4 topics dominant among losers + HCU timeline correlation + sitewide decline across content types | Content Strategy Misalignment — off-topic content triggering HCU classifier | High (80-95%) |
-| Ring 4 content was historically a top traffic driver but declined sharply after HCU | HCU vulnerability from off-topic traffic dependency | High (85-95%) |
+| Ring 3-4 topics dominant among losers + core-update (helpfulness) timeline correlation (HCU timeline for 2022-2023 losses) + sitewide decline across content types | Content Strategy Misalignment — off-topic content failing the core-update helpfulness assessment (the HCU classifier for 2022-2023 losses) | High (80-95%) |
+| Ring 4 content was historically a top traffic driver but declined sharply after a core update (after a standalone HCU for 2022-2023 losses) | Core-update (helpfulness) vulnerability from off-topic traffic dependency | High (85-95%) |
+
+**HCU naming in this branch (added 2026-11-10):** for losses after March 2024, read every helpfulness signal here as a core-update component, since the Helpful Content system has been part of core updates since March 2024 (`algorithm-updates-timeline.md`, "HCU integration into core (March 2024)"). Keep the HCU name only for the 2022-2023 standalone updates.
 
 **Recovery approach:** Prune Ring 4 content (noindex or remove), redirect link equity from pruned pages to Ring 1-2 content, rebuild content strategy around Ring 1-2 topics only.
 
@@ -384,7 +390,7 @@ When scoring "Content Strategy Misalignment" as a root cause:
 - If >50% of losing pages are Ring 3-4 → increase confidence by +10-15 points
 - If >70% of losing pages are Ring 1-2 with Strong/Adequate execution → score below 20 (Unlikely)
 
-When scoring "HCU Site-Wide Classifier" as a root cause:
+When scoring "Core Update (helpfulness), site-wide" as a root cause (named "HCU Site-Wide Classifier" only for 2022-2023 losses; relabelled 2026-11-10):
 
 - Ring 3-4 content >30% of total site content → increase confidence by +10
 - Ring 2 Weak execution >50% of content → maintain confidence but note the specific vulnerability is execution quality, not topic selection

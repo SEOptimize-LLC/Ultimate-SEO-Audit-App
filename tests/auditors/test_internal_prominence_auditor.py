@@ -136,3 +136,10 @@ def test_no_priority_pages_gives_only_the_summary():
     gsc = _gsc({"/services/drain/": (5, 500, 1.2), "/services/water-heater/": (4, 400, 1.4)})
     issues = _by_type(InternalProminenceAuditor(_crawl(), _anchors(), gsc).run_audit())
     assert list(issues) == ["internal_prominence_checked"]
+
+
+def test_link_score_is_shown_only_when_the_crawl_carries_it():
+    from auditors.internal_prominence_auditor import _link_score
+    assert _link_score({"link_score": 42.6}) == 43
+    assert _link_score({"link_score": float("nan")}) is None
+    assert _link_score({}) is None

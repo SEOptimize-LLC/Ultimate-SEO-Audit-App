@@ -11,6 +11,7 @@ Google AI Overviews (formerly SGE — Search Generative Experience) represent th
 | Seer Interactive | 61% average CTR reduction on queries with AI Overviews | Q1 2025 |
 | Semrush | AI Overviews appear on ~30% of queries (up from 7% at launch) | Late 2024 |
 | Ahrefs | Position 1 CTR dropped from ~28% to ~12% on AIO-affected queries | 2025 |
+| Ahrefs (vendor research) | An AI Overview correlates with a 58% lower average CTR for the top-ranking page; 300,000 keywords, 150,000 with an AI Overview and 150,000 informational without. <https://ahrefs.com/blog/ai-overviews-reduce-clicks-update/> (added 2026-11-10) | 2026-02-04 |
 | Search Engine Land | Informational queries hardest hit — up to 75% CTR loss | 2024 |
 | Conductor | 70% of AI Overview citations come from top 10 organic results | 2025 |
 | Advanced Web Ranking | Zero-click searches approaching 65-70% across all queries | 2025 |

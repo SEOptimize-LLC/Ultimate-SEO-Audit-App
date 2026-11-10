@@ -11,7 +11,7 @@ Screaming Frog can tell you a URL's HTTP status, canonical, and robots directive
 GSC's Page Indexing data lags ~2 days and its cached inspection result can be weeks stale. For any high-severity finding, run the live check:
 
 1. **URL Inspection → read the coverage state.** This is the per-URL version of the Page Indexing report's status.
-2. **Test Live URL.** Fetches the page fresh with Googlebot. Confirms current status, indexability, and the Google-selected canonical *now* — not as of the last crawl.
+2. **Test Live URL.** Fetches the page fresh with Googlebot. Confirms the current fetch, indexability and render *now*, not as of the last crawl. It does not confirm the canonical. Google's URL Inspection help: "You can determine the canonical version only in the indexed data; the live test cannot predict whether or not the tested version will be considered canonical." Read the Google-selected canonical from the indexed inspection result (Page indexing > Google-selected canonical), never from the live test. (added 2026-11-10)
 3. **View Crawled/Tested Page → confirm the content rendered.** If Googlebot's HTML is empty or broken where a user sees content, the problem is rendering, not indexing (route to `javascript_rendering_auditor.py`). Foley's render-verification trick: copy Googlebot's HTML from "View Tested Page," open the live URL in Chrome, F12 → Elements → right-click `<html>` → Edit as HTML → paste → observe whether Google sees the page a user does.
 4. **`site:` operator as an independent check.** `site:https://exact-url` confirms whether the URL is actually in the index, separate from the inspection cache.
 5. **Cross-check the sitemap and internal links.** A URL "unknown to Google" or "Discovered – not indexed" that isn't in the sitemap and has zero internal links is orphaned by definition.
@@ -39,6 +39,16 @@ Severity and remediation below. "Auditor coverage" names the module that surface
 | **Indexed, not submitted in sitemap** | Indexed but missing from the sitemap. | Add to the XML sitemap so Google has a reliable recrawl signal. Benign but worth cleaning up. **Validation:** confirm the URL appears in the live sitemap and re-inspect shows "Submitted and indexed." |
 | **Alternate page with proper canonical tag** | Google found the URL, saw a canonical pointing elsewhere, and correctly excluded it. **Expected, not an error** — the parameter/variant is being consolidated as intended. | Usually leave as-is. Only investigate when these grow into the thousands on a small site → run the canonical-child segmentation workflow (`robots-txt-ecommerce-framework.md`) and consider blocking worthless parameter paths. **Validation:** confirm the excluded URL's canonical resolves to a live, indexed parent. |
 
+### The Page indexing export lags — re-verify its rows before diagnosing them
+
+The Page indexing report (and its per-status exports, audit inputs #7/#8) lags GSC's own URL Inspection verdicts, sometimes by weeks. In practice a material share of the URLs in a "Crawled – currently not indexed" or "Discovered – currently not indexed" export are **already indexed** by the time the export is read — the same stale-snapshot behavior seen first-hand on stale noindex records (SameDay: 98 URLs recorded as noindex-excluded whose tags were long gone) and stale 404s (Superior `/emergency-services/`). AJ Kohn reports the same pattern across clients (LinkedIn, 2026-08): he re-inspects the export sample on a cadence and trends the share actually indexed, because clients panic over "de-indexing" that is mostly report lag.
+
+Operational consequences:
+
+1. **Never diagnose export rows directly.** Run `scripts/verify_gsc_exports.py <client>` first — it fetches the current URL Inspection verdict for every row and writes `Clients/<name>/data/gsc_export_verification.json`. The technical auditor consumes that file and drops rows Google has since indexed, so findings count only confirmed URLs. Without it, the finding ships with an explicit unverified-snapshot caveat.
+2. **Trend the accuracy, don't just measure it once.** Each verification run appends a summary (reported / actually indexed / % actually indexed). A **steady** actually-indexed share is ordinary report lag; a **falling** share across runs means Google is genuinely de-indexing pages from the bucket — that trend is the real early-warning signal, and neither number alone carries it.
+3. **The export caps at 1,000 rows per status.** On sites larger than that, the export is a sample, not the population — say so wherever counts from it appear.
+
 ### Not-indexed states that are usually a problem
 
 **Discovered – currently not indexed** — Google knows the URL exists but hasn't crawled it. No last-crawl date recorded.
@@ -47,7 +57,7 @@ Severity and remediation below. "Auditor coverage" names the module that surface
 - *Remediation:* add internal links from high-authority, frequently-crawled parents (homepage, hub pages, siblings) with descriptive anchor text; ensure it's in the sitemap; prune competing low-value URLs; then Request Indexing as a hint (it doesn't force indexing — signals do).
 - *Validation:* view source on the linking hub and confirm the new link is present; then GSC URL Inspection → Request Indexing → confirm the state flips to "Submitted and indexed." Recrawl typically lands within 7–14 days; re-request if not.
 - *Expected outcome:* **Ranking Lever** when it unblocks a finished money page (not Hygiene) — the page was invisible and becomes eligible to rank.
-- *Auditor coverage:* `technical_auditor._check_discovered_not_indexed` (needs `gsc_discovered_not_indexed.csv`; cross-refs `internal_links_in`).
+- *Auditor coverage:* `technical_auditor._check_discovered_not_indexed` (needs `gsc_discovered_not_indexed.csv`; cross-refs `internal_links_in`; drops rows `gsc_export_verification.json` shows as already indexed — see the report-lag section above).
 
 **Crawled – currently not indexed** — Google crawled it and *chose* not to index. Not a verdict on its own: Google's Page indexing help calls it a common status that "doesn't necessarily indicate an issue", and the cause can be a render failure as easily as weak content.
 - *Causes:* thin or low-value content lacking a reason to index, near-duplication that doesn't fit a formal duplicate category, weak internal + external signals, or rendering that leaves the page looking empty (including robots.txt blocking the theme's CSS or JavaScript).
@@ -55,7 +65,7 @@ Severity and remediation below. "Auditor coverage" names the module that surface
 - *Diagnose:* compare body content against indexed siblings. Reference case: Superior `/plumbing-services/` — 200, indexable, in sitemap, but no H1, zero H2s, ~27 words of body copy (a bare hub linking to children) vs a sibling service page with an H1, 14 H2s, ~2,700 words. That thinness is the reason.
 - *Remediation:* for each page ask "what reason does Google have to index this?" and provide one — depth, originality, genuine end-user value; merge/prune pages that can't clear the bar; strengthen internal links; verify the rendered HTML actually contains the content. **Re-submitting without an on-page change will not help** — Google already crawled and passed.
 - *Validation:* re-fetch and confirm an H1 is present and body word count is materially higher and comparable to indexed siblings; then Request Indexing → confirm "Submitted and indexed."
-- *Auditor coverage:* `technical_auditor._check_crawled_not_indexed` + `content_pruning_auditor.py` (needs `gsc_crawled_not_indexed.csv`; cross-refs `word_count`).
+- *Auditor coverage:* `technical_auditor._check_crawled_not_indexed` + `content_pruning_auditor.py` (needs `gsc_crawled_not_indexed.csv`; cross-refs `word_count`; drops rows `gsc_export_verification.json` shows as already indexed — see the report-lag section above).
 
 **URL is unknown to Google** — Google has no record of the URL at all.
 - *First, rule out the wrong-URL trap* (see the always-verify rule): confirm you inspected the exact live canonical (trailing slash, `www`/non-`www`, correct slug). A slug typo or slash variant produces this even when the real page is indexed.
@@ -71,7 +81,7 @@ Severity and remediation below. "Auditor coverage" names the module that surface
 **Duplicate, Google chose a different canonical than the user** — you declared a canonical; Google overrode it. Google treats the declared canonical as a hint and judged another page the better representative.
 - *Diagnose:* compare declared vs Google-selected in URL Inspection. Usually driven by near-duplicate content, an internal-linking imbalance, or conflicting sitemap/redirect signals.
 - *Remediation:* if the declared canonical is correct, align every signal to it (internal links, sitemap, redirects) and differentiate the content from Google's pick; if Google's choice is genuinely better, update the declared canonical to match.
-- *Validation:* re-inspect and confirm Google-selected canonical now equals the declared canonical.
+- *Validation:* re-inspect and confirm Google-selected canonical now equals the declared canonical. Allow time before the re-inspect. Google's canonicalization troubleshooting page: "Even after fixing content issues, Google might hold pages in a duplicate cluster for up to two weeks." (added 2026-11-10)
 - *Auditor coverage:* `technical_auditor._check_declared_vs_selected_canonical` (needs the `Google-Selected Canonical` column from URL Inspection data in the crawl). Also flagged as a checklist item in `robots-txt-ecommerce-framework.md`.
 
 ### Redirect / removal states
@@ -107,6 +117,7 @@ Severity and remediation below. "Auditor coverage" names the module that surface
 2. **Match the remediation to the state's actual cause.** Discovered-not-indexed is (usually) an internal-linking fix; Crawled-not-indexed is a content fix; a stale 404 is a reindex request. Prescribing a content rewrite for an orphan, or a reindex for a thin page, wastes the client's effort.
 3. **Tag the expected outcome.** Unblocking an indexable money page (orphan link, `noindex` removal, stale-404 reindex) is a **Ranking Lever**; cleaning benign "Alternate page with proper canonical" noise is **Infrastructure Hygiene**. Distinguish them per `.claude/rules/audit-workflow.md`.
 4. **Never surface GSC status labels' internal reasoning as client copy beyond the plain status.** State the principle and the fix directly (`.claude/rules/report-formatting.md`).
+5. **Re-verify Page indexing export rows before diagnosing them** (report-lag section above). To monitor whether specific URLs under remediation actually get indexed month over month, use `scripts/index_watchlist.py` — it snapshots the watch set's URL Inspection states alongside the monthly index audit and prints each URL's state progression.
 
 ## Source
 

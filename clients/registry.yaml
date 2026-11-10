@@ -38,16 +38,21 @@ ihs_group:
   - comfortsolutionsutah.com
 
 superior:
+  links_min_clicks: 1   # 3.1 source floor; owner 2026-10-12 (B): only 3 posts reach 10 clicks/90 days
   name: Superior Water & Air
   domain: superiorwaterandair.com
   folder: Clients/Superior
   gsc_property: https://superiorwaterandair.com/
   ga4_property: "314969736"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["Phone Call", "Estimate Request Form", "form_submit_contact", "BookingBooked"]
   drive_folder: 1g1u-qK3_8qE7KQI66hmUrVIYM8wn6X_C   # Drive folder holding every month's workbook
-  sheet_id: 1wmVotc1dWgZYfa0EDy0VFlGvIPAlE6QgWzSM7AeTieI   # October 2026
+  sheet_id: 1KaY1HmVnuPFPiWGFzKJnuCCff3qWu7BunYGOMIOV3To   # November 2026
+  sheet_id_2026_10: 1wmVotc1dWgZYfa0EDy0VFlGvIPAlE6QgWzSM7AeTieI
   sheet_id_2026_09: 1lOVM7FNonwfKa9zYo-2s1Q6VPyrxyaoYFD8OmKhhBEw
   sheet_id_2026_08: 1uVDqUbPRpdFCgfn4IlsDDnwIdRpjwjdcBoh2LRH4jA0
-  clickup_milestone: 17tmdg793au   # October 2026
+  clickup_milestone: 17tmdg7ft6v   # November 2026
+  clickup_milestone_2026_10: 17tmdg793au
   clickup_milestone_2026_08: 86ak0e259
   clickup_milestone_2026_09: 86ak7uxty
   semrush_project: "26537085"
@@ -94,16 +99,23 @@ superior:
             "/hvac/", "/emergency-services/", "/water/"]
 
 sameday:
+  links_min_clicks: 1
+  links_min_impressions: 100   # 3.1: or 100+ impressions/90 days; owner 2026-10-13   # 3.1 source floor; owner 2026-10-12: blog posts earn under 5 clicks/90 days
   name: SameDay Utah
   domain: samedayutah.com
   folder: Clients/SameDay
   gsc_property: https://samedayutah.com/
   ga4_property: "319451315"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["Click_to_Call", "BookingBooked", "form_submit_contact"]
+  ga4_tracking_gap: "Form fills have not been recorded since July 2026."
   drive_folder: 1b1A1uwsyrGppW6WvWyaUmbe0HCqHtC2T   # Drive folder holding every month's workbook
-  sheet_id: 1uCJsT-KyNgjpTR5tPP_bipP1h5rDI5N6h3x8yBiylP4   # October 2026
+  sheet_id: 1Bozg7FtgQYq1cBHq8YK0nc29MOu3krXTLohTlq58aWk   # November 2026
+  sheet_id_2026_10: 1uCJsT-KyNgjpTR5tPP_bipP1h5rDI5N6h3x8yBiylP4
   sheet_id_2026_09: 1nOJUsnW6DlS5mF478y0SKoBxCNpzPSuWTjRIUtFbhBs
   sheet_id_2026_08: 1tB_4H4-l759PLpNmcuOFpyUWcL6MzJvnMYenkFj4lKE
-  clickup_milestone: 17tmdg793ca   # October 2026
+  clickup_milestone: 17tmdg7ft38   # November 2026
+  clickup_milestone_2026_10: 17tmdg793ca
   clickup_milestone_2026_08: 86ak0e2nt
   clickup_milestone_2026_09: 86ak7vkgm
   semrush_project: "25650229"
@@ -150,11 +162,16 @@ beehive:
   folder: Clients/Beehive
   gsc_property: https://www.beehiveplumbing.com/
   ga4_property: "314808497"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["click_to_call", "form_submission", "BookingBooked"]
+  ga4_tracking_gap: "Bookings have not been recorded since April 2026."
   drive_folder: 1h2CVdsIsE3tyJ1VBozImj3s87GQ1fYdT   # Drive folder holding every month's workbook
-  sheet_id: 1EAAksgYjIYvH3w3D06fx8V9nTPT5N9qcIbdy4_QsVbE   # October 2026
+  sheet_id: 1X9Dgr1PW2O568C9KMfNRCvOOyCtV5KPrDiGsZj1y04U   # November 2026
+  sheet_id_2026_10: 1EAAksgYjIYvH3w3D06fx8V9nTPT5N9qcIbdy4_QsVbE
   sheet_id_2026_09: 13D8Lj9xFBVB78C6FzVOFgb68MXeE9jio_ngkuILNCOs
   sheet_id_2026_08: 1ScxOuGNoPMqr7OWTSQqqt9Vt4gQf-PRLd8PghxssmcE
-  clickup_milestone: 17tmdg793a4   # October 2026
+  clickup_milestone: 17tmdg7ft6u   # November 2026
+  clickup_milestone_2026_10: 17tmdg793a4
   clickup_milestone_2026_08: 86ak0e1ac
   clickup_milestone_2026_09: 86ak7ut6e
   semrush_project: "25650226"
@@ -233,16 +250,22 @@ beehive:
   # deliberately out of scope for this workbook.
 
 comfort:
+  links_min_clicks: 1
+  links_min_impressions: 100   # 3.1: or 100+ impressions/90 days; owner 2026-10-13   # 3.1 source floor; owner 2026-10-12: blog posts earn under 5 clicks/90 days
   name: Comfort Solutions
   domain: comfortsolutionsutah.com
   folder: Clients/Comfort
   gsc_property: https://www.comfortsolutionsutah.com/
   ga4_property: "371327071"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["Form_Submission", "West_Haven_Call", "Sandy_Call", "BookingBooked"]
   drive_folder: 1FQmeHYHLuFSLreU7fDnZJe1EGU3OYPU4   # Drive folder holding every month's workbook
-  sheet_id: 14I13JjqjGZJ1u-4fZEs8E_r5kEdTpurB1MCcmFUc7fs   # October 2026
+  sheet_id: 109RInfe_UzetoZtjQ9dlf5FGBgVAMCqFw1IW0dk6jdQ   # November 2026
+  sheet_id_2026_10: 14I13JjqjGZJ1u-4fZEs8E_r5kEdTpurB1MCcmFUc7fs
   sheet_id_2026_09: 1NHqvU2G4cqFenzjVM2uuOhQ_IrSe5A7KW7LW-QxGKrw
   sheet_id_2026_08: 1gzCtBffq3jpgj0c-tN2Km02PAINwU5f8Nh6qDI8DRGw
-  clickup_milestone: 17tmdg793ba   # October 2026
+  clickup_milestone: 17tmdg7ft7e   # November 2026
+  clickup_milestone_2026_10: 17tmdg793ba
   clickup_milestone_2026_08: 86ak0e1rf
   clickup_milestone_2026_09: 86ak7uwyn
   semrush_project: "26537093"
@@ -391,11 +414,16 @@ cudio:
   folder: Clients/Cudio
   gsc_property: https://www.cudio.com/
   ga4_property: "404082865"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["form_submit", "form_submit_contact", "form_submit_footer", "form_submission1_June2025", "homepage_request_free_consultation"]
+  ga4_lead_exclude_landing: ["/web/login", "/web/signup", "/slides/", "/fr_CA/web/"]   # portal logins and course forms, not leads
   drive_folder: 15jhxFmEOTfSH9Luiy5WVtdIpt3XpwS3M   # Drive folder holding every month's workbook
-  sheet_id: 1SoOe351eP-vfcCUFy5iCRJDcsxZTstxehqcEXQ9FwNg   # October 2026
+  sheet_id: 1z-_DJFVAfEcLTkTK323IiAkyClnCy7M28VO-mTSpJG8   # November 2026
+  sheet_id_2026_10: 1SoOe351eP-vfcCUFy5iCRJDcsxZTstxehqcEXQ9FwNg
   sheet_id_2026_09: 1src8vX59uyDxqFIrUuqPFYDUwwINWW2G8jaOM-ud3v4
   sheet_id_2026_08: 1_Ufm-_2cajXeR7C_4XKjEBjPEf7L3RBPzawuKbTp79U
-  clickup_milestone: 17tmdg7939b   # October 2026
+  clickup_milestone: 17tmdg7ft66   # November 2026
+  clickup_milestone_2026_10: 17tmdg7939b
   clickup_milestone_2026_08: 86ak0dnjz
   clickup_milestone_2026_09: 86ak6dxuu
   semrush_project: "25429387"
@@ -456,6 +484,9 @@ snow:
   semrush_project: "24584014"
   semrush_campaign: "24584014_2987931"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "snow"  # generic word; may catch non-brand queries - confirm
+  supabase_client: Snow   # QRG grader: name in Supabase client_page_content
+  ymyl: health_or_safety   # QRG grader default, owner decision 2026-10-15: products go on teeth and gums
+  brand_terms: ["snow", "trysnow", "try snow"]   # QRG grader: whole-word brand spellings
   competitor_tokens: ["amazon", "seares", "asuno", "hismile", "auraglow",
                       "crest", "colgate", "smiledirectclub"]
   # competitors  identified 2026-08-31 from 47 commercial purchase queries
@@ -506,16 +537,24 @@ educationwalkthrough:
   folder: Clients/Education Walkthrough
   gsc_property: https://educationwalkthrough.com/
   ga4_property: "304261130"
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["sign_up_organic", "contact_team_submits", "demo_thank_you"]
+  ga4_download_events: ["form_submit_template", "form_submit_blogpdf"]   # reported separately, never counted as leads
   drive_folder: 1KxQChNzJaDb__JeRDLXpPypAtO-WHsBB   # Drive folder holding every month's workbook
-  sheet_id: 1zpbed7eG29OUopSSw0hTSuM2fLDu9BcnJ4VC0x16MT0   # October 2026
+  sheet_id: 12SKA9RDDFdDh8DdgVGdBcmiPXdVLHmLdvCA86445BCA   # November 2026
+  sheet_id_2026_10: 1zpbed7eG29OUopSSw0hTSuM2fLDu9BcnJ4VC0x16MT0
   sheet_id_2026_09: 1-gOcsoWjkPGucHMIhpHKq_Zoabhlf3Qxy_mA1wgSZeg
   sheet_id_2026_08: 1vxLJKWWCd9HI0cynXmSG6Yooy5E1VtEgpnDO3vVcipA
-  clickup_milestone: 17tmdg7938f   # October 2026
+  clickup_milestone: 17tmdg7ft6d   # November 2026
+  clickup_milestone_2026_10: 17tmdg7938f
   clickup_milestone_2026_08: 86ak0e0rg
   clickup_milestone_2026_09: 86ak7unb1
   semrush_project: "20947643"
   semrush_campaign: "20947643_2330707"   # Position Tracking campaign for the aug-2026 tag flow
   brand_token: "education walkthrough"
+  supabase_client: EducationWalkthrough   # QRG grader: name in Supabase client_page_content
+  brand_terms: ["education walkthrough", "educationwalkthrough", "edu walkthrough"]   # QRG grader: whole-word brand spellings
+  ymyl: none   # QRG grader default, owner-confirmed 2026-10-15
   is_local: false
   ecommerce: false
   crawl:            # subfolder rules, supplied by owner 2026-08-17
@@ -558,15 +597,27 @@ educationwalkthrough:
       - https://educationwalkthrough.com/case-studies/
 
 barts:
+  links_min_clicks: 0   # 3.1 trial, December 2026 run only (owner's yes 2026-11-10): no click floor; run_3_1.index_screen keeps only sources URL Inspection shows indexed. October funnel: 163 pairs dropped at the click floor. Was 1 (owner 2026-10-26). Restore 1 if the trial does not add links.
   name: Bart's Asphalt
   domain: bartsasphalt.com
   folder: Clients/Barts Asphalt
   gsc_property: https://www.bartsasphalt.com/   # verified siteOwner 2026-09-01
   ga4_property: "454871981"   # verified 2026-10-05: GA4 hostName = www.bartsasphalt.com
+  # GA4 leads (owner Q8, 2026-10-08): phone clicks, submitted forms, completed bookings only.
+  ga4_lead_events: ["form_submit", "click_phone"]
+  # Owner 2026-10-29, relaying Guile (CEO) and earlier team discussion: a Michigan asphalt
+  # contractor needs no licence or insurance, so copy never asks for a licence, bonding or
+  # insurance statement; the company is young, so no years in business either. Projects
+  # completed is the proof to use. 4.2 drops these signals and fill_4_2_tab refuses a note
+  # that raises them.
+  trust_not_applicable: [licensed, insured, bonded, years in business]
+  trust_proof_metric: "projects completed (the home page shows 2,000+)"
   drive_folder: 1lsmojMqpwTR0YloTVGGzzmcvaXuLAnCc   # Drive folder holding every month's workbook
-  sheet_id: 1ZOe5mjZOhhc4jefGCoLX2qM3t4A1uni0dnQ2pvLUXvQ   # October 2026, second month
+  sheet_id: 1Ja_PpOaR_K5KtRHJctBYn-S_yFyq2SHMyd39dYpNnn8   # November 2026, third month
+  sheet_id_2026_10: 1ZOe5mjZOhhc4jefGCoLX2qM3t4A1uni0dnQ2pvLUXvQ   # second month
   sheet_id_2026_09: 1gen8V7L1_eCAXFuXreSaIz0G9yhoxFOdzcsxvRZJzms   # first month
-  clickup_milestone: 17tmdg7936x   # October 2026
+  clickup_milestone: 17tmdg7ft4k   # November 2026
+  clickup_milestone_2026_10: 17tmdg7936x
   clickup_milestone_2026_09: 86ak7uanr
   semrush_project: "22249902"   # verified 2026-10-05: SEMrush project "Barts Asphalt"
   semrush_campaign: "22249902_2591567"   # verified 2026-10-05: Michigan (state), 98 keywords, domain bartsasphalt.com
@@ -578,6 +629,9 @@ barts:
     # 2026-10-06: nothing worked in the last six workbook months is offered.
     candidate_exclude: ["/blog/how-much-does-asphalt-paving-cost"]
   brand_token: "bart's asphalt"
+  supabase_client: Barts Asphalt   # QRG grader: name in Supabase client_page_content
+  ymyl: none   # QRG grader default, owner decision 2026-10-15
+  brand_terms: ["bart's asphalt", "barts asphalt", "bartsasphalt", "barts"]   # QRG grader: whole-word brand spellings
   is_local: true
   ecommerce: false
   markets: ["Ann Arbor, MI", "Lansing, MI", "Jackson, MI"]

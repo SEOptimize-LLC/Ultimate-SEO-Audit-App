@@ -119,8 +119,83 @@ def live_noindex(urls: list[str], sample: int = 12) -> dict:
     return {"checked": len(got), "noindex": sum(got)}
 
 
+HOLLOW_WORDS = 50           # raw HTML under this many words: Google may be judging an empty shell
+
+
+def render_gate(urls: list[str], site: str, fetch=None, robots_text: str | None = None) -> dict[str, str]:
+    """Render check before any 'quality' reading (research run 2026-11-10; stage-3-indexability.md:150 calls
+    'Crawled - currently not indexed' the most common place a delivery problem is written up as content).
+
+    Per URL: 'blocked: <asset>' when robots.txt stops Googlebot fetching a same-host stylesheet or script,
+    'hollow: N words' when the raw HTML carries under HOLLOW_WORDS words, 'clean', or 'not checked (...)'
+    when the page could not be fetched. A check that did not run never reads as clean. This is a proxy:
+    the URL Inspection API cannot run a live test, so the owner's Test live URL confirms rows sent to 1.8.
+    """
+    import run_1_4 as R4
+    fetch = fetch or R4.fetch
+    host = site.split("/")[2]
+    if robots_text is None:
+        st, robots_text, _ = fetch(site.rstrip("/") + "/robots.txt", UA)
+        robots_text = robots_text if st == 200 else ""
+    groups = R4.parse_robots(robots_text or "")
+    out: dict[str, str] = {}
+    for u in urls:
+        st, html, _ = fetch(u, UA)
+        if st != 200 or not html:
+            out[u] = f"not checked (fetch returned {st})"
+            continue
+        assets = re.findall(r"(?is)<(?:link[^>]+rel=[\"']stylesheet[\"'][^>]*href|script[^>]+src)=[\"']([^\"']+)", html)
+        blocked = ""
+        for a in assets:
+            if a.startswith("//") or (a.startswith("http") and host not in a):
+                continue                                  # third-party assets are not this site's robots.txt
+            path = "/" + a.split(host, 1)[-1].lstrip("/") if a.startswith("http") else a
+            ok, _why = R4.robots_verdict(groups, "googlebot", path)
+            if not ok:
+                blocked = path
+                break
+        if blocked:
+            out[u] = f"blocked: {blocked}"
+            continue
+        body = re.sub(r"(?is)<(script|style|noscript).*?</\1>", " ", html)
+        words = len(re.sub(r"<[^>]+>", " ", body).split())
+        out[u] = f"hollow: {words} words" if words < HOLLOW_WORDS else "clean"
+    return out
+
+
+def split_by_gate(urls: list[str], gate: dict[str, str] | None) -> tuple[list, list, list]:
+    """(render problems, clean, not checked). With no gate at all, every URL is 'not checked'."""
+    gate = gate or {}
+    bad = [u for u in urls if gate.get(u, "").startswith(("blocked", "hollow"))]
+    clean = [u for u in urls if gate.get(u) == "clean"]
+    unchecked = [u for u in urls if u not in bad and u not in clean]
+    return bad, clean, unchecked
+
+
+def gate_findings(label: str, urls: list[str], gate: dict[str, str] | None, sev: str) -> list[list]:
+    """Rows for a set of URLs Google declined or dropped, split by the render check."""
+    bad, clean, unchecked = split_by_gate(urls, gate)
+    rows = []
+    if bad:
+        rows.append([f"{len(bad)} {label}: Googlebot cannot render them as published",
+                     listing(bad), "Fix This Month", "2.1",
+                     "The render check found blocked stylesheets or scripts, or almost no text in the raw "
+                     "HTML: " + "; ".join(f"{u.split('/', 3)[-1] or '/'} {gate[u]}" for u in bad[:4]) + ". "
+                     "Fix what Google is shown before judging the content."])
+    if clean:
+        rows.append([f"{len(clean)} {label}: render check clean", listing(clean), sev, "1.8",
+                     "Stylesheets and scripts are not blocked and the raw HTML carries the copy, so this is "
+                     "a content-quality reading. Confirm each with Test live URL in Search Console, then "
+                     "compare word count and uniqueness against indexed pages."])
+    if unchecked:
+        rows.append([f"{len(unchecked)} {label}: render not checked", listing(unchecked), sev, "2.1",
+                     "The render check could not fetch these pages, so neither a rendering fault nor a "
+                     "quality reading is established. Run Test live URL in Search Console for each first."])
+    return rows
+
+
 def build_findings(res: dict, changed: list[tuple[str, str, str]],
-                   prev: dict | None) -> list[list]:
+                   prev: dict | None, gate: dict[str, str] | None = None) -> list[list]:
     """Findings for section B. Severity is table-driven, never judged ad hoc."""
     F: list[list] = []
     counts = res["counts"]
@@ -132,13 +207,9 @@ def build_findings(res: dict, changed: list[tuple[str, str, str]],
     # in the monthly sweep surfaces it.
     lost = [(u, o, c) for u, o, c in changed if o == INDEXED and c != INDEXED]
     if lost:
-        F.append([f"{len(lost)} URL(s) dropped out of the index since last month",
-                  listing([u for u, _, _ in lost]),
-                  "Blocker", "1.8",
-                  "These were 'Submitted and indexed' last month and are not now. "
-                  "Google re-evaluated pages it had already accepted, which points at "
-                  "content quality rather than a technical block. Confirm each in URL "
-                  "Inspection, then route to the content-quality task."])
+        # Render check first: a page that dropped out can be a delivery fault, not a quality call.
+        F.extend(gate_findings("URL(s) dropped out of the index since last month",
+                               [u for u, _, _ in lost], gate, "Blocker"))
 
     gained = [(u, o, c) for u, o, c in changed if c == INDEXED and o != INDEXED]
     if gained:
@@ -153,21 +224,18 @@ def build_findings(res: dict, changed: list[tuple[str, str, str]],
         prev_cni = (prev or {}).get("counts", {}).get(CNI)
         delta = f" (was {prev_cni} last month)" if prev_cni is not None else " (baseline month)"
         sev = "Fix This Month" if cni / max(total, 1) >= CNI_SHARE_WATCH else "Watch"
-        F.append([f"{cni} URL(s) Crawled - currently not indexed "
-                  f"({pct(cni, total)} of sitemap){delta}",
-                  listing(urls_for(res, CNI)), sev, "1.8",
-                  "Google fetched these and chose not to index them. That is a quality "
-                  "judgment, not a crawl failure, so resubmitting will not fix it. "
-                  "Compare word count and uniqueness against pages that ARE indexed."])
+        F.extend(gate_findings(f"URL(s) Crawled - currently not indexed ({pct(cni, total)} of sitemap){delta}",
+                               urls_for(res, CNI), gate, sev))
 
     dni = counts.get(DNI, 0)
     if dni:
         sev = "Fix This Month" if dni / max(total, 1) >= DNI_SHARE_FLAG else "Watch"
         F.append([f"{dni} URL(s) Discovered - currently not indexed ({pct(dni, total)})",
                   listing(urls_for(res, DNI)), sev, "2.1",
-                  "Google knows these URLs exist but has not crawled them. That is a "
-                  "crawl-budget and internal-linking problem, not a content one: check "
-                  "how many internal links point at each."])
+                  "Google knows these URLs exist but has not crawled them yet. On a site of "
+                  "this size that points to discovery and internal linking, not crawl budget "
+                  "(Google's crawl budget guide is for sites with 1M+ pages changing weekly or "
+                  "10,000+ changing daily): check how many internal links point at each."])
 
     unknown = counts.get(UNKNOWN, 0)
     if unknown:
@@ -308,8 +376,10 @@ def append_findings(sid: str, b0: int, new: list[list]) -> int:
     existing = S.read(sid, f"'{TAB}'!A{b0}:F{b0 + 200}")
     keep = [(r + [""] * 6)[:6] for r in existing
             if len(r) > 1 and r[1].strip() and not MINE.match(r[1].strip())]
-    body = [[i + 1] + r[1:] for i, r in enumerate(keep)]
-    body += [[len(keep) + i + 1] + f for i, f in enumerate(new)]
+    body = [[i + 1] + r[1:5] + [S.finding_note(r[1], r[5] if len(r) > 5 else "")]
+            for i, r in enumerate(keep)]
+    body += [[len(keep) + i + 1] + f[:4] + [S.finding_note(f[0], f[4] if len(f) > 4 else "")]
+             for i, f in enumerate(new)]
     if not body:
         return 0
     S.clear(sid, f"'{TAB}'!A{b0}:F{b0 + 200}")
@@ -388,45 +458,69 @@ def run(slug: str, cfg: dict, month: str, force: bool = False) -> dict:
 
     mix = ", ".join(f"{st} {n}" for st, n in
                     sorted(counts.items(), key=lambda kv: -kv[1]))
+    # Notes are LABEL + bullets (rules/common/sheet-cells-get-read-by-people.md); joined
+    # prose tripped sheets_io's paragraph warning in November 2026. verify_1_2.py
+    # reads phrases out of these cells, so each phrase stays whole inside one bullet.
     if prev:
         pc = prev["counts"]
-        moved = (f"vs last month: indexed {pc.get(INDEXED,0)}->{idx}, "
-                 f"crawled-not-indexed {pc.get(CNI,0)}->{cni}, "
-                 f"discovered-not-indexed {pc.get(DNI,0)}->{dni}. "
-                 f"{len(changed)} URL(s) changed state.")
+        moved = ("Vs last month",
+                 [f"vs last month: indexed {pc.get(INDEXED,0)}->{idx}, "
+                  f"crawled-not-indexed {pc.get(CNI,0)}->{cni}, "
+                  f"discovered-not-indexed {pc.get(DNI,0)}->{dni}.",
+                  f"{len(changed)} URL(s) changed state."])
         c3_status = "Issue Found" if any(
             o == INDEXED and c != INDEXED for _, o, c in changed) else "Pass"
     else:
-        moved = ("BASELINE MONTH - no comparison possible. The URL Inspection API "
-                 "returns current state only and holds no history, so month-over-month "
-                 "starts from next month's run against this stored result.")
+        moved = ("Baseline month",
+                 ["No comparison possible.",
+                  "The URL Inspection API returns current state only and holds no history, "
+                  "so month-over-month starts from next month's run against this stored "
+                  "result."])
         c3_status = "Issue Found" if (cni / max(total, 1) >= CNI_SHARE_WATCH
                                       or dni / max(total, 1) >= DNI_SHARE_FLAG) else "Pass"
 
     b = crawl["buckets"]
     stale = b["90d+"] + b["never"]
     fetchbad = sum(crawl["fetch_failures"].values())
-    c4_txt = (f"CRAWL RECENCY PROXY, not Crawl Stats: that report is UI-only and no API "
-              f"exposes Googlebot request volume or the response-code mix. Measured from "
-              f"last-crawl date on {total} URLs. Median age {crawl['median_age_days']}d. "
-              f"0-7d {b['0-7d']}, 8-30d {b['8-30d']}, 31-90d {b['31-90d']}, "
-              f"90d+ {b['90d+']}, never {b['never']}. "
-              + (f"Fetch failures: {crawl['fetch_failures']}." if fetchbad
-                 else "No fetch failures."))
-    if prev:
-        pb = prev["crawl"]["buckets"]
-        c4_txt += (f" vs last month: 90d+ {pb['90d+']}->{b['90d+']}, "
-                   f"never {pb['never']}->{b['never']}.")
+    pb = prev["crawl"]["buckets"] if prev else None
+    c4_txt = S.compose(
+        ("Crawl recency proxy",
+         ["Not Crawl Stats: that report is UI-only and no API exposes Googlebot request "
+          "volume or the response-code mix.",
+          f"Measured from last-crawl date on {total} URLs.",
+          f"Median age {crawl['median_age_days']}d."]),
+        ("Last crawled",
+         [f"0-7d {b['0-7d']}, 8-30d {b['8-30d']}, 31-90d {b['31-90d']}, "
+          f"90d+ {b['90d+']}, never {b['never']}."]),
+        ("Fetch failures", [f"Fetch failures: {crawl['fetch_failures']}." if fetchbad
+                            else "No fetch failures."]),
+        ("Vs last month", [f"vs last month: 90d+ {pb['90d+']}->{b['90d+']}, "
+                           f"never {pb['never']}->{b['never']}."] if pb else []),
+        where="1.2 check 4")
 
-    scope = (f"SAMPLE ONLY: the registered sitemap does not resolve, so this "
-             f"covers the {total} top landing pages from 1.1, NOT the whole site. "
-             f"Percentages are of the sample. "
-             if sampled else f"URL Inspection API, all {total} sitemap URLs. ")
+    scope = (("Sample only",
+              [f"The registered sitemap does not resolve, so this covers the {total} top "
+               "landing pages from 1.1, NOT the whole site.",
+               "Percentages are of the sample."])
+             if sampled else ("Scope", [f"URL Inspection API, all {total} sitemap URLs."]))
     rows = {
-        p["c3"]: [c3_status, f"{scope}{mix}. {moved}"],
+        p["c3"]: [c3_status, S.compose(scope, ("States", [f"{mix}."]), moved,
+                                       where="1.2 check 3")],
         p["c4"]: ["Issue Found" if (fetchbad or stale / max(total, 1) >= STALE_SHARE_WATCH)
                   else "Pass", c4_txt],
     }
+    # Same rule as 1.2's own checks: a sampled or unreachable result is not a
+    # result. Blank the cell and hand it back so it is raised, not pasted where
+    # a caveat sits in a cell nobody re-reads.
+    DEGRADED = ("SAMPLE ONLY", "SITEMAP UNREACHABLE", "NOT RETRIEVED")
+    withheld = {}
+    NAMES = {p.get("c3"): "3. Page Indexing", p.get("c4"): "4. Crawl recency"}
+    for r in list(rows):
+        note = str(rows[r][1])
+        hit = next((d for d in DEGRADED if d in note), None)
+        if hit:
+            withheld[NAMES.get(r, "row %d" % r)] = (hit, note[:170])
+            rows[r] = ["", ""]
     n = sum(S.write(sid, f"'{TAB}'!B{r}:C{r}", [[a, bb]]).cells
             for r, (a, bb) in rows.items())
 
@@ -445,16 +539,19 @@ def run(slug: str, cfg: dict, month: str, force: bool = False) -> dict:
         # stale one every run: Cudio's cell ended up asserting 145 of 234 twice
         # and then 68 of 80, three contradictory figures in one cell.
         txt6 = (old6[0][0] if old6 and old6[0] else "")
-        for marker in ("Real indexed count", " Indexed: ", "Indexed count NOT"):
+        for marker in ("\n\nINDEXED COUNT", "Real indexed count", " Indexed: ",
+                       "Indexed count NOT"):
             txt6 = txt6.split(marker)[0]
         txt6 = txt6.strip()
         smtot = res.get("sitemapTotal")
         scope_note = (f" ({smtot} URLs in the sitemap; the rest are outside the "
                       f"defined scope of money pages and posts)"
                       if smtot and smtot != total else "")
-        txt6 += (f" Indexed: {idx} of {total} in-scope URLs ({pct(idx, total)})"
-                 f"{scope_note}, measured per URL via URL Inspection, not the "
-                 f"deprecated Sitemaps API field.")
+        txt6 += "\n\n" + S.compose(
+            ("Indexed count",
+             [f"Indexed: {idx} of {total} in-scope URLs ({pct(idx, total)}){scope_note}, "
+              "measured per URL via URL Inspection, not the deprecated Sitemaps API field."]),
+            where="1.2 check 6")
         n += S.write(sid, f"'{TAB}'!C{p['c6']}", [[txt6]]).cells
 
         # Check 6 is "sitemap URL count vs indexed count", and until this run it
@@ -466,7 +563,15 @@ def run(slug: str, cfg: dict, month: str, force: bool = False) -> dict:
         if idx / max(total, 1) < INDEXED_SHARE_OK:
             n += S.write(sid, f"'{TAB}'!B{p['c6']}", [["Issue Found"]]).cells
 
-    F = build_findings(res, changed, prev)
+    # Render check on the URLs a quality reading would otherwise be written about.
+    lost_urls = [u for u, o, c in changed if o == INDEXED and c != INDEXED]
+    to_gate = sorted(set(lost_urls) | set(urls_for(res, CNI)))
+    try:
+        gate = render_gate(to_gate, cfg["gsc_property"]) if to_gate else {}
+    except Exception as e:                       # noqa: BLE001 - every URL then reads "not checked"
+        print(f"  render check failed: {type(e).__name__} {e}")
+        gate = {}
+    F = build_findings(res, changed, prev, gate)
     if sampled:
         F.insert(0, ["Indexation measured on a sample, not the site",
                      cfg["gsc_property"],
@@ -478,7 +583,7 @@ def run(slug: str, cfg: dict, month: str, force: bool = False) -> dict:
     n += append_findings(sid, p["bsec"] + 2, F)
     return {"cells": n, "urls": total, "indexed": idx, "cni": cni, "dni": dni,
             "changed": len(changed), "findings": len(F), "baseline": prev is None,
-            "sampled": sampled}
+            "sampled": sampled, "withheld": withheld}
 
 
 def main() -> int:
@@ -486,8 +591,10 @@ def main() -> int:
     arg = sys.argv[1] if len(sys.argv) > 1 else "all"
     force = "--force" in sys.argv
     month = dt.date.today().strftime("%Y-%m")
-    todo = list(reg) if arg == "all" else [arg]
+    # registry holds non-client keys (ihs_group); skip them
+    todo = [k for k, v in reg.items() if isinstance(v, dict) and v.get("sheet_id")] if arg == "all" else [arg]
 
+    held = []
     print(f"{'client':<12}{'urls':>6}{'indexed':>9}{'CNI':>6}{'DNI':>6}"
           f"{'chg':>5}{'find':>6}{'cells':>7}  note")
     print("-" * 78)
@@ -497,8 +604,19 @@ def main() -> int:
             print(f"{slug:<12}{r['urls']:>6}{r['indexed']:>9}{r['cni']:>6}"
                   f"{r['dni']:>6}{r['changed']:>5}{r['findings']:>6}{r['cells']:>7}  "
                   + ("baseline" if r["baseline"] else "vs prior month"))
+            for nm, (why, note) in r.get("withheld", {}).items():
+                held.append((slug, nm, why, note))
         except Exception as e:
             print(f"{slug:<12}{'':>39}  FAILED {e.__class__.__name__}: {e}")
+    if held:
+        print(chr(10) + "=" * 74)
+        print("WITHHELD FROM THE SHEET - %d check(s) degraded, needs a look" % len(held))
+        print("=" * 74)
+        for slug, nm, why, note in held:
+            print("  %-22s %-22s [%s]" % (slug, nm, why))
+            print("      " + note)
+    else:
+        print(chr(10) + "Nothing withheld: every check returned a full result.")
     return 0
 
 

@@ -99,15 +99,21 @@ def test_page_label_from_slug():
 
 
 def test_scan_row_cells_formats_missing_queries_and_selection():
-    row = {"url": "https://x.com/a/", "gap_impr": 410, "excluded": "",
+    row = {"url": "https://x.com/a/", "gap_impr": 410, "excluded": "", "vol_missing": 1200,
            "top": [{"q": "q one", "pos": 9.24, "impr": 300},
                    {"q": "q two", "pos": 14.8, "impr": 110}]}
     cells = f18.scan_row_cells(row, True)
     assert cells[0] == "https://x.com/a/"
     assert cells[1].startswith("MISSING QUERIES\n• q one - 300 impr, pos 9.2")
     assert cells[2] == "9.2-14.8"
-    assert cells[3] == 410 and cells[5] == "Y"
-    assert f18.scan_row_cells(row, False)[5] == "N"
+    assert cells[3] == 410 and cells[4] == 1200 and cells[6] == "Y"
+    assert f18.scan_row_cells(row, False)[6] == "N"
+
+
+def test_scan_row_cells_refuses_a_scan_without_search_volumes():
+    row = {"url": "https://x.com/a/", "gap_impr": 410, "excluded": "", "top": []}
+    with pytest.raises(SystemExit):
+        f18.scan_row_cells(row, True)
 
 
 def test_build_pages_orders_refresh_before_quick_win_and_checks_cell_limits():
@@ -134,8 +140,8 @@ def test_build_pages_refuses_an_overlong_cell():
 # ---- 1.8: landing URLs only -----------------------------------------------
 
 class _Resp:
-    def __init__(self, status, url):
-        self.status_code, self.url = status, url
+    def __init__(self, status, url, text="<html><head></head></html>"):
+        self.status_code, self.url, self.text, self.headers = status, url, text, {}
 
     def close(self):
         pass
@@ -144,6 +150,13 @@ class _Resp:
 def test_resolve_page_returns_the_landing_url_for_a_slash_redirect():
     with mock.patch.object(f18.requests, "get",
                            return_value=_Resp(200, "https://x.com/blog/a/")):
+        final, note = f18.resolve_page("https://x.com/blog/a")
+    assert final == "https://x.com/blog/a/" and note.startswith("resolved to")
+
+
+def test_resolve_page_adopts_a_canonical_that_differs_only_by_the_slash():
+    head = '<html><head><link rel="canonical" href="https://x.com/blog/a/"></head></html>'
+    with mock.patch.object(f18.requests, "get", return_value=_Resp(200, "https://x.com/blog/a", head)):
         final, note = f18.resolve_page("https://x.com/blog/a")
     assert final == "https://x.com/blog/a/" and note.startswith("resolved to")
 

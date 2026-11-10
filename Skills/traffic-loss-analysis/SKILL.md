@@ -468,6 +468,12 @@ Read Google's live feed first: `https://status.search.google.com/incidents.json`
 
 **Measure a core update the way Google says to.** Wait at least a full week after the rollout completes, then compare that week with the week before the rollout started (Google Search Central, core updates guide). A comparison window that overlaps the rollout mixes the before and after states.
 
+**Size the move before acting on it (added 2026-11-10).** Review top pages and queries before and after the update. Google's core updates page (https://developers.google.com/search/updates/core-updates):
+- "Small drop in position (dropping from position 2 to 4): There's no need to take drastic action (in fact, we recommend avoiding making changes to content that's already performing well)."
+- "Large drop in position (dropping from position 4 to 29): Do a deeper assessment."
+
+**Recovery wording, from the same page (added 2026-11-10):** "some changes can take effect in a few days, but it could take several months for our systems to learn and confirm that the site as a whole is now producing helpful, reliable, people-first content in the long term. If it's been a few months and you still haven't seen any effect, that could mean waiting until the next core update." Do not state a fixed recovery cycle.
+
 **Match the loss SHAPE to the update type, not just the date (DERIVED-FROM-TESTING, Daniel Foley Carter).** Onset date alone produces false matches because updates cluster. Use the decline's shape as a second filter:
 - **Core update → delayed and gradual.** Core updates roll out over 2-4 weeks and the impact ramps in and compounds. Expect the onset to *lead into* a sloping multi-week decline, not a cliff — and the visible drop often lags the announced rollout start by days.
 - **Spam update → abrupt at a point.** Spam/manipulation demotions land as a step change — a sharp drop concentrated on a single date or two, then a plateau. A clean cliff aligned to a spam update is a much stronger signal than the same cliff aligned to a core update, whose fingerprint is gradual.
@@ -526,6 +532,8 @@ Combine the query-count movement (Step 2.0) with the position-band migration (St
 | Query count HOLDS + clicks fall (positions stable or only sliding down bands) | Slippage | Rank slip or SERP displacement (AIO/PAA pushing your result down the page), NOT a content-value problem | Do NOT rewrite. Fix internal links to the page, shore up freshness signals and the specific slipped terms — and check Phase 6 for AIO/PAA displacement before assuming a rank fix is even needed. |
 
 **The trap this closes:** a page whose clicks fell but whose query count held will *look* like it needs new content — and rewriting it is wasted effort at best and destructive at worst, because the content was never the problem. Conversely, date-bumping a genuinely devalued page (query count collapsing) feels productive and accomplishes nothing, because the fix has to be substantive enough to change what Google thinks the page *is*. The gate forces the distinction before any effort is committed.
+
+**Why the gate maps to Google's pipeline (court-confirmed + leak-documented).** Ranking runs in two stages: a retrieval/eligibility pass assembles the candidate set (lexical and embedding scoring in parallel), then a behavioural re-ranking pass (NavBoost — court-confirmed) orders it. Devaluation is a retrieval-stage loss: the page has stopped being a candidate, which is exactly why no behavioural or link fix can reach it — the fix has to change what the page *is*. Slippage is a re-ranking loss: the page is still a candidate and is losing the behavioural comparison, so intent match, format, and internal links are the levers, in that order. **Impressions are the eligibility instrument for this split:** impressions on the query family collapsing toward zero means the page has left the candidate set (a page that was never retrieved has no position to report — rank trackers cannot see this state); impressions holding while clicks and position fall means the page is eligible but losing re-ranking. Read the impressions trend alongside the query count whenever the two table signals disagree.
 
 Carry each page's verdict — Devaluation or Slippage — into Phase 10 (content quality gates its rewrite recommendations on this) and Phase 12 (recovery prioritisation).
 
@@ -994,6 +1002,8 @@ For each top losing keyword from Phase 4:
 - Adjust content depth to match SERP expectations
 
 ### Step 10.5: Helpful Content Risk
+
+**Naming (added 2026-11-10).** Helpful content has been part of core ranking since March 2024 (`references/algorithm-updates-timeline.md`, "HCU integration into core"). For losses after March 2024, every "HCU" in this skill means the helpfulness signals inside core updates, not a separate update; the standalone HCU name applies only to the 2022-2023 updates. Same convention as `references/diagnostic-decision-tree.md`.
 
 **IMPORTANT:** This step MUST use the Content-Business Alignment data from Step 10.0. The HCU assessment distinguishes between two fundamentally different vulnerability patterns that require different recovery strategies:
 

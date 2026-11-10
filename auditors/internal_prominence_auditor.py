@@ -106,7 +106,8 @@ class InternalProminenceAuditor(BaseAuditor):
                 "impressions": int(gsc.loc[key, "impressions"]),
                 "position": round(float(gsc.loc[key, "position"]), 1),
                 "linking_pages": len(sources),
-                "candidates": [{"url": eligible[c]["url"], "clicks": int(clicks[c])} for c in candidates],
+                "candidates": [{"url": eligible[c]["url"], "clicks": int(clicks[c]),
+                                "link_score": _link_score(eligible[c])} for c in candidates],
             })
         flagged.sort(key=lambda r: r["impressions"], reverse=True)
 
@@ -229,7 +230,10 @@ class InternalProminenceAuditor(BaseAuditor):
     def _emit_flagged(self, flagged: list[dict]) -> None:
         lines = []
         for r in flagged[:MAX_PAGES_DESCRIBED]:
-            cand = ", ".join(f"{c['url']} ({c['clicks']} clicks)" for c in r["candidates"]) or "none available"
+            cand = ", ".join(
+                f"{c['url']} ({c['clicks']} clicks"
+                + (f", Link Score {c['link_score']}" if c.get("link_score") is not None else "") + ")"
+                for c in r["candidates"]) or "none available"
             lines.append(
                 f"{r['url']}: position {r['position']}, {r['impressions']} impressions, linked from "
                 f"{r['linking_pages']} pages, none earning clicks. Candidate linking pages: {cand}"
@@ -282,3 +286,14 @@ class InternalProminenceAuditor(BaseAuditor):
             recommendation="Re-export the full internal anchor-text report and re-run the check.",
             impact="",
         )
+
+
+def _link_score(row: dict):
+    """Screaming Frog Link Score for a candidate, shown beside clicks (sort stays on clicks). Added 2026-11-10
+    from the internal-link research run: it names Link Score as an authority axis, and the leak's onsiteProminence
+    starts from the homepage as well as from click pages. None when the crawl export does not carry it."""
+    v = row.get("link_score")
+    try:
+        return None if v is None or v != v else int(round(float(v)))
+    except (TypeError, ValueError):
+        return None

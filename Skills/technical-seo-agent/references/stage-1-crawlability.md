@@ -149,6 +149,12 @@ checking explicitly, because it is invisible in a standard issue list.
 **Where to check:** GSC Crawl Stats report (average response time, plus the host-status
 breakdown).
 
+**"Hostload exceeded" in URL Inspection is a server-capacity signal.** (added 2026-11-10)
+Google's URL Inspection help lists it as a site-wide live-test result: "Hostload exceeded:
+Your site seems to be at maximum capacity for Google crawling or inspection requests.
+Google can't run tests until your traffic load (as estimated by Google) drops." Treat it
+as a Stage 1 host constraint, not a page problem.
+
 **Attributed threshold:** Star Diamond SEO puts "consistently above 500ms" as the marker
 of a hosting constraint affecting crawl frequency, and contrasts a 2-second response
 against 200ms as the difference in pages-per-session. Both figures are that single
@@ -165,6 +171,20 @@ prefer the client's own Crawl Stats trend as evidence.
 large scale and effectively a non-issue on small or new sites. Google allocates it on
 two inputs: host capacity to serve requests without degrading for users, and perceived
 value of what it expects to find.
+
+**Google's own scope comes first.** (added 2026-11-10) Google's crawl budget guide says
+it is intended primarily for:
+
+- "Large sites (1 million+ unique pages) with content that changes moderately often (once a week)"
+- "Medium or larger sites (10,000+ unique pages) with very rapidly changing content (daily)"
+- "Sites with a large portion of their total URLs classified by Search Console as Discovered - currently not indexed"
+
+Google adds: "The numbers given here are a **rough estimate** to help you classify your
+site. These are not exact thresholds." On a site below that scope, "Discovered -
+currently not indexed" points to internal linking and discovery, not crawl budget.
+(added 2026-11-10)
+
+The vendor sizing below is secondary to Google's scope.
 
 - **Small sites** (Star Diamond's figure: under roughly 1,000 pages, with decent
   hosting): Google can crawl everything in a session. Crawl budget is not the

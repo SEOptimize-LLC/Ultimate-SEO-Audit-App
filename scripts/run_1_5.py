@@ -55,7 +55,8 @@ def cause(d):
 ACTION = {
     "RANKING LOSS": "content depth and internal links",
     "DEMAND FALL": "validate seasonality year over year BEFORE any rewrite",
-    "CTR GAP": "title and meta, judged against this site's own CTR curve",
+    "CTR GAP": "check the SERP for an AI Overview, snippet or PAA first (evidence_1_5.py), then title and "
+               "meta judged against this site's own CTR curve",
 }
 
 
